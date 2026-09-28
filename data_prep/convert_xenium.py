@@ -8,6 +8,10 @@ scheduler exhausts 16 GB workstation. This script forces single-threaded
 scheduler and small chunks, and writes element by element, so peak usage stays
 bounded and failure is partial rather than total.
 
+Transcripts below quality 20 (qv) and control probes are dropped, so
+Transcript layer shows only molecules counted in Xenium Ranger's cell counts,
+which drive gene colouring.
+
 Always run it under cgroup memory cap so runaway process cannot take desktop
 down with it:
 
@@ -54,6 +58,10 @@ ELEMENT_ORDER = [
 # Only columns viewer reads. Xenium carries nine more per transcript, and at
 # 13.5M rows dropping them is what keeps sort and store affordable
 TRANSCRIPT_COLUMNS = ['x', 'y', 'z', 'feature_name']
+
+# Xenium Ranger's cell counts, behind gene colouring, keep only calls at or
+# above this quality (checked: transcript_counts sum matches exactly)
+MIN_TRANSCRIPT_QV = 20
 
 # Row group small enough that browser can fetch spatial tile as byte range
 # instead of pulling whole file
@@ -352,6 +360,8 @@ def prepare_transcripts(sdata, var_names):
     --------
     n_dropped: int
       Number of control-probe detections removed.
+    n_low_qv: int
+      Number of gene transcripts removed for quality below MIN_TRANSCRIPT_QV.
     """
     points = sdata.points['transcripts']
 
@@ -361,9 +371,13 @@ def prepare_transcripts(sdata, var_names):
 
     # Control probes are absent from var names, so they cannot carry feature
     # index; dropping beats writing them with sentinel code
-    counts = points['is_gene'].value_counts().compute()
-    n_dropped = int(counts.get(False, 0))
-    points = points[points['is_gene']][TRANSCRIPT_COLUMNS]
+    is_gene = points['is_gene']
+    # Low-quality calls are not counted, so layer would show uncounted molecules
+    passes_qv = points['qv'] >= MIN_TRANSCRIPT_QV
+    n_dropped, n_low_qv = dask.compute(
+        (~is_gene).sum(), (is_gene & ~passes_qv).sum()
+    )
+    points = points[is_gene & passes_qv][TRANSCRIPT_COLUMNS]
 
     # Map through categories rather than per-row lookup: 13.5M string lookups
     # against list is minutes, this is one pass over ~500 categories
@@ -398,7 +412,7 @@ def prepare_transcripts(sdata, var_names):
         sorted_points[ordered], transformations
     )
 
-    return n_dropped
+    return int(n_dropped), int(n_low_qv)
 
 
 # Function to read Xenium bundle into SpatialData object
@@ -601,10 +615,11 @@ if __name__ == '__main__':
 
     if args.transcripts:
         step = time.time()
-        n = prepare_transcripts(sdata, table.var.index)
+        n, n_low_qv = prepare_transcripts(sdata, table.var.index)
         print(
             f'transcripts prepared in {time.time() - step:.1f}s '
-            f'({n} control-probe detections dropped)',
+            f'({n} control-probe detections and {n_low_qv} below qv '
+            f'{MIN_TRANSCRIPT_QV} dropped)',
             flush=True,
         )
         step = time.time()
