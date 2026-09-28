@@ -1,0 +1,10 @@
+# Node for rebuilding Vitessce bundle; steps in README, "Rebuilding the spatial
+# viewer". Built files are committed, so deployment needs no Node
+#
+#   conda env create -f spatial_viewer_src/viewer_build_env.yaml
+name: viewer-build
+channels:
+  - conda-forge
+dependencies:
+  # Ships npm 11.16.0; npm packages themselves pinned by package-lock.json
+  - nodejs=24.18.0

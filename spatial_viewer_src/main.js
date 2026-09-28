@@ -10,7 +10,8 @@
  * Reads the Vitessce view-config URL from the page's `?config=` query
  * parameter, fetches it, and mounts the viewer into `#root`.
  *
- * Build: `npm run build` in the `viewer-build` conda env (see HANDOFF.md).
+ * Build: `npm run build` in the `viewer-build` conda env (see README,
+ * "Rebuilding the spatial viewer").
  */
 
 import React from 'react';

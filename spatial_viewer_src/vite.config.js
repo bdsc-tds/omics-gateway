@@ -10,7 +10,8 @@
  * Buffer and process, which do not exist in the browser, so
  * vite-plugin-node-polyfills supplies browser shims for them.
  *
- * Run `npm run build` in the `viewer-build` conda env (Node pinned there).
+ * Run `npm run build` in the `viewer-build` conda env (Node pinned in
+ * viewer_build_env.yaml).
  */
 
 import { defineConfig } from 'vite';
