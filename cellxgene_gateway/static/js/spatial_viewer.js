@@ -1,0 +1,444 @@
+// Script to hand spatial viewer page over to Vitessce and patch its UI
+
+// Bundle offers no callback and renders either viewer or bare #message div
+// on failure, so watch #root to tell which arrived
+(function() {
+  var root = document.getElementById('root');
+  // Bootstrap's line-height and font resets inflate Vitessce's own rows
+  // until list footers overlap, so chrome's CSS goes when chrome does.
+  // Collected before bundle runs, so only chrome's own links are taken
+  var chromeStyles = Array.prototype.slice.call(document.querySelectorAll(
+    'head link[rel="stylesheet"]:not([data-keep])'));
+
+  var configUrl =
+    new URLSearchParams(window.location.search).get('config') || '';
+
+  // Bundle fetches same config, so this comes from browser cache
+  var config = fetch(configUrl).then(function(response) {
+    return response.json();
+  });
+  var extraTypes = config.then(extraChannelTypes).catch(function() {
+    return [];
+  });
+
+  // Extra segmentations have different obsType from their layer, so viewer
+  // cannot find their data. Metric channel differs too but declares own
+  // featureType, which does resolve
+  function extraChannelTypes(config) {
+    var space = config.coordinationSpace || {};
+    var values = space.obsType || {};
+    var meta = space.metaCoordinationScopesBy || {};
+    var layerTypes = [];
+    var channelTypes = [];
+    function collect(level, out) {
+      var scopes = (level || {}).obsType || {};
+      var featureTypes = (level || {}).featureType || {};
+      Object.keys(scopes).forEach(function(scope) {
+        if (featureTypes[scope]) return;
+        out.push(values[scopes[scope]]);
+      });
+    }
+    Object.keys(meta).forEach(function(key) {
+      collect(meta[key].segmentationLayer, layerTypes);
+      collect(meta[key].segmentationChannel, channelTypes);
+    });
+    return channelTypes.filter(function(type) {
+      return type && layerTypes.indexOf(type) === -1;
+    });
+  }
+
+  var logEl = document.getElementById('spatial-log');
+  function log(text) {
+    logEl.textContent +=
+      new Date().toTimeString().slice(0, 8) + '  ' + text + '\n';
+  }
+  log('Loading viewer bundle');
+
+  new MutationObserver(function(records, observer) {
+    var message = root.querySelector('#message');
+    if (message) {
+      log('Failed to load dataset');
+      document.getElementById('spatial-loading').hidden = true;
+      // Bundle's own wording is diagnostic, so it goes to Stderr and
+      // Message says plainly what failed
+      document.getElementById('spatial-error-message').textContent =
+        'This spatial dataset could not be loaded in your browser.';
+      document.getElementById('spatial-error-stderr').textContent =
+        message.textContent;
+      document.getElementById('spatial-error').hidden = false;
+      observer.disconnect();
+    } else if (root.children.length) {
+      // Viewer mounted; hand whole page over to it
+      log('Starting viewer');
+      document.getElementById('chrome').remove();
+      chromeStyles.forEach(function(link) { link.remove(); });
+      observer.disconnect();
+      patchSpatialLegends(root);
+      config.then(function(json) {
+        patchMetricTooltips(json, configUrl);
+      }).catch(function() {});
+      orderLayerRows(root);
+      limitLassoToCells(root);
+      extraTypes.then(function(types) {
+        constrainExtraEncodings(root, types);
+      });
+    }
+  }).observe(root, { childList: true, subtree: true });
+
+  // Extra segmentations only draw their fixed colour: gene values reach
+  // neither polygons nor sets, so their menu keeps Static Color and drops
+  // other controls
+  function constrainExtraEncodings(root, extraTypes) {
+    if (!extraTypes.length) return;
+    var openedFor = null;
+    // Portalled menu is outside its row, so get its channel from opener
+    root.addEventListener('click', function(event) {
+      var button = event.target.closest(
+        'button[aria-label="Open segmentation channel options menu"]');
+      if (!button) return;
+      var name = button.closest('[class*="layerControllerGrid"]')
+        .querySelector('[class*="imageLayerName"]');
+      openedFor = name ? name.textContent.trim().toLowerCase() : null;
+    }, true);
+
+    new MutationObserver(function() {
+      if (extraTypes.indexOf(openedFor) === -1) return;
+      var options = document.querySelectorAll(
+        'select[aria-label="Color encoding selector"] '
+        + 'option:not([value="spatialChannelColor"])');
+      for (var i = 0; i < options.length; i++) {
+        // Disable as well as hide: hidden alone may leave it selectable
+        options[i].hidden = true;
+        options[i].disabled = true;
+      }
+      // Colormap and range only apply to feature values, so hide them with
+      // those encodings. Inline style because menu row's class overrides
+      // [hidden] attribute
+      var labels = document.querySelectorAll(
+        '[class*="imageLayerMenuLabel"]');
+      for (var j = 0; j < labels.length; j++) {
+        if (labels[j].textContent.trim().indexOf('Colormap') !== 0) continue;
+        var item = labels[j].closest('li') || labels[j].parentElement;
+        item.style.display = 'none';
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Vitessce tooltips list only ids and sets, so cell tooltips get selected
+  // metric from generator's sidecar file, fetched on first hover, while
+  // Metric layer is on
+  function patchMetricTooltips(config, configUrl) {
+    var featureTypes = (config.coordinationSpace || {}).featureType || {};
+    var hasMetrics = Object.keys(featureTypes).some(function(scope) {
+      return featureTypes[scope] === 'metric';
+    });
+    var valuesUrl = configUrl.replace(/\.vitessce\.json$/, '.metrics.json');
+    if (!hasMetrics || valuesUrl === configUrl) return;
+    var values = null;
+    var loaded = null;
+
+    function format(value) {
+      if (value === null) return 'n/a';
+      return Number.isInteger(value) ? String(value) : value.toFixed(2);
+    }
+
+    // Row's eye icon never changes, but its swatch is blank while hidden
+    function metricLayerVisible() {
+      var names = document.querySelectorAll('[class*="imageLayerName"]');
+      for (var i = 0; i < names.length; i++) {
+        if (names[i].textContent.trim() !== 'Metric') continue;
+        var row = names[i].closest('[class*="layerControllerGrid"]');
+        return !!(row && row.querySelector(
+          '[class*="colorIcon"] svg, [class*="colorIcon"][style*="background"]'));
+      }
+      return false;
+    }
+
+    // Metric list checks its selected row's hidden checkbox
+    function selectedMetric() {
+      return values.columns.findIndex(function(column) {
+        var input = document.querySelector(
+          'input[type="checkbox"][value="' + column + '"]');
+        return input && input.checked;
+      });
+    }
+
+    function patch() {
+      // Tooltip is portalled, and React reuses it across hovered cells
+      var headers = document.querySelectorAll('th');
+      for (var i = 0; i < headers.length; i++) {
+        var th = headers[i];
+        var tbody = th.closest('tbody');
+        // Hovered id is always first row
+        if (!tbody || th !== tbody.querySelector('th')) continue;
+        if (th.textContent === 'Metric ID') {
+          // Metric layer's own, shown while Cell layer is hidden. React
+          // never rewrites constant key, so rename sticks
+          th.textContent = 'Cell ID';
+        } else if (th.textContent !== 'Cell ID') {
+          continue;
+        }
+        if (!values) {
+          loaded = loaded || fetch(valuesUrl).then(function(response) {
+            return response.json();
+          }).then(function(json) {
+            values = json;
+            patch();
+          });
+          continue;
+        }
+        var cellId = th.nextElementSibling.textContent;
+        var metric = metricLayerVisible() ? selectedMetric() : -1;
+        var key = cellId + '|' + metric;
+        if (tbody.dataset.metricCell === key) continue;
+        tbody.dataset.metricCell = key;
+        var old = tbody.querySelector('tr[data-metric-row]');
+        if (old) old.remove();
+        var cellValues = values.cells[cellId];
+        if (metric < 0 || !cellValues) continue;
+        var row = document.createElement('tr');
+        row.dataset.metricRow = '';
+        var name = document.createElement('th');
+        name.textContent = values.columns[metric];
+        var value = document.createElement('td');
+        value.textContent = format(cellValues[metric]);
+        row.append(name, value);
+        tbody.append(row);
+      }
+    }
+    new MutationObserver(patch).observe(
+      document.body, { childList: true, subtree: true, characterData: true });
+  }
+
+  // Lasso takes every visible segmentation channel, adding empty selections
+  // for those without quadtree; keep only Cell's while any layer is visible
+  function limitLassoToCells(root) {
+    var seen = new WeakSet();
+    var warned = false;
+    function warn(text) {
+      if (warned) return;
+      warned = true;
+      console.warn('Lasso override not applied: ' + text);
+    }
+
+    // Nearest React fiber at or above element
+    function fiberOf(element) {
+      for (var el = element; el && el !== root; el = el.parentElement) {
+        var key = Object.keys(el).find(function(name) {
+          return name.indexOf('__reactFiber$') === 0;
+        });
+        if (key) return el[key];
+      }
+      return null;
+    }
+
+    // Class component above deck.gl canvas; UMAP's lacks segmentation props
+    function spatialOf(canvas) {
+      var fiber = fiberOf(canvas);
+      if (!fiber) warn('no React fiber above canvas');
+      for (; fiber; fiber = fiber.return) {
+        var node = fiber.stateNode;
+        if (node && node.props && 'segmentationLayerScopes' in node.props) {
+          return node;
+        }
+      }
+      return null;
+    }
+
+    function wrap(spatial) {
+      var original = spatial.createSelectionLayer;
+      if (typeof original !== 'function') {
+        warn('createSelectionLayer not found');
+        return;
+      }
+      spatial.createSelectionLayer = function() {
+        var props = this.props;
+        var coordination = props.segmentationChannelCoordination;
+        if (!coordination || !coordination[0]) return original.call(this);
+        var trees = this.obsSegmentationsQuadTree;
+        // Renamed after upgrade: no channel would join, so keep original
+        if (!trees || typeof trees !== 'object') {
+          warn('obsSegmentationsQuadTree not found');
+          return original.call(this);
+        }
+        var channels = coordination[0];
+        var layers = (props.segmentationLayerCoordination || [])[0] || {};
+        var anyVisible = Object.keys(channels).some(function(layer) {
+          return (layers[layer] || {}).spatialLayerVisible
+            && Object.keys(channels[layer]).some(function(channel) {
+              return channels[layer][channel].spatialChannelVisible;
+            });
+        });
+        // Copies, not store objects: only lasso sees changed visibility
+        var values = {};
+        Object.keys(channels).forEach(function(layer) {
+          values[layer] = {};
+          Object.keys(channels[layer]).forEach(function(channel) {
+            var hasTree = !!(trees[layer] && trees[layer][channel]);
+            values[layer][channel] = Object.assign({}, channels[layer][channel],
+              { spatialChannelVisible: anyVisible && hasTree });
+          });
+        });
+        // Real instance underneath supplies state and quadtrees
+        var view = Object.create(this, { props: { value: Object.assign({},
+          props, { segmentationChannelCoordination: [values, coordination[1]] }) } });
+        return original.call(view);
+      };
+    }
+
+    function scan() {
+      var canvases = root.getElementsByTagName('canvas');
+      for (var i = 0; i < canvases.length; i++) {
+        if (seen.has(canvases[i])) continue;
+        seen.add(canvases[i]);
+        var spatial = spatialOf(canvases[i]);
+        if (spatial && !seen.has(spatial)) {
+          seen.add(spatial);
+          wrap(spatial);
+        }
+      }
+    }
+    scan();
+    // Canvas mounts once data loads, and again if view remounts
+    new MutationObserver(scan).observe(
+      root, { childList: true, subtree: true });
+  }
+
+  // Metric draws below cells so they keep hover, but row stays listed
+  // after Cell. Flex order is visual only; column-reverse sorts from bottom
+  function orderLayerRows(root) {
+    function reorder() {
+      var names = root.querySelectorAll('[class*="imageLayerName"]');
+      var cell = null;
+      var metric = null;
+      for (var i = 0; i < names.length; i++) {
+        var name = names[i].textContent.trim();
+        var row = names[i].closest('[class*="layerControllerGrid"]');
+        if (name === 'Cell') cell = row;
+        if (name === 'Metric') metric = row;
+      }
+      if (!cell || !metric || cell.parentNode !== metric.parentNode) return;
+      var rows = Array.prototype.slice.call(cell.parentNode.children);
+      var cellIndex = rows.indexOf(cell);
+      var metricIndex = rows.indexOf(metric);
+      rows[cellIndex] = metric;
+      rows[metricIndex] = cell;
+      rows.forEach(function(row, index) {
+        // Style changes are not observed, so no feedback loop
+        if (row.style.order !== String(index)) row.style.order = index;
+      });
+    }
+    reorder();
+    new MutationObserver(reorder).observe(
+      root, { childList: true, subtree: true });
+  }
+
+  // Bundle uses "Points", leaves fixed-colour swatches grey, and redraws on
+  // selection. Observer must outlive handover
+  function patchSpatialLegends(root) {
+    function rename() {
+      var titles = root.querySelectorAll('[class*="legend"] text');
+      for (var i = 0; i < titles.length; i++) {
+        if (titles[i].textContent === 'Points') {
+          titles[i].textContent = 'Transcript';
+        }
+      }
+    }
+
+    // Bundle omits channel colour, so fixed-colour swatches default to grey
+    // Span legend width minus padding (96), then shrink to squares when
+    // recoloured
+    function recolourSwatches() {
+      var bars = root.querySelectorAll('[class*="legend"] rect[width="96"]');
+      for (var i = 0; i < bars.length; i++) {
+        var title = bars[i].ownerSVGElement.querySelector('text');
+        var colour = layerColour(title && title.textContent);
+        if (!colour) continue;
+        bars[i].setAttribute('width', '8');
+        bars[i].setAttribute('fill', colour);
+      }
+    }
+
+    // Layer row picker carries channel colour inline, tracking controller
+    // changes. Its button shares class prefix, so find coloured swatch
+    function layerColour(label) {
+      var names = root.querySelectorAll('[class*="imageLayerName"]');
+      for (var i = 0; i < names.length; i++) {
+        if (names[i].textContent.trim() !== label) continue;
+        var row = names[i].closest('[class*="layerControllerGrid"]');
+        var icons = row ? row.querySelectorAll('[class*="colorIcon"]') : [];
+        for (var j = 0; j < icons.length; j++) {
+          if (icons[j].style.backgroundColor) {
+            return icons[j].style.backgroundColor;
+          }
+        }
+      }
+      return null;
+    }
+
+    // Lifted title shares row with obsType label, which long metric names
+    // reach: shrink to fit, then truncate
+    function fitLiftedTitles() {
+      var titles = root.querySelectorAll(
+        '[class*="legend"] svg[height="36"] text[y="18"]');
+      for (var i = 0; i < titles.length; i++) {
+        var title = titles[i];
+        var label = title.parentNode.querySelector('text[y="0"]');
+        if (!label) continue;
+        var box = label.getBBox();
+        var room = Number(title.getAttribute('x')) - box.x - box.width - 6;
+        var length = title.getComputedTextLength();
+        if (room <= 0 || length <= room) continue;
+        var size = Math.max(7, 9 * room / length);
+        title.style.fontSize = size + 'px';
+        var text = title.textContent;
+        while (text.length > 1 && title.getComputedTextLength() > room) {
+          text = text.slice(0, -1);
+          title.textContent = text + '\u2026';
+        }
+      }
+    }
+
+    // Legends follow draw order, so Metric would sit above Cell; list it
+    // after Cell, matching layer controller. Cell legend's title varies
+    // (set name when set-coloured), so extras are matched instead
+    function orderLegends() {
+      var legends = root.querySelectorAll('[class*="multiLegend"]');
+      for (var i = 0; i < legends.length; i++) {
+        var items = Array.prototype.slice.call(legends[i].children);
+        // Colour bar tick labels precede titles, so search all texts
+        var texts = items.map(function(item) {
+          return Array.prototype.map.call(
+            item.querySelectorAll('svg text'),
+            function(text) { return text.textContent; });
+        });
+        var metricIndex = texts.findIndex(function(labels) {
+          return labels.indexOf('Metric') !== -1;
+        });
+        if (metricIndex === -1) continue;
+        var metric = items.splice(metricIndex, 1)[0];
+        texts.splice(metricIndex, 1);
+        // Column-reverse: earlier in sorted order is lower on screen
+        var cellIndex = texts.findIndex(function(labels) {
+          return !['Transcript', 'Points', 'Nucleus'].some(function(title) {
+            return labels.indexOf(title) !== -1;
+          });
+        });
+        items.splice(cellIndex === -1 ? items.length : cellIndex, 0, metric);
+        items.forEach(function(item, index) {
+          if (item.style.order !== String(index)) item.style.order = index;
+        });
+      }
+    }
+
+    function patch() {
+      rename();
+      recolourSwatches();
+      fitLiftedTitles();
+      orderLegends();
+    }
+    patch();
+    new MutationObserver(patch).observe(
+      root, { childList: true, subtree: true });
+  }
+})();

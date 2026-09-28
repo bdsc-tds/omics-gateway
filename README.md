@@ -150,7 +150,7 @@ The build is reproducible: rebuilding unchanged sources gives identical files. T
 
 `spatial-viewer.js` keeps a fixed name, so it must be served with revalidation rather than long-term caching; the other built files have content hashes in their names and can be cached indefinitely.
 
-`spatial_viewer.html` also adjusts the viewer at runtime with CSS and scripts (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
+The spatial viewer page also adjusts Vitessce at runtime, through `cellxgene_gateway/static/css/spatial_viewer.css` and `cellxgene_gateway/static/js/spatial_viewer.js` (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
 
 ## Getting help
 
