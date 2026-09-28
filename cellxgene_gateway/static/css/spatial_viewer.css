@@ -1,5 +1,6 @@
 /* Spatial viewer page: gateway chrome and Vitessce overrides */
 
+/* Full-page root: Vitessce grid measures its container */
 html,
 body,
 #root {
@@ -8,9 +9,7 @@ body,
   width: 100%;
 }
 
-/* Covers viewer rather than hiding it: Vitessce grid measures its container,
-   so #root must keep full size while bundle mounts. Background inherited
-   from body, so it tracks common.css rather than repeating its value */
+/* Loading chrome covers viewer, never hides it, so #root keeps its size */
 #chrome {
   position: fixed;
   inset: 0;
@@ -19,28 +18,23 @@ body,
   background: inherit;
 }
 
-/* Controller hardcodes group order (points, spots, segmentations, images),
-   each reversed; flip whole list to read Image/Cell/Nucleus/Transcript.
-   Rows' container has no class, so match hashed row-class suffix */
+/* Flip controller's reversed layer rows; their container has no class */
 div:has(> [class*="layerControllerGrid"]) {
   display: flex;
   flex-direction: column-reverse;
 }
 
-/* Cell Sets tree's 17px gutter overflows card under content-box. border-box
-  keeps it within declared width, avoiding horizontal scroll */
+/* Keep Cell Sets tree's 17px gutter within width, avoiding horizontal scroll */
 [class*="setsManagerTree"] {
   box-sizing: border-box;
 }
 
-/* Chromium renders hanging legend titles ~1.8px above the SVG viewport;
-  overflow hidden clips them. Legend's 2px padding accommodates overshoot */
+/* Chromium draws hanging legend titles ~1.8px above SVG; do not clip them */
 [class*="legend"] svg {
   overflow: visible;
 }
 
-/* When gene is selected, move spatial legend title to free top-right area
-  to avoid title overlapping colorbar */
+/* Lift continuous legend's second title beside obsType, clear of colour bar */
 [class*="legend"] svg[height="36"] text[y="18"] {
   transform: translateY(-18px);
 }
@@ -51,8 +45,7 @@ div:has(> [class*="layerControllerGrid"]) {
   min-width: 0;
 }
 
-/* Dot plot needs fixed width per cell set, so 39 sets overflow panel;
-  scroll instead of clipping */
+/* Dot plot's fixed-width columns overflow panel with 39 sets: scroll instead */
 [class*="vegaContainer"] {
   overflow: auto !important;
 }
