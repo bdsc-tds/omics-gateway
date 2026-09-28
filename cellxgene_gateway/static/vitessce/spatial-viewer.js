@@ -18570,7 +18570,16 @@ window.fetch = (e, t) => {
 	let n = new URL(e instanceof Request ? e.url : e, window.location.origin);
 	return n.origin === window.location.origin && _.test(n.pathname) ? Promise.resolve(new Response(null, { status: 404 })) : v(e, t);
 };
-async function y() {
+var y = 10, b = 5, ee = 12, te = [12, 44], ne = [800, 450], re = .95;
+function ie(e, t, n) {
+	let r = e.layout || [], i = r.find((e) => e.component === "spatialBeta"), a = e.coordinationSpace || {}, o = i && i.coordinationScopes || {}, s = a.spatialZoom || {}, c = a.spatialTargetX || {}, l = a.spatialTargetY || {}, u = s[o.spatialZoom], d = 2 * c[o.spatialTargetX], f = 2 * l[o.spatialTargetY];
+	if (typeof u != "number" || !(d > 0) || !(f > 0)) return;
+	let p = Math.log2(Math.min(ne[0] / d, ne[1] / f));
+	if (Math.abs(u - p) > 1e-6) return;
+	let m = Math.max(...r.map((e) => e.y + e.h)), h = (t - 2 * y - (ee - 1) * b) / ee, g = (n - 2 * y - (m - 1) * b) / m, _ = i.w * h + (i.w - 1) * b - te[0], v = i.h * g + (i.h - 1) * b - te[1];
+	!(_ > 0) || !(v > 0) || (s[o.spatialZoom] = Math.log2(re * Math.min(_ / d, v / f)));
+}
+async function ae() {
 	if (!p) {
 		h("No config specified. Use ?config=<url>.");
 		return;
@@ -18579,7 +18588,7 @@ async function y() {
 		let e = await fetch(p);
 		if (!e.ok) throw Error(`${e.status} ${e.statusText}`);
 		let t = await e.json();
-		g(t), m.render(f.createElement(r, {
+		g(t), ie(t, window.innerWidth, window.innerHeight), m.render(f.createElement(r, {
 			config: t,
 			theme: "light",
 			height: window.innerHeight
@@ -18588,5 +18597,5 @@ async function y() {
 		h(`Failed to load config from ${p}: ${e}`);
 	}
 }
-y();
+ae();
 //#endregion

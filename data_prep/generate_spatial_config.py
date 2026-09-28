@@ -263,7 +263,9 @@ def fit_zoom(image_shape, viewport=(800, 450)):
 
     Vitessce renders one world unit per 2**zoom screen pixels and opens on
     default zoom which leaves images too small, so fitting it here frames
-    dataset automatically.
+    dataset automatically. Viewer's main.js recognises this reference fit and
+    refits it to real panel at load, so default viewport must match its
+    REFERENCE_PANEL.
 
     Parameters:
     -----------

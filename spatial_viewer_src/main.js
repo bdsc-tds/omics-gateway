@@ -61,6 +61,53 @@ window.fetch = (input, init) => {
   return nativeFetch(input, init);
 };
 
+// Vitessce 4.0.1 grid geometry (VitessceGrid padding and margin, 12 columns)
+// and card chrome around spatial canvas, measured headless.
+const GRID_PADDING = 10;
+const GRID_MARGIN = 5;
+const GRID_COLS = 12;
+const CARD_CHROME = [12, 44];
+// Must match generate_spatial_config.fit_zoom's assumed panel.
+const REFERENCE_PANEL = [800, 450];
+const FIT_MARGIN = 0.95;
+
+/**
+ * Refit generator's initial spatial zoom to real panel size.
+ *
+ * Generator fits image to fixed 800x450 panel and centres view on image, so
+ * its target is half image size. Panel size depends on window, known only
+ * here. Configs whose zoom differs from that reference fit (e.g. headless
+ * probe framing) are left alone.
+ */
+function fitSpatialZoom(config, width, height) {
+  const layout = config.layout || [];
+  const view = layout.find((v) => v.component === 'spatialBeta');
+  const space = config.coordinationSpace || {};
+  const scopes = (view && view.coordinationScopes) || {};
+  const zooms = space.spatialZoom || {};
+  const xs = space.spatialTargetX || {};
+  const ys = space.spatialTargetY || {};
+  const zoom = zooms[scopes.spatialZoom];
+  const imageW = 2 * xs[scopes.spatialTargetX];
+  const imageH = 2 * ys[scopes.spatialTargetY];
+  if (typeof zoom !== 'number' || !(imageW > 0) || !(imageH > 0)) return;
+  const reference = Math.log2(Math.min(
+    REFERENCE_PANEL[0] / imageW, REFERENCE_PANEL[1] / imageH));
+  if (Math.abs(zoom - reference) > 1e-6) return;
+  const rows = Math.max(...layout.map((v) => v.y + v.h));
+  const colWidth = (width - 2 * GRID_PADDING
+    - (GRID_COLS - 1) * GRID_MARGIN) / GRID_COLS;
+  const rowHeight = (height - 2 * GRID_PADDING
+    - (rows - 1) * GRID_MARGIN) / rows;
+  const panelW = view.w * colWidth + (view.w - 1) * GRID_MARGIN
+    - CARD_CHROME[0];
+  const panelH = view.h * rowHeight + (view.h - 1) * GRID_MARGIN
+    - CARD_CHROME[1];
+  if (!(panelW > 0) || !(panelH > 0)) return;
+  zooms[scopes.spatialZoom] = Math.log2(
+    FIT_MARGIN * Math.min(panelW / imageW, panelH / imageH));
+}
+
 async function main() {
   if (!configUrl) {
     showMessage('No config specified. Use ?config=<url>.');
@@ -73,6 +120,7 @@ async function main() {
     }
     const config = await response.json();
     absolutizeUrls(config);
+    fitSpatialZoom(config, window.innerWidth, window.innerHeight);
     root.render(
       React.createElement(Vitessce, {
         config,
