@@ -36,13 +36,12 @@ from vitessce.data_utils import (
     sdata_points_modify_row_group_size,
 )
 
-# Single-threaded: dask's default scheduler runs one task per core, and each
-# task materialises an image chunk, so peak memory scales with core count
+# Single-threaded: dask's default scheduler runs one task per core, each
+# materialising image chunk, so peak memory scales with core count
 dask.config.set(scheduler='synchronous')
 
-# Written one at a time, lightest first, so failure leaves partial store rather
-# than losing everything. Shapes precede table because table annotates them by
-# region name
+# Written singly, lightest first, so failure leaves partial store; shapes
+# precede table, which annotates them by region name
 ELEMENT_ORDER = [
     'cell_boundaries',
     'nucleus_boundaries',
@@ -165,7 +164,7 @@ def add_global_centroids(sdata, region, key='spatial_global'):
     return [float(affine[0, 0]), float(affine[1, 1])]
 
 
-# Function to make string columns readable by the viewer
+# Function to make string columns readable by viewer
 def normalise_string_dtypes(table):
     """
     Rewrite pandas string-dtype columns as plain object columns.
@@ -444,7 +443,7 @@ def read_xenium(xenium_dir, transcripts, cells_labels, nucleus_boundaries):
     )
 
 
-# Function to write SpatialData object one element at a time
+# Function to write SpatialData object element by element
 def write_incrementally(source, out_path, skip=()):
     """
     Write SpatialData store element by element, reporting peak memory.
@@ -587,7 +586,7 @@ if __name__ == '__main__':
         scale = add_global_centroids(sdata, 'cell_boundaries')
         print(f'global centroids written (scale {scale})', flush=True)
 
-    # Must run last, after every column the steps above may have added
+    # Must run last, after every column steps above may add
     converted = normalise_string_dtypes(table)
     if converted:
         print(f'string dtypes normalised: {", ".join(converted)}', flush=True)

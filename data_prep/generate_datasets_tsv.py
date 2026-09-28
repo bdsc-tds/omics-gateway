@@ -231,9 +231,8 @@ def extract_h5ad_metadata(h5ad_path):
         return meta
 
     except Exception as e:  # noqa: BLE001
-        # Broad by design: anndata/h5py can raise many undocumented exceptions
-        # on corrupt or unexpected .h5ad files. Warn and skip bad files instead
-        # of aborting entire batch
+        # Broad by design: anndata/h5py raise undocumented errors on bad .h5ad;
+        # warn and skip file rather than abort whole batch
         print(f'  Warning: could not read {h5ad_path}: {e}')
         return empty
 
@@ -263,7 +262,7 @@ def find_h5ad_files(data_dir):
     return sorted(found)
 
 
-# Function to build the merged dataset row, combining uns extraction and YAML overrides
+# Function to build merged dataset row from uns extraction and YAML overrides
 def load_merged_row(merged_file, config_path):
     """
     Build a TSV row dict for a merged/meta-analysis .h5ad file.
@@ -335,9 +334,8 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
     """
     rows = []
 
-    # Distinguish missing directory from empty one: os.walk yields nothing for
-    # both, so typo or unset CELLXGENE_DATA would look like directory without
-    # .h5ad files
+    # Tell missing from empty directory: os.walk yields nothing for either, so
+    # typo or unset CELLXGENE_DATA would pass as directory without .h5ad files
     if not os.path.isdir(data_dir):
         raise FileNotFoundError(
             f'Data directory {os.path.abspath(data_dir)} does not exist. '
@@ -349,7 +347,7 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
         print(f'No .h5ad files found in {data_dir}')
         return
 
-    # Exclude the merged file from the individual dataset scan
+    # Exclude merged file from individual dataset scan
     merged_relpath = (
         os.path.relpath(merged_file, data_dir)
         if merged_file and os.path.exists(merged_file)

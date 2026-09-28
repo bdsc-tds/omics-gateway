@@ -57,7 +57,7 @@ METRIC_OBS_COLS = [
 # which labels its layer row
 METRIC_TYPE = 'metric'
 
-# Config file suffixes; page derives sidecar path from config path the same way
+# Config file suffixes; page derives sidecar path from config path likewise
 CONFIG_SUFFIX = '.vitessce.json'
 NO_METRICS_SUFFIX = '.nometrics.vitessce.json'
 METRIC_VALUES_SUFFIX = '.metrics.json'
@@ -110,7 +110,7 @@ def list_group_members(group_dir):
     return sorted(name for name in os.listdir(group_dir) if name not in skip)
 
 
-# Function to read SpatialData coordinate-system name of an element
+# Function to read element's SpatialData coordinate-system name
 def read_coordinate_system(element_dir):
     """
     Read output coordinate-system name of SpatialData zarr element.
@@ -289,7 +289,7 @@ def fit_zoom(image_shape, viewport=(800, 450)):
     )
 
 
-# Function to auto-detect element paths of a spatial store
+# Function to auto-detect element paths of spatial store
 def detect_elements(zarr_path, image=None, segmentations=None):
     """
     Pick image, segmentation and table element paths from store.
@@ -523,9 +523,8 @@ def generate_config(
                 # Kept so feature index resolves against gene names
                 table_path=table_path,
                 coordinate_system=paths['coordinate_system'],
-                # Defaults resolve through spatialdata_attrs.feature_key, which
-                # is fragile across re-parse; naming them keeps fast path from
-                # silently degrading to whole-file fetch
+                # Defaults resolve via fragile spatialdata_attrs.feature_key;
+                # naming them stops fast path degrading to whole-file fetch
                 obs_points_feature_index_column='feature_name_codes',
                 obs_points_morton_code_column='morton_code_2d',
                 coordination_values={'obsType': POINT_OBS_TYPE},
@@ -543,7 +542,7 @@ def generate_config(
             )
         )
 
-    # Metrics colour a second layer over cells: lookup keys on channel's
+    # Metrics colour second layer over cells: lookup keys on channel's
     # featureType, and polygon layer draws only its first channel
     if paths['metric_cols']:
         # SpatialDataWrapper drops obs_feature_column_paths, hence plain AnnData
@@ -571,9 +570,8 @@ def generate_config(
                 sdata_url=sdata_url,
                 obs_segmentations_path=seg_path,
                 coordinate_system=paths['coordinate_system'],
-                # obsType must match views', or spatial view drops layer and
-                # element loads but never renders; fileUid then tells
-                # same-type file defs apart
+                # obsType must match views', or layer is dropped (loads, never
+                # renders); fileUid then tells same-type file defs apart
                 coordination_values={
                     'obsType': obs_type,
                     'fileUid': extra_file_uid,
@@ -597,7 +595,7 @@ def generate_config(
     )
     description = vc.add_view('description', dataset=dataset)
     description.set_props(description=os.path.splitext(name)[0])
-    # Metric list takes status panel's slot, the least used one
+    # Metric list takes status panel's slot, least used one
     if paths['metric_cols']:
         side_panel = vc.add_view('featureList', dataset=dataset)
         vc.link_views(
@@ -621,8 +619,8 @@ def generate_config(
         [obs_type],
     )
 
-    # Colour encoding and selections are shared scope objects rather than plain
-    # values, so picking a gene or cell set elsewhere recolours spatial view too
+    # Colour encoding and selections are shared scope objects, not plain
+    # values, so picking gene or cell set elsewhere recolours spatial view
     (
         color_encoding,
         feature_selection,
@@ -673,8 +671,8 @@ def generate_config(
         feature_selection, obs_set_selection, obs_set_color
     )
 
-    # Cells are annotated, so their channel reuses shared selection scopes.
-    # Extra segmentations have no table and only ever carry a fixed colour
+    # Cells are annotated, so their channel reuses shared selection scopes;
+    # extra segmentations have no table and only carry fixed colour
     segmentation_layers = [
         {
             'obsType': obs_type,
@@ -690,8 +688,8 @@ def generate_config(
                     'spatialChannelColor': [255, 255, 255],
                     'spatialChannelOpacity': 1,
                     'spatialChannelVisible': True,
-                    # Use outlines so morphology image stays visible; 3.75 is
-                    # 75% of controller slider's 0.01–5.0 world-unit range
+                    # Outlines keep morphology image visible; 3.75 is 75% of
+                    # controller slider's 0.01 to 5.0 world-unit range
                     'spatialSegmentationFilled': False,
                     'spatialSegmentationStrokeWidth': 3.75,
                     'obsColorEncoding': color_encoding,
@@ -763,16 +761,14 @@ def generate_config(
         {
             'obsType': obs_type,
             'fileUid': extra_file_uid,
-            # Controller's eye toggles channel, not layer, so disabled layer
-            # could never be switched on from UI; off by default lives in
-            # spatialChannelVisible below
+            # Eye toggles channel, not layer: hidden layer could not return;
+            # off by default lives in spatialChannelVisible below
             'spatialLayerVisible': True,
             'spatialLayerOpacity': 1,
             'segmentationChannel': CL([
                 {
-                    # Channel obsType only drives row label, capitalised by
-                    # viewer; layer and file def must keep views' obsType. Cost
-                    # is that spatial footer stops counting these segmentations
+                    # Channel obsType only sets row label; layer and file def
+                    # keep views' obsType, so footer skips these segmentations
                     'obsType': extra_file_uid,
                     'spatialTargetC': 0,
                     # Deep blue (#00008B): mid blue is lost against bright DAPI
@@ -796,9 +792,8 @@ def generate_config(
         for extra_file_uid in extra_file_uids
     ]
 
-    # Image layer is left to viewer's own initialisation, which derives contrast
-    # windows from pixel statistics that this script cannot compute without
-    # reading pyramid
+    # Image layer left to viewer's own initialisation, which derives contrast
+    # windows from pixel statistics this script cannot read without pyramid
     vc.link_views_by_dict(
         [spatial, controller],
         {'segmentationLayer': CL(segmentation_layers)},
@@ -836,9 +831,8 @@ def generate_config(
             ),
         )
 
-    # Channel names read horizontally, matching rest of controller. Only this
-    # one property is set, so viewer still initialises channels and their
-    # contrast windows itself
+    # Channel names read horizontally, like rest of controller; only this
+    # property is set, so viewer still initialises channels and contrast
     vc.link_views_by_dict(
         [spatial, controller],
         {'imageLayer': CL([{'spatialChannelLabelsOrientation': 'horizontal'}])},
@@ -863,11 +857,8 @@ def generate_config(
         if paths['metric_cols']
         else (description, side_panel)
     )
-    # Explicit grid rather than vc.layout()'s row splitting, which only makes
-    # equal-sized panels. Mirrors codeluppi-2018 reference layout: narrow left
-    # sidebar, large spatial view, embedding and selectors right, plots below.
-    # Scatterplot takes both embedding slots of reference, which shows t-SNE and
-    # UMAP, because Xenium Ranger gives one embedding
+    # Grid mirrors codeluppi-2018 (vc.layout() only makes equal panels);
+    # scatterplot fills both its embedding slots, Xenium having one embedding
     for view, (x, y, w, h) in (
         (controller, (0, 0, 3, 4)),
         (upper, (0, 4, 3, 1)),

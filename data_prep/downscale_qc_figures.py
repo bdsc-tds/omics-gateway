@@ -85,7 +85,7 @@ def downscale(src_path, dest_path, target_dpi, fallback_dpi, quality):
         img.draft('RGB', (width, height))
         small = img.convert('RGB').resize((width, height), Image.LANCZOS)
 
-    # Record new dpi so re-running is a no-op, not second downscale
+    # Record new dpi so re-running is no-op, not second downscale
     small.save(
         dest_path,
         'JPEG',
@@ -159,7 +159,7 @@ def main():
             src_path = os.path.join(root, name)
             dest_path = os.path.join(dest_root, name)
             src_bytes += os.path.getsize(src_path)
-            # Copy anything not resampled, so output is a drop-in replacement
+            # Copy anything not resampled, so output drops in as replacement
             if not name.lower().endswith(JPEG_EXTENSIONS):
                 shutil.copy2(src_path, dest_path)
                 copied += 1
