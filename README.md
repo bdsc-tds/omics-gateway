@@ -26,36 +26,36 @@ Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into
 
 The gateway is configured through environment variables:
 
-* `CELLXGENE_LOCATION` - the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
+* `CELLXGENE_LOCATION`: the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
 
 At least one of the following is required:
-* `CELLXGENE_DATA` - a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/cellxgene_data`
-* `CELLXGENE_BUCKET` - an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-cellxgene-data-bucket`
+* `CELLXGENE_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/cellxgene_data`
+* `CELLXGENE_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-cellxgene-data-bucket`
 Cellxgene Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
 
 Optional environment variables:
-* `CELLXGENE_ARGS` - catch-all variable that can be used to pass additional command line args to cellxgene server
-* `EXTERNAL_HOST` - the hostname and port from the perspective of the web browser, typically `localhost:5005` if running locally. Defaults to "localhost:{GATEWAY_PORT}"
-* `EXTERNAL_PROTOCOL` - typically http when running locally, can be https when deployed if the gateway is behind a load balancer or reverse proxy that performs https termination. No default; when unset, the gateway does not override the scheme and Flask infers it from the incoming request
-* `GATEWAY_IP` - ip addess of instance gateway is running on, mostly used to display SSH instructions. No default; when unset, `/metadata/ip_address` returns an empty response
-* `GATEWAY_PORT` - local port that the gateway should bind to, defaults to 5005
-* `GATEWAY_EXPIRE_SECONDS` - time in seconds that a cellxgene process will remain idle before being terminated. Defaults to 3600 (one hour)
-* `GATEWAY_EXTRA_SCRIPTS` - JSON array of script paths, will be embedded into each page and forwarded with `--scripts` to cellxgene server
-* `GATEWAY_ENABLE_ANNOTATIONS` - Set to `true` or to `1` to enable cellxgene annotations and gene sets.
-* `GATEWAY_ENABLE_BACKED_MODE` - Set to `true` or to `1` to load AnnData in file-backed mode. This saves memory and speeds up launch time but may reduce overall performance.
-* `GATEWAY_LOG_LEVEL` - default is `INFO`. set to `DEBUG` to increase logging and to `WARNING` to decrease logging.
-* `DATASET_METADATA_TSV` - tab-separated file describing datasets, used to render the filterable dataset browser at `/filecrawl`. Defaults to `datasets.tsv`. When the file is absent, the browser falls back to listing files from the configured item sources
-* `QC_DATA` - a directory containing per-dataset QC report folders, served at `/qc/<dataset_id>`. Defaults to `analysis_qc`. A relative path is resolved against the working directory
-* `QC_THUMB_CACHE` - a directory for the thumbnails shown in QC reports, which the gateway builds on demand. Defaults to `<QC_DATA>_thumbs`, outside the QC tree so that tree can stay read-only
-* `SPATIAL_METRICS` - Set to `false` or to `0` to open spatial (`.zarr`) datasets without the Metric layer, which colours cells by per-cell measurements such as cell area. Defaults to `true`. `data_prep/generate_spatial_config.py` writes both configs for each store (`<name>.vitessce.json` and `<name>.nometrics.vitessce.json`), and this variable picks which one the dataset browser links to
-* `S3_ENABLE_LISTINGS_CACHE` - Set to `true` or to `1` to cache listings of S3 folders for performance. If the cache becomes stale, set `filecrawl?refresh=true` query parameter to refresh the cache.
+* `CELLXGENE_ARGS`: catch-all variable that can be used to pass additional command line args to cellxgene server
+* `EXTERNAL_HOST`: the hostname and port from the perspective of the web browser, typically `localhost:5005` if running locally. Defaults to "localhost:{GATEWAY_PORT}"
+* `EXTERNAL_PROTOCOL`: typically http when running locally, can be https when deployed if the gateway is behind a load balancer or reverse proxy that performs https termination. No default; when unset, the gateway does not override the scheme and Flask infers it from the incoming request
+* `GATEWAY_IP`: ip addess of instance gateway is running on, mostly used to display SSH instructions. No default; when unset, `/metadata/ip_address` returns an empty response
+* `GATEWAY_PORT`: local port that the gateway should bind to, defaults to 5005
+* `GATEWAY_EXPIRE_SECONDS`: time in seconds that a cellxgene process will remain idle before being terminated. Defaults to 3600 (one hour)
+* `GATEWAY_EXTRA_SCRIPTS`: JSON array of script paths, will be embedded into each page and forwarded with `--scripts` to cellxgene server
+* `GATEWAY_ENABLE_ANNOTATIONS`: Set to `true` or to `1` to enable cellxgene annotations and gene sets.
+* `GATEWAY_ENABLE_BACKED_MODE`: Set to `true` or to `1` to load AnnData in file-backed mode. This saves memory and speeds up launch time but may reduce overall performance.
+* `GATEWAY_LOG_LEVEL`: default is `INFO`. set to `DEBUG` to increase logging and to `WARNING` to decrease logging.
+* `DATASET_METADATA_TSV`: tab-separated file describing datasets, used to render the filterable dataset browser at `/filecrawl`. Defaults to `datasets.tsv`. When the file is absent, the browser falls back to listing files from the configured item sources
+* `QC_DATA`: a directory containing per-dataset QC report folders, served at `/qc/<dataset_id>`. Defaults to `analysis_qc`. A relative path is resolved against the working directory
+* `QC_THUMB_CACHE`: a directory for the thumbnails shown in QC reports, which the gateway builds on demand. Defaults to `<QC_DATA>_thumbs`, outside the QC tree so that tree can stay read-only
+* `SPATIAL_METRICS`: Set to `false` or to `0` to open spatial (`.zarr`) datasets without the Metric layer, which colours cells by per-cell measurements such as cell area. Defaults to `true`. `data_prep/generate_spatial_config.py` writes both configs for each store (`<name>.vitessce.json` and `<name>.nometrics.vitessce.json`), and this variable picks which one the dataset browser links to
+* `S3_ENABLE_LISTINGS_CACHE`: Set to `true` or to `1` to cache listings of S3 folders for performance. If the cache becomes stale, set `filecrawl?refresh=true` query parameter to refresh the cache.
 
 If any of the following optional variables are set, [ProxyFix](https://werkzeug.palletsprojects.com/en/1.0.x/middleware/proxy_fix/) will be used.
-* `PROXY_FIX_FOR` - Number of upstream proxies setting X-Forwarded-For
-* `PROXY_FIX_PROTO` - Number of upstream proxies setting X-Forwarded-Proto
-* `PROXY_FIX_HOST` - Number of upstream proxies setting X-Forwarded-Host
-* `PROXY_FIX_PORT` - Number of upstream proxies setting X-Forwarded-Port
-* `PROXY_FIX_PREFIX` - Number of upstream proxies setting X-Forwarded-Prefix
+* `PROXY_FIX_FOR`: Number of upstream proxies setting X-Forwarded-For
+* `PROXY_FIX_PROTO`: Number of upstream proxies setting X-Forwarded-Proto
+* `PROXY_FIX_HOST`: Number of upstream proxies setting X-Forwarded-Host
+* `PROXY_FIX_PORT`: Number of upstream proxies setting X-Forwarded-Port
+* `PROXY_FIX_PREFIX`: Number of upstream proxies setting X-Forwarded-Prefix
 
 ## Data layout
 
@@ -84,12 +84,12 @@ analysis_qc/
 
 `datasets.tsv` is tab-separated, with one row per dataset and these columns:
 
-* `dataset_id` - short identifier, also the name of the dataset's QC folder
-* `name`, `description` - shown in the dataset browser
-* `file_path` - path of the `.h5ad` file or `.zarr` store, relative to the data directory. A `.zarr` row is shown as spatial and opens its viewer config
-* `assay`, `disease`, `tissue`, `sex` - semicolon-separated values, used as filters
-* `patients`, `cell_count`, `gene_count`, `year` - numbers, used for display and as range filters
-* `authors`, `journal`, `doi` - publication details
+* `dataset_id`: short identifier, also the name of the dataset's QC folder
+* `name`, `description`: shown in the dataset browser
+* `file_path`: path of the `.h5ad` file or `.zarr` store, relative to the data directory. A `.zarr` row is shown as spatial and opens its viewer config
+* `assay`, `disease`, `tissue`, `sex`: semicolon-separated values, used as filters
+* `patients`, `cell_count`, `gene_count`, `year`: numbers, used for display and as range filters
+* `authors`, `journal`, `doi`: publication details
 
 ### Spatial datasets
 
