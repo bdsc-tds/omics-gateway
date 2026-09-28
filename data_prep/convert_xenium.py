@@ -19,7 +19,11 @@ Usage:
     systemd-run --user --scope -p MemoryMax=5G -p MemorySwapMax=0 \
         conda run -n spatial python data_prep/convert_xenium.py \
             --xenium-dir /path/to/xenium_output \
-            --out data/xenium_sample.zarr
+            --out data/xenium_sample.zarr \
+            --metadata data/xenium_sample.metadata.yaml
+
+--metadata writes dataset metadata into table (see write_store_metadata.py),
+from which generate_datasets_tsv.py builds store's datasets.tsv row.
 """
 
 # Import utility modules
@@ -39,6 +43,9 @@ from vitessce.data_utils import (
     sdata_morton_sort_points,
     sdata_points_modify_row_group_size,
 )
+
+# Import sibling script; data_prep/ is on sys.path when scripts run directly
+from write_store_metadata import load_metadata, write_store_metadata
 
 # Single-threaded: dask's default scheduler runs one task per core, each
 # materialising image chunk, so peak memory scales with core count
@@ -546,6 +553,12 @@ def parse_args():
         action='store_true',
         help='Rasterise cell masks instead of using polygon boundaries.',
     )
+    parser.add_argument(
+        '--metadata',
+        default=None,
+        help='Optional YAML of dataset metadata for datasets.tsv '
+        '(see write_store_metadata.py).',
+    )
 
     return parser.parse_args()
 
@@ -558,6 +571,7 @@ if __name__ == '__main__':
         raise FileNotFoundError(
             f'Xenium directory {os.path.abspath(args.xenium_dir)} does not exist.'
         )
+    metadata = load_metadata(args.metadata) if args.metadata else None
 
     # Elements are dask-backed, so cheap operation
     start = time.time()
@@ -633,6 +647,10 @@ if __name__ == '__main__':
         sdata_points_modify_row_group_size(
             backed, 'transcripts', TRANSCRIPT_ROW_GROUP_SIZE
         )
+
+    if metadata is not None:
+        keys = write_store_metadata(args.out, metadata)
+        print(f'metadata written: {", ".join(keys)}', flush=True)
 
     backed.write_consolidated_metadata()
     print(

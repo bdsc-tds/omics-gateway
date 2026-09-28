@@ -1,5 +1,8 @@
 """
-Script to generate datasets.tsv from .h5ad files in directory.
+Script to generate datasets.tsv from .h5ad files and SpatialData stores.
+
+Rows come from each dataset's uns metadata: .h5ad files carry it from team
+pipeline, and write_store_metadata.py writes same keys into .zarr stores.
 
 Usage:
     python data_prep/generate_datasets_tsv.py \
@@ -36,6 +39,31 @@ TSV_COLUMNS = [
     'doi',
 ]
 
+# uns key read for each TSV column; year is extracted from article_date. Also
+# defines keys write_store_metadata.py accepts
+UNS_KEYS = {
+    'dataset_id': 'dataset_name_short',
+    'name': 'dataset_name',
+    'description': 'article_title',
+    'assay': 'assay',
+    'disease': 'disease',
+    'tissue': 'tissue',
+    'sex': 'sex',
+    'patients': 'patients',
+    'cell_count': 'cell_count',
+    'gene_count': 'gene_count',
+    'year': 'article_date',
+    'authors': 'article_authors',
+    'journal': 'article_journal',
+    'doi': 'article_doi',
+}
+
+# Only list columns split comma-separated strings, so titles keep their commas
+LIST_COLUMNS = {'assay', 'disease', 'tissue', 'sex', 'authors'}
+
+# AnnData table inside SpatialData store
+TABLE_PATH = 'tables/table'
+
 
 # Function to extract year from date string using regex
 def extract_year(date_str):
@@ -60,7 +88,7 @@ def extract_year(date_str):
 
 
 # Function to read field from uns dict
-def read_uns_field(uns, key):
+def read_uns_field(uns, key, split_commas=True):
     """
     Safely read field from AnnData uns dict, handling lists/arrays. Always
     returns semicolon-separated string to keep TSV consistent.
@@ -71,6 +99,9 @@ def read_uns_field(uns, key):
       AnnData uns dictionary.
     key: str
       Key to retrieve.
+    split_commas: bool
+      Whether to turn comma-separated string into semicolon-separated one;
+      off for free text such as titles.
 
     Returns:
     --------
@@ -84,9 +115,9 @@ def read_uns_field(uns, key):
         val = val.tolist()
     if isinstance(val, list):
         return '; '.join(str(v).strip() for v in val)
-    # Normalize comma-separated strings (from uns metadata) to semicolons
+    # Normalise comma-separated strings (from uns metadata) to semicolons
     text = str(val).strip()
-    if ', ' in text and ';' not in text:
+    if split_commas and ', ' in text and ';' not in text:
         return '; '.join(v.strip() for v in text.split(', '))
 
     return text
@@ -179,6 +210,95 @@ def strip_tokens(value, to_strip):
     return '; '.join(tokens)
 
 
+# Function to build metadata dict with every column empty
+def empty_metadata(name):
+    """
+    Build metadata dict for dataset whose metadata cannot be read.
+
+    Parameters:
+    -----------
+    name: str
+      Fallback dataset name, usually file name without extension.
+
+    Returns:
+    --------
+    meta: dict
+      Dictionary with every TSV column but file_path, all empty except name.
+    """
+    meta = {column: '' for column in UNS_KEYS}
+    meta['name'] = name
+    return meta
+
+
+# Function to count rows of AnnData obs or var group
+def index_length(group):
+    """
+    Count entries of AnnData dataframe group from its index, without loading
+    columns.
+
+    Parameters:
+    -----------
+    group: h5py.Group or zarr.Group
+      AnnData obs or var group.
+
+    Returns:
+    --------
+    length: int
+      Number of entries.
+    """
+    index = group[group.attrs['_index']]
+    if hasattr(index, 'shape'):
+        return index.shape[0]
+    # Categorical or nullable index is group of arrays, not array
+    for key in ('codes', 'values'):
+        if key in index:
+            return index[key].shape[0]
+    raise ValueError(f'Unknown index encoding: {dict(index.attrs)}')
+
+
+# Function to read metadata from AnnData table without loading data
+def read_table_metadata(group, name):
+    """
+    Read dataset metadata from AnnData table's uns keys and index lengths.
+
+    Only keys in UNS_KEYS are read, so cost stays small even for large tables:
+    loading whole file (even backed) once exhausted machine memory.
+
+    Parameters:
+    -----------
+    group: h5py.File or zarr.Group
+      Root group of AnnData table (.h5ad file or table inside store).
+    name: str
+      Fallback dataset name when uns has none.
+
+    Returns:
+    --------
+    meta: dict
+      Dictionary with keys: dataset_id, name, description, assay, disease,
+      tissue, sex, patients, cell_count, gene_count, year, authors, journal,
+      doi. All values are strings.
+    """
+    from anndata.io import read_elem
+
+    uns_group = group.get('uns', {})
+    uns = {
+        key: read_elem(uns_group[key])
+        for key in UNS_KEYS.values()
+        if key in uns_group
+    }
+    meta = {
+        column: read_uns_field(uns, key, split_commas=column in LIST_COLUMNS)
+        for column, key in UNS_KEYS.items()
+    }
+    meta['name'] = meta['name'] or name
+    meta['year'] = extract_year(meta['year'])
+    # Stores record no counts, so table size stands in when uns has none
+    meta['cell_count'] = meta['cell_count'] or str(index_length(group['obs']))
+    meta['gene_count'] = meta['gene_count'] or str(index_length(group['var']))
+
+    return meta
+
+
 # Function to extract metadata from .h5ad file's uns dict
 def extract_h5ad_metadata(h5ad_path):
     """
@@ -197,64 +317,56 @@ def extract_h5ad_metadata(h5ad_path):
       doi. All values are strings.
     """
     filename_stem = os.path.splitext(os.path.basename(h5ad_path))[0]
-
-    empty = {
-        'dataset_id': '',
-        'name': filename_stem,
-        'description': '',
-        'assay': '',
-        'disease': '',
-        'tissue': '',
-        'sex': '',
-        'patients': '',
-        'cell_count': '',
-        'gene_count': '',
-        'year': '',
-        'authors': '',
-        'journal': '',
-        'doi': '',
-    }
-
     if not os.path.exists(h5ad_path):
-        return empty
+        return empty_metadata(filename_stem)
 
     try:
-        import anndata
+        import h5py
 
-        adata = anndata.read_h5ad(h5ad_path, backed='r')
-        uns = adata.uns
-
-        meta = {
-            'dataset_id': read_uns_field(uns, 'dataset_name_short'),
-            'name': read_uns_field(uns, 'dataset_name') or filename_stem,
-            'description': read_uns_field(uns, 'article_title'),
-            'assay': read_uns_field(uns, 'assay'),
-            'disease': read_uns_field(uns, 'disease'),
-            'tissue': read_uns_field(uns, 'tissue'),
-            'sex': read_uns_field(uns, 'sex'),
-            'patients': read_uns_field(uns, 'patients'),
-            'cell_count': read_uns_field(uns, 'cell_count'),
-            'gene_count': read_uns_field(uns, 'gene_count'),
-            'year': extract_year(read_uns_field(uns, 'article_date')),
-            'authors': read_uns_field(uns, 'article_authors'),
-            'journal': read_uns_field(uns, 'article_journal'),
-            'doi': read_uns_field(uns, 'article_doi'),
-        }
-
-        adata.file.close()
-        return meta
+        with h5py.File(h5ad_path, 'r') as handle:
+            return read_table_metadata(handle, filename_stem)
 
     except Exception as e:  # noqa: BLE001
         # Broad by design: anndata/h5py raise undocumented errors on bad .h5ad;
         # warn and skip file rather than abort whole batch
         print(f'  Warning: could not read {h5ad_path}: {e}')
-        return empty
+        return empty_metadata(filename_stem)
 
 
-# Function to recursively find all .h5ad files in directory
-def find_h5ad_files(data_dir):
+# Function to extract metadata from SpatialData store's table
+def extract_zarr_metadata(store_path):
     """
-    Recursively find all .h5ad files under data_dir.
+    Extract dataset metadata from uns of SpatialData store's table.
+
+    Parameters:
+    -----------
+    store_path: str
+      Path to .zarr store.
+
+    Returns:
+    --------
+    meta: dict
+      Same keys as extract_h5ad_metadata. All values are strings.
+    """
+    stem = os.path.basename(os.path.normpath(store_path))[: -len('.zarr')]
+    try:
+        import zarr
+
+        table = zarr.open_group(os.path.join(store_path, TABLE_PATH), mode='r')
+        return read_table_metadata(table, stem)
+
+    except Exception as e:  # noqa: BLE001
+        # Broad for same reason as .h5ad reads: skip store, keep batch going
+        print(f'  Warning: could not read {store_path}: {e}')
+        return empty_metadata(stem)
+
+
+# Function to recursively find .h5ad files and SpatialData stores
+def find_dataset_files(data_dir):
+    """
+    Recursively find .h5ad files and SpatialData .zarr stores under data_dir.
+
+    Stores are not descended into: they hold thousands of chunk files.
 
     Parameters:
     -----------
@@ -263,17 +375,51 @@ def find_h5ad_files(data_dir):
 
     Returns:
     --------
-    file_paths: list of str
-      Relative paths (relative to data_dir) of all .h5ad files found, sorted.
+    (h5ad_paths, zarr_paths): tuple of list of str
+      Paths relative to data_dir, each list sorted. Only stores holding table
+      are listed.
     """
-    found = []
-    for dirpath, _dirnames, filenames in os.walk(data_dir):
+    h5ad_paths, zarr_paths = [], []
+    for dirpath, dirnames, filenames in os.walk(data_dir):
+        for dirname in [d for d in dirnames if d.endswith('.zarr')]:
+            dirnames.remove(dirname)
+            full = os.path.join(dirpath, dirname)
+            if os.path.isdir(os.path.join(full, TABLE_PATH)):
+                zarr_paths.append(os.path.relpath(full, data_dir))
         for fname in filenames:
             if fname.endswith('.h5ad'):
                 full = os.path.join(dirpath, fname)
-                found.append(os.path.relpath(full, data_dir))
+                h5ad_paths.append(os.path.relpath(full, data_dir))
 
-    return sorted(found)
+    return sorted(h5ad_paths), sorted(zarr_paths)
+
+
+# Function to clean multi-value fields of metadata dict
+def clean_fields(meta):
+    """
+    Strip placeholder tokens from disease, tissue and sex, then sort them.
+
+    Parameters:
+    -----------
+    meta: dict
+      Metadata dict, updated in place.
+
+    Returns:
+    --------
+    meta: dict
+      Same dict, for chaining.
+    """
+    meta['disease'] = sort_semicolon_field(
+        strip_tokens(meta['disease'], {'healthy'})
+    )
+    meta['tissue'] = sort_semicolon_field(
+        strip_tokens(meta['tissue'], {'na', 'n/a', 'nan', 'none'})
+    )
+    meta['sex'] = sort_semicolon_field(
+        strip_tokens(meta['sex'], {'na', 'n/a', 'nan', 'none'}),
+        fixed_order=['female', 'male'],
+    )
+    return meta
 
 
 # Function to build merged dataset row from uns extraction and YAML overrides
@@ -316,16 +462,7 @@ def load_merged_row(merged_file, config_path):
                 meta[meta_key] = str(val)
 
     # Apply same post-processing as individual datasets
-    meta['disease'] = sort_semicolon_field(
-        strip_tokens(meta['disease'], {'healthy'})
-    )
-    meta['tissue'] = sort_semicolon_field(
-        strip_tokens(meta['tissue'], {'na', 'n/a', 'nan', 'none'})
-    )
-    meta['sex'] = sort_semicolon_field(
-        strip_tokens(meta['sex'], {'na', 'n/a', 'nan', 'none'}),
-        fixed_order=['female', 'male'],
-    )
+    clean_fields(meta)
 
     return {'file_path': merged_file, **meta}
 
@@ -333,12 +470,16 @@ def load_merged_row(merged_file, config_path):
 # Function to generate datasets.tsv summary of .h5ad files
 def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
     """
-    Generate datasets.tsv by scanning data_dir for .h5ad files.
+    Generate datasets.tsv by scanning data_dir for .h5ad files and stores.
+
+    Rows follow order: .h5ad files, merged file, then .zarr stores. Stores
+    without dataset_name_short in their table metadata are skipped.
 
     Parameters:
     -----------
     data_dir: str
-      Directory containing .h5ad files (searched recursively).
+      Directory containing .h5ad files and .zarr stores (searched
+      recursively).
     output_path: str
       Path for output .tsv file.
     merged_file: str or None
@@ -356,9 +497,9 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
             'Pass --data-dir or set CELLXGENE_DATA.'
         )
 
-    file_paths = find_h5ad_files(data_dir)
-    if not file_paths:
-        print(f'No .h5ad files found in {data_dir}')
+    file_paths, zarr_paths = find_dataset_files(data_dir)
+    if not file_paths and not zarr_paths:
+        print(f'No .h5ad files or .zarr stores found in {data_dir}')
         return
 
     # Exclude merged file from individual dataset scan
@@ -375,19 +516,8 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
             continue
         h5ad_path = os.path.join(data_dir, file_path)
         print(f'Processing: {file_path}')
-        meta = extract_h5ad_metadata(h5ad_path)
-
         # Strip Healthy from disease; strip NA from tissue and sex
-        meta['disease'] = sort_semicolon_field(
-            strip_tokens(meta['disease'], {'healthy'})
-        )
-        meta['tissue'] = sort_semicolon_field(
-            strip_tokens(meta['tissue'], {'na', 'n/a', 'nan', 'none'})
-        )
-        meta['sex'] = sort_semicolon_field(
-            strip_tokens(meta['sex'], {'na', 'n/a', 'nan', 'none'}),
-            fixed_order=['female', 'male'],
-        )
+        meta = clean_fields(extract_h5ad_metadata(h5ad_path))
 
         out_row = {'file_path': file_path, **meta}
         rows.append(out_row)
@@ -399,8 +529,26 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
     elif merged_file:
         print(f'Warning: merged file not found: {merged_file}')
 
+    for store_path in zarr_paths:
+        print(f'Processing: {store_path}')
+        meta = clean_fields(
+            extract_zarr_metadata(os.path.join(data_dir, store_path))
+        )
+        # Stores are listed only once given metadata, so scratch or reference
+        # stores under data dir stay out of browser
+        if not meta['dataset_id']:
+            print(
+                f'  Skipped: no {UNS_KEYS["dataset_id"]} in table metadata '
+                '(see write_store_metadata.py)'
+            )
+            continue
+        rows.append({'file_path': store_path, **meta})
+
     with open(output_path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=TSV_COLUMNS, delimiter='\t')
+        # Unix line endings: csv default CRLF would rewrite every line in diffs
+        writer = csv.DictWriter(
+            f, fieldnames=TSV_COLUMNS, delimiter='\t', lineterminator='\n'
+        )
         writer.writeheader()
         writer.writerows(rows)
 
