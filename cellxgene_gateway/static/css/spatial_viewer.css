@@ -1,0 +1,69 @@
+/* Spatial viewer page: gateway chrome and Vitessce overrides */
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Covers viewer rather than hiding it: Vitessce grid measures its container,
+   so #root must keep full size while bundle mounts. Background inherited
+   from body, so it tracks common.css rather than repeating its value */
+#chrome {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: auto;
+  background: inherit;
+}
+
+/* Controller hardcodes group order (points, spots, segmentations, images),
+   each reversed; flip whole list to read Image/Cell/Nucleus/Transcript.
+   Rows' container has no class, so match hashed row-class suffix */
+div:has(> [class*="layerControllerGrid"]) {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+/* Cell Sets tree's 17px gutter overflows card under content-box. border-box
+  keeps it within declared width, avoiding horizontal scroll */
+[class*="setsManagerTree"] {
+  box-sizing: border-box;
+}
+
+/* Chromium renders hanging legend titles ~1.8px above the SVG viewport;
+  overflow hidden clips them. Legend's 2px padding accommodates overshoot */
+[class*="legend"] svg {
+  overflow: visible;
+}
+
+/* When gene is selected, move spatial legend title to free top-right area
+  to avoid title overlapping colorbar */
+[class*="legend"] svg[height="36"] text[y="18"] {
+  transform: translateY(-18px);
+}
+
+/* Titles set ellipsis but never shrink, pushing buttons out of panel */
+[class*="titleLeft"] {
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Dot plot needs fixed width per cell set, so 39 sets overflow panel;
+  scroll instead of clipping */
+[class*="vegaContainer"] {
+  overflow: auto !important;
+}
+
+/* Legends stack in reverse of spatial layer order; flip to match panel */
+[class*="multiLegend"] {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+/* Hide redundant gene title when colour does not encode it */
+[class*="legend"] svg[height="20"] text[y="18"] {
+  display: none;
+}
