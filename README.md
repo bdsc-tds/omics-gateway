@@ -46,6 +46,7 @@ Optional environment variables:
 * `GATEWAY_LOG_LEVEL` - default is `INFO`. set to `DEBUG` to increase logging and to `WARNING` to decrease logging.
 * `DATASET_METADATA_TSV` - tab-separated file describing datasets, used to render the filterable dataset browser at `/filecrawl`. Defaults to `datasets.tsv`. When the file is absent, the browser falls back to listing files from the configured item sources
 * `QC_DATA` - a directory containing per-dataset QC report folders, served at `/qc/<dataset_id>`. Defaults to `analysis_qc`. A relative path is resolved against the working directory
+* `QC_THUMB_CACHE` - a directory for the thumbnails shown in QC reports, which the gateway builds on demand. Defaults to `<QC_DATA>_thumbs`, outside the QC tree so that tree can stay read-only
 * `SPATIAL_METRICS` - Set to `false` or to `0` to open spatial (`.zarr`) datasets without the Metric layer, which colours cells by per-cell measurements such as cell area. Defaults to `true`. `data_prep/generate_spatial_config.py` writes both configs for each store (`<name>.vitessce.json` and `<name>.nometrics.vitessce.json`), and this variable picks which one the dataset browser links to
 * `S3_ENABLE_LISTINGS_CACHE` - Set to `true` or to `1` to cache listings of S3 folders for performance. If the cache becomes stale, set `filecrawl?refresh=true` query parameter to refresh the cache.
 
@@ -55,6 +56,52 @@ If any of the following optional variables are set, [ProxyFix](https://werkzeug.
 * `PROXY_FIX_HOST` - Number of upstream proxies setting X-Forwarded-Host
 * `PROXY_FIX_PORT` - Number of upstream proxies setting X-Forwarded-Port
 * `PROXY_FIX_PREFIX` - Number of upstream proxies setting X-Forwarded-Prefix
+
+## Data layout
+
+The gateway reads datasets from three places, none of them tracked in git: the data directory (`CELLXGENE_DATA`, `data/` with `start_gunicorn.sh`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
+
+```
+data/
+    <dataset>.h5ad                          single-cell dataset, opened in cellxgene
+    <dataset>_annotations/                  optional, next to its .h5ad
+        <name>.csv                          cell annotations, loadable in cellxgene
+        <name>_gene_sets.csv                gene sets, offered for download only
+    <sample>.zarr/                          SpatialData store, opened in the spatial viewer
+    vitessce_configs/
+        <sample>.vitessce.json              viewer config, with the Metric layer
+        <sample>.nometrics.vitessce.json    viewer config, without it
+        <sample>.metrics.json               per-cell values shown in cell tooltips
+analysis_qc/
+    <dataset_id>/                           one folder per dataset_id in datasets.tsv
+        <N>_<step>/                         e.g. 1_preprocessing, 2_normalisation
+            [<section>/]                    optional, e.g. 1_raw, results (see below)
+                <figure>.jpg                shown for all samples together
+                per_sample/<sample>_QC_<figure>.jpg
+```
+
+### Dataset table
+
+`datasets.tsv` is tab-separated, with one row per dataset and these columns:
+
+* `dataset_id` - short identifier, also the name of the dataset's QC folder
+* `name`, `description` - shown in the dataset browser
+* `file_path` - path of the `.h5ad` file or `.zarr` store, relative to the data directory. A `.zarr` row is shown as spatial and opens its viewer config
+* `assay`, `disease`, `tissue`, `sex` - semicolon-separated values, used as filters
+* `patients`, `cell_count`, `gene_count`, `year` - numbers, used for display and as range filters
+* `authors`, `journal`, `doi` - publication details
+
+### Spatial datasets
+
+A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generated for it. The configs must live in `data/vitessce_configs/` and be named after the store, because the viewer loads them, like the store itself, through `/spatial-data/`, the only route that serves byte ranges. `SPATIAL_METRICS` picks which of the two configs the dataset browser links to.
+
+### QC reports
+
+`/qc/<dataset_id>` shows one tab per step folder, in folder-name order. Inside a step, folders named `1_raw`, `2_filtered`, `filtered`, `3_doublets`, `results` or `training` become headed sections; a step without them is shown as one section. Figures (`.jpg`, `.jpeg`, `.png` or `.svg`) under `per_sample/`, `per_dataset/` or `3_doublets/` are grouped by the part of their file name before `_QC_` or `_doublet_`; all other figures are shown together. The gateway builds thumbnails into `QC_THUMB_CACHE` the first time a report is opened; `data_prep/build_qc_thumbnails.py` builds them all in advance, so run it after each QC sync:
+
+```bash
+conda run -n cellxgateway python data_prep/build_qc_thumbnails.py --qc-data analysis_qc
+```
 
 ## Running the gateway
 
