@@ -3,7 +3,7 @@ Script to generate datasets.tsv from .h5ad files in directory.
 
 Usage:
     python data_prep/generate_datasets_tsv.py \
-        --data-dir cellxgene_data/ \
+        --data-dir data/ \
         --output datasets.tsv \
         --merged-file data/meta_analysis_all_final_label_transfer_swapped.h5ad \
         --merged-config data_prep/meta_analysis_config.yaml
@@ -417,8 +417,8 @@ def main():
     )
     parser.add_argument(
         '--data-dir',
-        default=os.environ.get('CELLXGENE_DATA', 'cellxgene_data'),
-        help='Directory containing .h5ad files (default: $CELLXGENE_DATA or cellxgene_data)',
+        default=os.environ.get('CELLXGENE_DATA', 'data'),
+        help='Directory containing .h5ad files (default: $CELLXGENE_DATA or data)',
     )
     parser.add_argument(
         '--output',
