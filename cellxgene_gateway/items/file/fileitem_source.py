@@ -277,9 +277,8 @@ class FileItemSource(ItemSource):
                 self.scan_directory(os.path.join(subpath, subdir))
                 for subdir in subdirs
             ]
-            # Exclude branches without files as leaves. Since traversal is
-            # applied pre-order, branch.branches has already been processed and
-            # we don't need to check deeper nesting
+            # Drop branches with no files; pre-order traversal already processed
+            # branch.branches, so deeper nesting needs no check
             branches = [
                 branch for branch in branches if branch.items or branch.branches
             ]

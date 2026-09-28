@@ -14,9 +14,8 @@ import os
 
 # Cellxgene variables
 cellxgene_location = os.environ.get('CELLXGENE_LOCATION')
-# Left as None when unset so that 'no data directory configured' is different
-# from 'configured as working directory'. Absolutised only when set, see
-# `send_from_directory` reason given in QC block below
+# None when unset, so 'no data directory configured' differs from
+# 'configured as working directory'; absolutised only when set (see QC)
 cellxgene_data = os.environ.get('CELLXGENE_DATA')
 if cellxgene_data:
     cellxgene_data = os.path.abspath(cellxgene_data)
@@ -28,9 +27,8 @@ env_vars = {'CELLXGENE_LOCATION': cellxgene_location}
 # Not absolutised: opened with `open`, which resolves against working directory
 dataset_metadata_tsv = os.environ.get('DATASET_METADATA_TSV', 'datasets.tsv')
 
-# QC variables
-# Resolved absolutely: Flask's `send_from_directory` treats a relative directory
-# as relative to package dir, not working directory
+# QC variables; absolutised, as Flask's `send_from_directory` resolves
+# relative directory against package dir, not working directory
 qc_data = os.path.abspath(os.environ.get('QC_DATA', 'analysis_qc'))
 # Kept outside QC tree, which is pipeline-synced and may be read-only
 qc_thumb_cache = os.path.abspath(

@@ -50,9 +50,8 @@ app = Flask(__name__)
 item_sources = []
 default_item_source = None
 
-# Guard for lazy initialization so tests can import this module without
-# triggering environment-dependent side effects. initialise_data_sources()
-# will set this to True when it has run.
+# Lazy-init guard, so tests import module without env-dependent side
+# effects; initialise_data_sources() sets it
 data_sources_initialized = False
 data_sources_init_lock = Lock()
 
@@ -107,9 +106,8 @@ def set_no_cache(resp):
     return resp
 
 
-# Bundle entry point: keeps a stable name across rebuilds, so it must be
-# revalidated. Every other file under static/vitessce/ carries a content hash,
-# and static/vendor/ files carry a version, so both can be cached forever
+# Bundle entry keeps stable name across rebuilds, so must be revalidated;
+# other static/vitessce/ files are content-hashed, vendor/ ones versioned
 BUNDLE_ENTRY_PATH = '/static/vitessce/spatial-viewer.js'
 
 
@@ -157,11 +155,8 @@ if (
     )
 
 
-# WSGI middleware to ensure data sources are initialized before the first
-# WSGI request is handled. This guarantees initialization works under
-# Gunicorn/uWSGI (which import the module but don't call main()). The
-# initialise_data_sources() function is idempotent-protected by
-# data_sources_initialized and data_sources_init_lock.
+# Initialise data sources on first request: Gunicorn/uWSGI import module
+# without calling main(); flag and lock stop repeat runs
 def _init_on_first_wsgi_request(wsgi_app):
     def middleware(environ, start_response):
         global data_sources_initialized
@@ -199,16 +194,14 @@ def _init_on_first_wsgi_request(wsgi_app):
     return middleware
 
 
-# Wrap the WSGI app so Gunicorn/uWSGI will trigger initialization when the
-# first request comes in. Tests that need initialization can call
-# initialise_data_sources() directly.
+# Gunicorn/uWSGI initialise on first request; tests needing it call
+# initialise_data_sources() directly
 app.wsgi_app = _init_on_first_wsgi_request(app.wsgi_app)
 
 cache = BackendCache()
 
 
-# Initialize data sources - this is defined later in the file but called here
-# to ensure initialization happens when WSGI servers (Gunicorn) import module
+# Run once, on first WSGI request, by middleware above
 def initialise_data_sources():
     """
     Initialise data sources from environment variables.
@@ -457,16 +450,15 @@ def filecrawl(path=None):
         selected_sex = request.args.getlist('sex')
         search_term = request.args.get('search', '').strip().lower()
 
-        # Helper function to safely parse integers with a default fallback
+        # Parse integer, falling back to default when missing or invalid
         def _safe_int(val, default):
             try:
                 return int(val)
             except (TypeError, ValueError):
                 return default
 
-        # Only restrict by range if user moved the slider away from the bound.
-        # This prevents datasets with empty values from being incorrectly
-        # filtered out when the slider is at its default position
+        # Restrict by range only once slider leaves its bound, so datasets with
+        # empty values survive default position
         year_min_param = _safe_int(request.args.get('year_min'), year_range[0])
         year_max_param = _safe_int(request.args.get('year_max'), year_range[1])
         cc_min_param = _safe_int(
@@ -482,7 +474,7 @@ def filecrawl(path=None):
             request.args.get('gene_count_max'), gene_count_range[1]
         )
 
-        # Range is 'active' (restricting) only when moved away from the bound
+        # Range restricts ('active') only once moved away from bound
         year_min_active = year_min_param > year_range[0]
         year_max_active = year_max_param < year_range[1]
         cc_min_active = cc_min_param > cell_count_range[0]
@@ -953,7 +945,7 @@ _FIGURE_TITLES = {
     'all_scanvi_qc_reconstruction': 'Reconstruction loss',
 }
 
-# annotation_qc figures use a dynamic suffix (resolution value)
+# annotation_qc figures carry dynamic suffix (resolution value)
 _ANNOTATION_QC_RE = re.compile(r'^annotation_qc_res([\d.]+)$')
 
 
@@ -1056,7 +1048,7 @@ def _arrange_into_rows(imgs, step_key):
         return []
 
     if step_key not in _ROW_DEFS:
-        # No thematic arrangement — single row with all figures
+        # No thematic arrangement: single row with all figures
         return [
             {
                 'label': None,
@@ -1098,7 +1090,7 @@ def _arrange_into_rows(imgs, step_key):
         if row_imgs:
             rows.append({'label': row_label, 'imgs': row_imgs})
 
-    # Append any figures not captured by the row definitions
+    # Append figures not captured by row definitions
     leftover = [
         {
             'path': p,
@@ -1229,7 +1221,7 @@ def qc_report(dataset_id):
         '5_integration_annotation': 'Integration & Annotation',
     }
 
-    # Sub-labels for named subdirectories inside a step (used as headings)
+    # Sub-labels for named subdirectories inside step (used as headings)
     sub_labels = {
         '1_raw': 'Raw Data',
         '2_filtered': 'Filtered Data',
@@ -1247,9 +1239,8 @@ def qc_report(dataset_id):
 
         label = step_labels.get(step_dir, step_dir.replace('_', ' ').title())
 
-        # Each step is a list of sections: {'label': str, 'combined': [],
-        # 'per_sample': {}}. Most steps have one implicit section; integration
-        # has named subsections
+        # Steps list sections {'label', 'combined', 'per_sample'}; most have one
+        # implicit section, integration has named ones
         raw_subdirs = sorted(
             d
             for d in os.listdir(step_path)
@@ -1274,7 +1265,7 @@ def qc_report(dataset_id):
                     'group_label': group_label,
                 })
         else:
-            # Single implicit section — walk whole step directory
+            # Single implicit section: walk whole step directory
             combined_imgs, per_sample, group_label = _walk_images(
                 step_path, qc_dir
             )
@@ -1439,8 +1430,8 @@ def download_file(filename):
             'Invalid filename.', 400, context='download', filename=filename
         )
 
-    # Get data directory path. Unset with only a bucket configured is a valid
-    # setup (nothing to download from disk in that case)
+    # Data directory; unset with only bucket configured is valid (nothing on
+    # disk to download then)
     data_dir = env.cellxgene_data
     if data_dir is None:
         raise CacheException(
@@ -1460,8 +1451,8 @@ def download_file(filename):
             filename=filename,
         )
 
-    # env.cellxgene_data is already absolute: Flask resolves a relative
-    # directory against app.root_path (package dir), not configured data dir
+    # env.cellxgene_data is already absolute: Flask resolves relative directory
+    # against app.root_path (package dir), not configured data dir
     return send_from_directory(
         data_dir,
         filename,

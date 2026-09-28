@@ -87,7 +87,7 @@ def _render_thumbnail(src_path, dest_path):
     os.close(fd)
     try:
         thumb.save(tmp_path, 'JPEG', quality=THUMB_QUALITY, optimize=True)
-        # mkstemp is owner-only; cache may be warmed by a different user
+        # mkstemp is owner-only; cache may be warmed by another user
         os.chmod(tmp_path, 0o644)
         os.replace(tmp_path, dest_path)
     except BaseException:

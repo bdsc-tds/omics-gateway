@@ -9,7 +9,7 @@ from cellxgene_gateway import env
 logger = logging.getLogger(__name__)
 
 
-# Function to find annotation files for a given dataset file
+# Function to find annotation files for given dataset file
 def find_annotations_for_file(file_path, data_dir):
     """
     Find annotation files for a given dataset file.
@@ -111,9 +111,8 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
     gene_counts = []
     years = []
 
-    # Coerced to '' rather than left as None: path joins below sit inside a try
-    # that catches TypeError, so None would degrade to an empty dataset list
-    # instead of surfacing
+    # Coerced to '' rather than left None: path joins below sit in try catching
+    # TypeError, so None would silently give empty dataset list
     if data_dir is None:
         data_dir = env.cellxgene_data or ''
 
@@ -152,9 +151,8 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
                 row['is_spatial'] = fp.endswith('.zarr')
                 if row['is_spatial']:
                     stem = fp[: -len('.zarr')]
-                    # Place configs in data dir subfolder to keep them reachable
-                    # via /spatial-data/. Generator writes one without Metric
-                    # layer alongside
+                    # Configs live under data dir to stay reachable via
+                    # /spatial-data/; generator also writes no-Metric variant
                     suffix = (
                         'vitessce.json'
                         if env.spatial_metrics
@@ -175,7 +173,7 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
                 except OSError:
                     row['file_size_bytes'] = 0
 
-                # Check whether a QC folder exists for this dataset
+                # Check whether QC folder exists for this dataset
                 qc_base = env.qc_data
                 did = row.get('dataset_id', '')
                 row['has_qc'] = bool(
@@ -210,10 +208,8 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
 
         logger.info(f'Loaded {len(datasets)} datasets from {tsv_path}')
     except (OSError, csv.Error, ValueError, TypeError) as e:
-        # Unreadable or malformed .tsv degrades to empty list rather than 500 on
-        # /filecrawl. Deliberately does not catch every exception: KeyError or
-        # AttributeError here is a bug, not bad input, and should surface
-        # instead of silently rendering "no datasets"
+        # Unreadable or malformed .tsv gives empty list, not 500 on /filecrawl;
+        # KeyError or AttributeError signals bug, not bad input: left to surface
         logger.error(
             f'Error loading .tsv {tsv_path}: {e}. Using empty dataset list.'
         )

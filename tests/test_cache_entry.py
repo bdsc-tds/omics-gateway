@@ -10,7 +10,7 @@ from cellxgene_gateway.items.file.fileitem import FileItem
 from cellxgene_gateway.items.file.fileitem_source import FileItemSource
 from cellxgene_gateway.items.item import ItemType
 
-# Create CacheKey instance using FileItem representing an .h5ad file and
+# Create CacheKey instance using FileItem for .h5ad file and
 # FileItemSource pointing to local directory
 key = CacheKey(
     FileItem('/czi/', name='pbmc3k.h5ad', type=ItemType.h5ad),

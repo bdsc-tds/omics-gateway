@@ -7,15 +7,6 @@
 # OR CONDITIONS OF ANY KIND, either express or implied. See the License for
 # the specific language governing permissions and limitations under the License.
 
-# There are three kinds of CacheKey:
-# 1) somedir/dataset.h5ad: a dataset
-#    in this case, descriptor == dataset == 'somedir/dataset.h5ad'
-# 2) somedir/dataset_annotations/my_annotations.csv: an actual annotations file
-#    in this case, descriptor == 'somedir/dataset_annotations/my_annotations.csv', dataset == 'somedir/dataset.h5ad'
-# 3) somedir/dataset_annotations: an annotation directory. The corresponding h5ad must exist, but the directory may not
-#    in this case, descriptor == 'somedir/dataset_annotations', dataset == 'somedir/dataset.h5ad'
-
-
 # Import other functions from package
 from cellxgene_gateway import flask_util
 from cellxgene_gateway.items.item import Item
@@ -24,8 +15,17 @@ from cellxgene_gateway.items.item_source import ItemSource, LookupResult
 
 class CacheKey:
     """
-    Class to represent a unique identifier for cached data, including h5ad item,
+    Class to represent unique identifier for cached data, including h5ad item,
     optional annotation item, and data source.
+
+    Three kinds of key:
+    1) somedir/dataset.h5ad: dataset; descriptor == dataset ==
+       'somedir/dataset.h5ad'
+    2) somedir/dataset_annotations/my_annotations.csv: annotations file;
+       descriptor is that path, dataset == 'somedir/dataset.h5ad'
+    3) somedir/dataset_annotations: annotation directory, whose h5ad must exist
+       though directory need not; descriptor is that path, dataset ==
+       'somedir/dataset.h5ad'
     """
 
     def __init__(
