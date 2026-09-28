@@ -1,5 +1,5 @@
 """
-Script to generate datasets.tsv from .h5ad files in a directory.
+Script to generate datasets.tsv from .h5ad files in directory.
 
 Usage:
     python data_prep/generate_datasets_tsv.py \
@@ -45,7 +45,7 @@ def extract_year(date_str):
     Parameters:
     -----------
     date_str: str
-      Date string potentially containing a year.
+      Date string potentially containing year.
 
     Returns:
     --------
@@ -102,8 +102,8 @@ def sort_semicolon_field(value, fixed_order=None):
     value: str
       Semicolon-separated string.
     fixed_order: list or None
-      If provided, sort tokens by their position in this list. Tokens not in
-      the list sort alphabetically after those that are.
+      If provided, sort tokens by their position in this list; tokens absent
+      from it sort alphabetically after listed ones.
 
     Returns:
     --------
@@ -120,6 +120,20 @@ def sort_semicolon_field(value, fixed_order=None):
     NA_VALUES = {'na', 'n/a', 'nan', 'none'}
 
     def sort_key(token):
+        """
+        Build sort key placing NA tokens last, then by fixed order or name.
+
+        Parameters:
+        -----------
+        token: str
+          Stripped token from semicolon-separated field.
+
+        Returns:
+        --------
+        key: tuple
+          (NA flag, position in fixed_order, lower-cased token) when fixed order
+          is given, otherwise (NA flag, lower-cased token).
+        """
         token_lower = token.lower()
         is_na = token_lower in NA_VALUES
         if fixed_order is not None:
@@ -150,7 +164,7 @@ def strip_tokens(value, to_strip):
     Returns:
     --------
     cleaned: str
-      Re-joined semicolon-separated string with the tokens removed, or empty
+      Re-joined semicolon-separated string without those tokens, or empty
       string if all tokens were removed.
     """
     if not value:
@@ -168,12 +182,12 @@ def strip_tokens(value, to_strip):
 # Function to extract metadata from .h5ad file's uns dict
 def extract_h5ad_metadata(h5ad_path):
     """
-    Extract dataset metadata from an .h5ad file's uns dict.
+    Extract dataset metadata from .h5ad file's uns dict.
 
     Parameters:
     -----------
     h5ad_path: str
-      Absolute path to the .h5ad file.
+      Absolute path to .h5ad file.
 
     Returns:
     --------
@@ -265,14 +279,14 @@ def find_h5ad_files(data_dir):
 # Function to build merged dataset row from uns extraction and YAML overrides
 def load_merged_row(merged_file, config_path):
     """
-    Build a TSV row dict for a merged/meta-analysis .h5ad file.
+    Build TSV row dict for merged/meta-analysis .h5ad file.
 
     Parameters:
     -----------
     merged_file: str
-      Path to the merged .h5ad file.
+      Path to merged .h5ad file.
     config_path: str or None
-      Optional path to a YAML file with manual field overrides.
+      Optional path to YAML file with manual field overrides.
 
     Returns:
     --------
@@ -326,11 +340,11 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
     data_dir: str
       Directory containing .h5ad files (searched recursively).
     output_path: str
-      Path for the output .tsv file.
+      Path for output .tsv file.
     merged_file: str or None
-      Optional path to a merged/meta-analysis .h5ad to append as last row.
+      Optional path to merged/meta-analysis .h5ad to append as last row.
     merged_config: str or None
-      Optional path to a YAML file with manual field overrides for the merged row.
+      Optional path to YAML file with manual field overrides for merged row.
     """
     rows = []
 

@@ -115,10 +115,6 @@ def read_coordinate_system(element_dir):
     """
     Read output coordinate-system name of SpatialData zarr element.
 
-    Name is taken from element's NGFF coordinateTransformations (output.name),
-    which SpatialData sets to coordinate system element lives in (e.g. a
-    per-sample or 'global' system).
-
     Name comes from element's NGFF coordinateTransformations (output.name),
     which SpatialData sets to element's coordinate system (e.g. per-sample or
     "global").
@@ -126,7 +122,7 @@ def read_coordinate_system(element_dir):
     Parameters:
     -----------
     element_dir: str
-      Path to element directory within store (holds a zarr.json).
+      Path to element directory within store (holds zarr.json).
 
     Returns:
     --------
@@ -193,8 +189,8 @@ def detect_metric_cols(obs_dir):
     List metric obs columns present in table with dtype viewer can load.
 
     Columns are read by Vitessce's obsFeatureColumns loader, which copies them
-    into a Float32Array: int64 decodes as BigInt there and fails silently, so
-    such columns are skipped with a warning.
+    into Float32Array: int64 decodes as BigInt there and fails silently, so
+    such columns are skipped with warning.
 
     Parameters:
     -----------

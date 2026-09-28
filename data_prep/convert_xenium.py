@@ -1,15 +1,15 @@
 """
 Script to convert Xenium Ranger output bundle into SpatialData .zarr store for
-for Vitessce spatial viewer.
+Vitessce spatial viewer.
 
-Memory is a binding constraint: full-resolution morphology image is
+Memory is binding constraint: full-resolution morphology image is
 (4, 40866, 14354), so naive `SpatialData.write()` under dask's default threaded
-scheduler exhausts a 16 GB workstation. This script forces a single-threaded
-scheduler, small chunks, and writes one element at a time so peak usage stays
+scheduler exhausts 16 GB workstation. This script forces single-threaded
+scheduler and small chunks, and writes element by element, so peak usage stays
 bounded and failure is partial rather than total.
 
-Always run it under a cgroup memory cap so a runaway cannot take desktop down
-with it:
+Always run it under cgroup memory cap so runaway process cannot take desktop
+down with it:
 
 Usage:
     systemd-run --user --scope -p MemoryMax=5G -p MemorySwapMax=0 \
@@ -110,7 +110,8 @@ def add_umap(table, csv_path):
     table: anndata.AnnData
       Table element of SpatialData object, indexed by cell id.
     csv_path: str
-      Path to Xenium Ranger's umap projection.csv ('Barcode', 'UMAP-1', 'UMAP-2').
+      Path to Xenium Ranger's umap projection.csv ('Barcode', 'UMAP-1',
+      'UMAP-2').
 
     Returns:
     --------
@@ -243,7 +244,7 @@ def retarget_table_region(sdata, region):
 
     Xenium reader annotates table against 'cell_labels', but rasterised label
     pyramid is skipped when polygon boundaries are used. Vitessce joins table to
-    segmentations through region name, so a dangling reference leaves every view
+    segmentations through region name, so dangling reference leaves every view
     unlinked.
 
     Parameters:
@@ -306,7 +307,7 @@ def parse_points_keeping_transform(points, transformations):
     """
     Parse points element and restore coordinate transform afterwards.
 
-    PointsModel.parse refuses transformations passed alongside an element that
+    PointsModel.parse refuses transformations passed alongside element that
     already carries one, and applies identity when none is given. Setting it
     after parsing sidesteps both, and identity here would place transcripts in
     microns while image and shapes are in pixels.
@@ -334,7 +335,7 @@ def prepare_transcripts(sdata, var_names):
     """
     Rewrite transcripts point cloud in form Vitessce can query by region.
 
-    Viewer fetches points for visible rectangle only when store carries a
+    Viewer fetches points for visible rectangle only when store carries
     Morton (Z-order) code per point and rows are sorted by it. It also needs
     integer index into table's var names per point, since it colours points by
     gene without reading gene strings. Dictionary-encoded columns must be
