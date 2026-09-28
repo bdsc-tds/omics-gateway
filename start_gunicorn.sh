@@ -9,9 +9,9 @@
 # USAGE:
 # ./start_gunicorn.sh
 #
-# Configuration lives in this file rather than a .env: every setting below is
-# written as ${VAR:-default}, so it can still be overridden from environment
-# (e.g. systemd Environment=, or an inline export) without one
+# Configuration lives here, not in .env: every setting below is written as
+# ${VAR:-default}, so environment still overrides it (e.g. systemd
+# Environment= or inline export)
 
 # Exit on error
 set -e
@@ -20,8 +20,7 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
-# Server config
-# Paths derive from conda env and repo location so script stays host-independent
+# Server config; paths derive from conda env and repo, so host-independent
 # Conda variables
 CONDA_ROOT=${CONDA_ROOT:-$HOME/miniforge3}
 CONDA_ENV=${CONDA_ENV:-cellxgateway}
@@ -41,8 +40,7 @@ export PROXY_FIX_PROTO=${PROXY_FIX_PROTO:-1}
 export PROXY_FIX_HOST=${PROXY_FIX_HOST:-1}
 export PROXY_FIX_PREFIX=${PROXY_FIX_PREFIX:-1}
 
-# Check cellxgene binary exists (defaults above are always set, so a missing
-# binary can happen)
+# Check cellxgene binary exists: defaults always set, but may point nowhere
 if [ ! -x "$CELLXGENE_LOCATION" ]; then
     echo "Error: cellxgene not found at $CELLXGENE_LOCATION"
     echo "Set CELLXGENE_LOCATION, or CONDA_ROOT/CONDA_ENV (currently:"
@@ -50,16 +48,11 @@ if [ ! -x "$CELLXGENE_LOCATION" ]; then
     exit 1
 fi
 
-# Gunicorn configuration
-# WARNING: Multi-worker mode has cache synchronization issues (see
-# https://github.com/Novartis/cellxgene-gateway/pull/99). Each worker maintains
-# its own in-memory cache, causing 404s for static assets when different workers
-# handle requests for the same dataset. Use GUNICORN_WORKERS=1 until shared
-# cache is implemented
+# Gunicorn config: one worker, since each keeps own in-memory cache and peers
+# 404 on its datasets (https://github.com/Novartis/cellxgene-gateway/pull/99)
 WORKERS=${GUNICORN_WORKERS:-1}
-# Use gthread worker class to enable concurrent request handling via threads.
-# Threads share the same in-memory BackendCache, avoiding the cache
-# synchronization issues that arise with multiple workers.
+# gthread workers serve requests on threads sharing one BackendCache, so
+# multi-worker cache sync issues never arise
 WORKER_CLASS=${GUNICORN_WORKER_CLASS:-gthread}
 THREADS=${GUNICORN_THREADS:-8}
 BIND=${GATEWAY_IP:-0.0.0.0}:${GATEWAY_PORT:-5005}
@@ -70,7 +63,7 @@ LOG_LEVEL=${GUNICORN_LOG_LEVEL:-info}
 # Production optimisation: enable backed mode to reduce memory usage
 export GATEWAY_ENABLE_BACKED_MODE=${GATEWAY_ENABLE_BACKED_MODE:-true}
 
-# Spatial viewer: false links configs without Metric layer (generator writes both)
+# Spatial viewer: false links no-Metric configs (generator writes both)
 export SPATIAL_METRICS=${SPATIAL_METRICS:-true}
 
 # Check if gunicorn is installed
@@ -100,10 +93,8 @@ echo ""
 
 cd "$SCRIPT_DIR"
 
-# Start Gunicorn with optimised settings
-# Additional options you can add via environment variables:
-# - GUNICORN_MAX_REQUESTS: Restart worker after N requests (avoids memory leaks)
-# - GUNICORN_MAX_REQUESTS_JITTER: Add randomness to max-requests
+# Optional: GUNICORN_MAX_REQUESTS restarts worker after N requests (memory
+# leaks), GUNICORN_MAX_REQUESTS_JITTER randomises that count
 exec gunicorn cellxgene_gateway.gateway:app \
     --workers "$WORKERS" \
     --worker-class "$WORKER_CLASS" \

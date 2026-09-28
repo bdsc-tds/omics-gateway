@@ -1,16 +1,16 @@
 /**
- * Vite build config for the self-hosted Vitessce viewer bundle.
+ * Vite build config for self-hosted Vitessce viewer bundle.
  *
- * Builds main.js in library mode so the output is a single ES module plus one
- * stylesheet, written directly into the Flask app's static directory
- * (cellxgene_gateway/static/vitessce/) where templates/spatial_viewer.html
- * loads them via url_for('static', ...).
+ * Builds main.js in library mode into ES module entry (spatial-viewer.js) plus
+ * content-hashed chunks, written directly into Flask app's static directory
+ * (cellxgene_gateway/static/vitessce/), where templates/spatial_viewer.html
+ * loads entry via url_for('static', ...).
  *
  * Vitessce and its Zarr/loader dependencies reference Node globals such as
- * Buffer and process, which do not exist in the browser, so
- * vite-plugin-node-polyfills supplies browser shims for them.
+ * Buffer and process, absent in browsers, so vite-plugin-node-polyfills
+ * supplies browser shims for them.
  *
- * Run `npm run build` in the `viewer-build` conda env (Node pinned in
+ * Run `npm run build` in `viewer-build` conda env (Node pinned in
  * viewer_build_env.yaml).
  */
 
@@ -22,7 +22,7 @@ export default defineConfig({
   build: {
     outDir: '../cellxgene_gateway/static/vitessce',
     emptyOutDir: true,
-    // Single stylesheet rather than per-chunk CSS, so the template has one
+    // Single stylesheet rather than per-chunk CSS, so template has one
     // predictable file to link.
     cssCodeSplit: false,
     lib: {

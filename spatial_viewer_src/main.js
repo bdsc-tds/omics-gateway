@@ -1,16 +1,16 @@
 /**
- * Entry point for the self-hosted Vitessce spatial viewer.
+ * Entry point for self-hosted Vitessce spatial viewer.
  *
- * Vite bundles this file (with React, Vitessce and their dependencies) into a
- * single static asset under `cellxgene_gateway/static/vitessce/`, which
- * `templates/spatial_viewer.html` loads. Self-hosting replaces the previous
- * CDN-loaded Vitessce, so the deployed gateway serves the viewer code itself
- * and needs no outbound internet access.
+ * Vite bundles this file (with React, Vitessce and their dependencies) into
+ * static assets under `cellxgene_gateway/static/vitessce/`, which
+ * `templates/spatial_viewer.html` loads. Self-hosting replaced CDN-loaded
+ * Vitessce, so deployed gateway serves viewer code itself and needs no
+ * outbound internet access.
  *
- * Reads the Vitessce view-config URL from the page's `?config=` query
- * parameter, fetches it, and mounts the viewer into `#root`.
+ * Reads Vitessce view-config URL from page's `?config=` query parameter,
+ * fetches it, and mounts viewer into `#root`.
  *
- * Build: `npm run build` in the `viewer-build` conda env (see README,
+ * Build: `npm run build` in `viewer-build` conda env (see README,
  * "Rebuilding the spatial viewer").
  */
 
@@ -18,8 +18,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Vitessce } from 'vitessce';
 
-// Read from the query string rather than server-side templating: this bundle
-// is a static asset, so it cannot be rendered by Jinja.
+// Read from query string rather than server-side templating: bundle is
+// static asset, so Jinja cannot render it.
 const configUrl = new URLSearchParams(window.location.search).get('config') || '';
 const root = createRoot(document.getElementById('root'));
 
@@ -29,9 +29,8 @@ function showMessage(text) {
   );
 }
 
-// Configs store data URLs as root-relative paths (e.g. /spatial-data/…)
-// so they stay host-independent. Vitessce's loaders call `new URL(url)`
-// with no base, so resolve them against the current origin here.
+// Configs keep data URLs root-relative (/spatial-data/…), host-independent;
+// Vitessce loaders call `new URL(url)` with no base, so resolve on origin.
 function absolutizeUrls(obj) {
   if (Array.isArray(obj)) {
     obj.forEach(absolutizeUrls);
@@ -64,7 +63,7 @@ async function main() {
       React.createElement(Vitessce, {
         config,
         theme: 'light',
-        // Vitessce needs an explicit pixel height; it does not fill its parent.
+        // Vitessce needs explicit pixel height; it does not fill its parent.
         height: window.innerHeight,
       })
     );

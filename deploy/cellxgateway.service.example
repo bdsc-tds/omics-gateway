@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-# Host-specific: the account that owns the clone.
+# Host-specific: account owning clone.
 User=CHANGEME_USER
-# Host-specific: the repository root.
+# Host-specific: repository root.
 WorkingDirectory=/path/to/cellxgene-gateway
 
 # Start command
@@ -21,8 +21,7 @@ RestartSec=10
 StandardOutput=append:/path/to/cellxgene-gateway/logs/cellxgateway.log
 StandardError=append:/path/to/cellxgene-gateway/logs/cellxgateway.log
 
-# Every setting in start_gunicorn.sh is written as ${VAR:-default}, so it can
-# be overridden here without editing the script, e.g.:
+# start_gunicorn.sh settings are ${VAR:-default}, so override them here, e.g.:
 # Environment=CONDA_ROOT=/opt/miniforge3
 # Environment=CELLXGENE_DATA=/mnt/cellxgene_data
 

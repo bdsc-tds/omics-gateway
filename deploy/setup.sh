@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# setup.sh - Prepare a freshly cloned repo so gateway can be started
+# setup.sh - Prepare freshly cloned repo so gateway can be started
 #
 # USAGE:
 # ./deploy/setup.sh
 #
 # Creates conda env, installs this repo into it, re-applies cellxgene patch that
 # gateway depends on, and creates runtime directories. Safe to re-run: every
-# step is skipped if it has already been done.
+# step is skipped if already done.
 #
 # Config follows same ${VAR:-default} convention as start_gunicorn.sh, so both
 # scripts agree on which environment they mean:
@@ -54,17 +54,13 @@ else
     "$CONDA_BIN" env create --name "$CONDA_ENV" --file "$ENV_FILE"
 fi
 
-# 2. Install repo into conda env
-# Env file cannot express an editable install, so without this, env would
-# resolve `cellxgene_gateway` to PyPI release rather than this fork
+# 2. Install repo into conda env: env file cannot express editable install,
+# so env would otherwise resolve `cellxgene_gateway` to PyPI release
 echo "[2/5] Installing (editable) repo into conda env..."
 "$CONDA_ENV_BIN/pip" install --quiet --no-deps --editable "$REPO_DIR"
 
-# 3. Re-apply cellxgene StringDtype patch
-# Upstream cellxgene only treats boolean/category/object columns as categorical,
-# so with newer pandas a "string" index falls into numeric range-filter branch
-# and gene expression colouring returns 400 for every dataset. Patch lives in
-# site-packages, so a rebuilt env loses it
+# 3. Re-apply cellxgene StringDtype patch (in site-packages, lost on rebuild):
+# without it, "string" index takes numeric filter and gene colouring 400s
 echo "[3/5] Checking cellxgene StringDtype patch..."
 ADAPTOR=$(find "$CONDA_ENV_DIR/lib" -path '*/server/data_common/data_adaptor.py' | head -1)
 if [ -z "$ADAPTOR" ]; then
@@ -78,8 +74,8 @@ elif grep -q '"boolean", "category", "object"' "$ADAPTOR"; then
     grep -q '"boolean", "category", "object", "string"' "$ADAPTOR"
     echo "      Patched: $ADAPTOR"
 else
-    # cellxgene is pinned to 1.3.0, so this means something changed upstream.
-    # Fail rather than start a gateway whose gene expression silently 400s.
+    # cellxgene is pinned to 1.3.0, so this means upstream changed. Fail rather
+    # than start gateway whose gene expression silently 400s.
     echo "Error: expected dtype list not found in $ADAPTOR"
     echo "Check whether cellxgene fixed this upstream, then update this script."
     exit 1
