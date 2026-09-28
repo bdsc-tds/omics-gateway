@@ -242,6 +242,7 @@
             patchMetricTooltips(json, configUrl);
           }).catch(function() {});
           orderLayerRows(root);
+          limitLassoToCells(root);
           extraTypes.then(function(types) {
             constrainExtraEncodings(root, types);
           });
@@ -371,6 +372,100 @@
         }
         new MutationObserver(patch).observe(
           document.body, { childList: true, subtree: true, characterData: true });
+      }
+
+      // Lasso takes every visible segmentation channel, adding empty selections
+      // for those without quadtree; keep only Cell's while any layer is visible
+      function limitLassoToCells(root) {
+        var seen = new WeakSet();
+        var warned = false;
+        function warn(text) {
+          if (warned) return;
+          warned = true;
+          console.warn('Lasso override not applied: ' + text);
+        }
+
+        // Nearest React fiber at or above element
+        function fiberOf(element) {
+          for (var el = element; el && el !== root; el = el.parentElement) {
+            var key = Object.keys(el).find(function(name) {
+              return name.indexOf('__reactFiber$') === 0;
+            });
+            if (key) return el[key];
+          }
+          return null;
+        }
+
+        // Class component above deck.gl canvas; UMAP's lacks segmentation props
+        function spatialOf(canvas) {
+          var fiber = fiberOf(canvas);
+          if (!fiber) warn('no React fiber above canvas');
+          for (; fiber; fiber = fiber.return) {
+            var node = fiber.stateNode;
+            if (node && node.props && 'segmentationLayerScopes' in node.props) {
+              return node;
+            }
+          }
+          return null;
+        }
+
+        function wrap(spatial) {
+          var original = spatial.createSelectionLayer;
+          if (typeof original !== 'function') {
+            warn('createSelectionLayer not found');
+            return;
+          }
+          spatial.createSelectionLayer = function() {
+            var props = this.props;
+            var coordination = props.segmentationChannelCoordination;
+            if (!coordination || !coordination[0]) return original.call(this);
+            var trees = this.obsSegmentationsQuadTree;
+            // Renamed after upgrade: no channel would join, so keep original
+            if (!trees || typeof trees !== 'object') {
+              warn('obsSegmentationsQuadTree not found');
+              return original.call(this);
+            }
+            var channels = coordination[0];
+            var layers = (props.segmentationLayerCoordination || [])[0] || {};
+            var anyVisible = Object.keys(channels).some(function(layer) {
+              return (layers[layer] || {}).spatialLayerVisible
+                && Object.keys(channels[layer]).some(function(channel) {
+                  return channels[layer][channel].spatialChannelVisible;
+                });
+            });
+            // Copies, not store objects: only lasso sees changed visibility
+            var values = {};
+            Object.keys(channels).forEach(function(layer) {
+              values[layer] = {};
+              Object.keys(channels[layer]).forEach(function(channel) {
+                var hasTree = !!(trees[layer] && trees[layer][channel]);
+                values[layer][channel] = Object.assign({}, channels[layer][channel],
+                  { spatialChannelVisible: anyVisible && hasTree });
+              });
+            });
+            // Real instance underneath supplies state and quadtrees
+            var view = Object.create(this, { props: { value: Object.assign({},
+              props, { segmentationChannelCoordination: [values, coordination[1]] }) } });
+            return original.call(view);
+          };
+        }
+
+        function scan() {
+          var canvases = root.getElementsByTagName('canvas');
+          for (var i = 0; i < canvases.length; i++) {
+            if (seen.has(canvases[i])) continue;
+            seen.add(canvases[i]);
+            var spatial = spatialOf(canvases[i]);
+            if (spatial && !seen.has(spatial)) {
+              seen.add(spatial);
+              wrap(spatial);
+            }
+          }
+        }
+        scan();
+        // Canvas mounts once data loads, and again if view remounts
+        new MutationObserver(scan).observe(
+          root, { childList: true, subtree: true });
       }
 
       // Metric draws below cells so they keep hover, but row stays listed
