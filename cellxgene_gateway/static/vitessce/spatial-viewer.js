@@ -18565,7 +18565,12 @@ function g(e) {
 		t === "url" && typeof n == "string" && n.startsWith("/") ? e[t] = window.location.origin + n : g(n);
 	}
 }
-async function _() {
+var _ = /^\/spatial-data\/.*\/\.(zattrs|zarray|zgroup)$/, v = window.fetch.bind(window);
+window.fetch = (e, t) => {
+	let n = new URL(e instanceof Request ? e.url : e, window.location.origin);
+	return n.origin === window.location.origin && _.test(n.pathname) ? Promise.resolve(new Response(null, { status: 404 })) : v(e, t);
+};
+async function y() {
 	if (!p) {
 		h("No config specified. Use ?config=<url>.");
 		return;
@@ -18583,5 +18588,5 @@ async function _() {
 		h(`Failed to load config from ${p}: ${e}`);
 	}
 }
-_();
+y();
 //#endregion
