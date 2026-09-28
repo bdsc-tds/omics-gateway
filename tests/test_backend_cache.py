@@ -25,8 +25,8 @@ class TestIsPortInUse(unittest.TestCase):
         Parameters:
         -----------
         socketMock: unittest.mock.Mock
-          Mocked socket class. Its instance simulates a successful connection
-          via `connect_ex`, returning 0 to indicate port is in use.
+          Mocked socket class; instance simulates successful connection via
+          `connect_ex`, returning 0 to indicate port is in use.
         """
 
         connectMock = socketMock()
@@ -46,8 +46,8 @@ class TestIsPortInUse(unittest.TestCase):
         Parameters:
         -----------
         socketMock: unittest.mock.Mock
-          Mocked socket class. Its instance simulates a failed connection
-          via `connect_ex`, returning 1 to indicate port is available.
+          Mocked socket class; instance simulates failed connection via
+          `connect_ex`, returning 1 to indicate port is available.
         """
 
         connectMock = socketMock()
@@ -64,13 +64,13 @@ class TestBackendCacheInit(unittest.TestCase):
     """
     Unit tests for `BackendCache` initialisation.
 
-    Verify that a new `BackendCache` instance starts with the expected
-    default state.
+    Verify that new `BackendCache` instance starts with expected default
+    state.
     """
 
     def test_GIVEN_new_backend_cache_THEN_entry_list_is_empty(self):
         """
-        Test that a newly created `BackendCache` has an empty entry list.
+        Test that newly created `BackendCache` has empty entry list.
         """
 
         cache = BackendCache()
@@ -87,7 +87,7 @@ class TestBackendCacheGetPorts(unittest.TestCase):
 
     def test_GIVEN_empty_cache_THEN_get_ports_returns_empty_list(self):
         """
-        Test that `get_ports` returns an empty list when no entries exist.
+        Test that `get_ports` returns empty list when no entries exist.
         """
 
         cache = BackendCache()
@@ -96,7 +96,7 @@ class TestBackendCacheGetPorts(unittest.TestCase):
 
     def test_GIVEN_cache_with_entries_THEN_get_ports_returns_all_ports(self):
         """
-        Test that `get_ports` returns the port of every entry in the cache.
+        Test that `get_ports` returns port of every entry in cache.
         """
 
         cache = BackendCache()
@@ -116,7 +116,7 @@ class TestBackendCacheGetPorts(unittest.TestCase):
 
     def test_GIVEN_single_entry_THEN_get_ports_returns_single_port(self):
         """
-        Test that `get_ports` correctly handles a cache with a single entry.
+        Test that `get_ports` correctly handles cache with single entry.
         """
 
         cache = BackendCache()
@@ -139,14 +139,14 @@ class TestBackendCacheCheckPath(unittest.TestCase):
 
     def setUp(self):
         """
-        Set up a fresh `BackendCache` instance before each test.
+        Set up empty `BackendCache` before each `check_path` test.
         """
 
         self.cache = BackendCache()
 
     def test_GIVEN_no_matching_path_THEN_check_path_returns_none(self):
         """
-        Test that `check_path` returns None when no entry matches the path.
+        Test that `check_path` returns None when no entry matches path.
         """
 
         source = Mock()
@@ -184,7 +184,7 @@ class TestBackendCacheCheckPath(unittest.TestCase):
 
     def test_GIVEN_single_matching_entry_THEN_check_path_returns_it(self):
         """
-        Test that `check_path` returns the entry when exactly one matches.
+        Test that `check_path` returns entry when exactly one matches.
         """
 
         source = Mock()
@@ -205,8 +205,8 @@ class TestBackendCacheCheckPath(unittest.TestCase):
         self,
     ):
         """
-        Test that `check_path` returns None when the path does not start with
-        the entry's descriptor.
+        Test that `check_path` returns None when path does not start with
+        entry's descriptor.
         """
 
         source = Mock()
@@ -228,7 +228,7 @@ class TestBackendCacheCheckPath(unittest.TestCase):
     ):
         """
         Test that `check_path` raises `CacheException` when more than one
-        entry matches the source and path.
+        entry matches source and path.
         """
 
         source = Mock()
@@ -261,7 +261,7 @@ class TestBackendCacheCheckPath(unittest.TestCase):
     ):
         """
         Test that `check_path` filters correctly by source, path, and status,
-        returning only the single active matching entry.
+        returning only active matching entry.
         """
 
         source = Mock()
@@ -308,14 +308,14 @@ class TestBackendCacheCheckEntry(unittest.TestCase):
 
     def setUp(self):
         """
-        Set up a fresh `BackendCache` instance before each test.
+        Set up empty `BackendCache` before each `check_entry` test.
         """
 
         self.cache = BackendCache()
 
     def test_GIVEN_no_matching_entry_THEN_check_entry_returns_none(self):
         """
-        Test that `check_entry` returns None when no entry matches the key.
+        Test that `check_entry` returns None when no entry matches key.
         """
 
         key = Mock()
@@ -333,7 +333,7 @@ class TestBackendCacheCheckEntry(unittest.TestCase):
     def test_GIVEN_terminated_entry_THEN_check_entry_ignores_it(self):
         """
         Test that `check_entry` ignores entries with terminated status even
-        when the key matches.
+        when key matches.
         """
 
         key = Mock()
@@ -350,8 +350,7 @@ class TestBackendCacheCheckEntry(unittest.TestCase):
 
     def test_GIVEN_single_matching_entry_THEN_check_entry_returns_it(self):
         """
-        Test that `check_entry` returns the entry when exactly one matches
-        the key.
+        Test that `check_entry` returns entry when exactly one matches key.
         """
 
         key = Mock()
@@ -371,7 +370,7 @@ class TestBackendCacheCheckEntry(unittest.TestCase):
     ):
         """
         Test that `check_entry` raises `CacheException` when more than
-        one active entry matches the key.
+        one active entry matches key.
         """
 
         key = Mock()
@@ -402,7 +401,7 @@ class TestBackendCacheCheckEntry(unittest.TestCase):
     ):
         """
         Test that `check_entry` filters correctly by key equality and status,
-        returning only the single active matching entry.
+        returning only active matching entry.
         """
 
         key = Mock()
@@ -439,13 +438,13 @@ class TestBackendCachePrune(unittest.TestCase):
     """
     Unit tests for `BackendCache.prune` method.
 
-    Verify that pruning correctly removes the target entry from the cache
-    and terminates it, without affecting other entries.
+    Verify that pruning removes target entry from cache and terminates it,
+    without affecting other entries.
     """
 
     def test_GIVEN_entry_in_cache_THEN_prune_removes_it(self):
         """
-        Test that `prune` removes the entry from the cache's entry list.
+        Test that `prune` removes entry from cache's entry list.
         """
 
         cache = BackendCache()
@@ -460,7 +459,7 @@ class TestBackendCachePrune(unittest.TestCase):
 
     def test_GIVEN_entry_in_cache_THEN_prune_terminates_it(self):
         """
-        Test that `prune` calls `terminate` on the removed entry.
+        Test that `prune` calls `terminate` on removed entry.
         """
 
         cache = BackendCache()
@@ -474,7 +473,7 @@ class TestBackendCachePrune(unittest.TestCase):
 
     def test_GIVEN_multiple_entries_THEN_prune_removes_only_target_entry(self):
         """
-        Test that `prune` removes and terminates only the specified entry,
+        Test that `prune` removes and terminates only specified entry,
         leaving all other entries untouched.
         """
 
@@ -500,8 +499,7 @@ class TestBackendCachePrune(unittest.TestCase):
 
     def test_GIVEN_empty_cache_THEN_prune_raises_value_error(self):
         """
-        Test that `prune` raises `ValueError` when the entry is not in the
-        cache.
+        Test that `prune` raises `ValueError` when entry is not in cache.
         """
 
         cache = BackendCache()

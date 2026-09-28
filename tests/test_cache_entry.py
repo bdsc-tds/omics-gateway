@@ -28,9 +28,9 @@ class TestRenderEntry(unittest.TestCase):
 
     def setUp(self):
         """
-        Set up Flask test client and application context.
+        Set up Flask test client and application context for cache entry tests.
 
-        Executed before each test to initialize Flask `test_request_context` and
+        Executed before each test to initialise Flask `test_request_context` and
         client used for simulating requests.
         """
 
@@ -52,7 +52,7 @@ class TestRenderEntry(unittest.TestCase):
 
     def test_GIVEN_key_and_port_THEN_returns_loading_CacheEntry(self):
         """
-        Test that creating `CacheEntry` with key and port returns an entry with
+        Test that creating `CacheEntry` with key and port returns entry with
         status set to `CacheEntryStatus.loading`.
         """
 
@@ -74,8 +74,8 @@ class TestRenderEntry(unittest.TestCase):
 
     def test_GIVEN_absolute_src_THEN_include_path(self):
         """
-        Test that HTML `<link>` with absolute static URL is rewritten to include
-        cache entry path when `include_source_in_url` is False.
+        Test that absolute static `<link>` URL gains cache entry path when
+        `include_source_in_url` is False.
         """
 
         flask_util.include_source_in_url = False
@@ -100,8 +100,8 @@ class TestRenderEntry(unittest.TestCase):
 
     def test_GIVEN_absolute_src_include_source_THEN_include_path(self):
         """
-        Test that HTML `<link>` with absolute static URL is rewritten to include
-        source path when `include_source_in_url` is True.
+        Test that absolute static `<link>` URL gains source path when
+        `include_source_in_url` is True.
         """
 
         flask_util.include_source_in_url = True

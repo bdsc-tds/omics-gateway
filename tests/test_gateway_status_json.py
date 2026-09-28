@@ -8,6 +8,10 @@ from cellxgene_gateway.gateway import app, cache, do_instances_json
 
 class TestGatewayStatusJson(unittest.TestCase):
     def test_do_instances_json_returns_expected_structure(self):
+        """
+        Test that `do_instances_json` reports app launchtime and each cache
+        entry with dataset, annotation file, status and timestamps.
+        """
         # Create a minimal fake key with required attributes
         h5ad_item = SimpleNamespace(descriptor='somedir/dataset.h5ad')
         key = SimpleNamespace(

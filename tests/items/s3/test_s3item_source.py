@@ -11,7 +11,7 @@ from cellxgene_gateway.items.s3.s3item_source import S3ItemSource
 
 class TestScanDirectory(unittest.TestCase):
     """
-    Unit tests for the `S3ItemSource.scan_directory` method.
+    Unit tests for `S3ItemSource.scan_directory` method.
 
     Verify correct handling of S3 directory traversal.
     """
@@ -120,6 +120,26 @@ class TestScanDirectory(unittest.TestCase):
             tree = source.scan_directory()
 
         def s3item_compare(i1, i2, msg=''):
+            """
+            Assert two S3 items match on name, type, key and annotations.
+
+            Registered through `addTypeEqualityFunc`, so `assertEqual` on S3Item
+            objects calls it.
+
+            Parameters:
+            -----------
+            i1: S3Item
+              Item found by scan.
+            i2: S3Item
+              Expected item.
+            msg: str, optional
+              Failure message slot required by `unittest`; unused.
+
+            Returns:
+            --------
+            bool
+              True once every assertion passes.
+            """
             self.assertEqual(i1.name, i2.name, 'name equals')
             self.assertEqual(i1.type, i2.type, 'type equals')
             self.assertEqual(i1.s3key, i2.s3key, 's3key equals')
@@ -196,18 +216,19 @@ class TestScanDirectory(unittest.TestCase):
 
 class TestListItems(unittest.TestCase):
     """
-    Unit tests for the `S3ItemSource.list_items` method.
+    Unit tests for `S3ItemSource.list_items` method.
 
     Ensure filter arguments are correctly passed to `scan_directory` and default
-    behavior occurs when no filter is provided.
+    behaviour occurs when no filter is provided.
     """
 
     def test_GIVEN_filter_THEN_pass_filter_into_scan_directory(self):
         """
-        Test that `list_items` forwards a provided filter argument to `scan_directory`.
+        Test that `list_items` forwards provided filter argument to
+        `scan_directory`.
 
-        Uses a mock for `scan_directory` to confirm it is invoked with the same
-        filter string passed to `list_items`.
+        Uses mock `scan_directory` to confirm it receives filter string given to
+        `list_items`.
         """
 
         source = S3ItemSource('my-bucket')
@@ -217,9 +238,10 @@ class TestListItems(unittest.TestCase):
 
     def test_GIVEN_no_filter_THEN_pass_empty_string_into_scan_directory(self):
         """
-        Test that `list_items` calls `scan_directory` with an empty string when no filter is given.
+        Test that `list_items` calls `scan_directory` with empty string when no
+        filter is given.
 
-        Ensures default behavior when no subpath or filter is provided.
+        Ensures default behaviour when no subpath or filter is provided.
         """
 
         source = S3ItemSource('my-bucket')

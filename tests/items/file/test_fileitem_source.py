@@ -14,7 +14,7 @@ def stub_join(path):
 
 class TestFileItemSource(unittest.TestCase):
     """
-    Unit tests the `FileItemSource` class.
+    Unit tests for `FileItemSource` class.
 
     Verify file and directory behavior for building item trees and creating
     `FileItem` instances based on local filesystem paths.
@@ -24,7 +24,8 @@ class TestFileItemSource(unittest.TestCase):
     @patch('os.listdir')
     def test_list_items_GIVEN_no_subpath_THEN_checks_dir(self, listdir, path):
         """
-        Test that `list_items` checks the base directory when no subpath is provided.
+        Test that `list_items` checks base directory when no subpath is
+        provided.
 
         Parameters:
         -----------

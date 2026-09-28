@@ -20,7 +20,7 @@ source = FileItemSource('/tmp')
 
 def make_entry(subpath='somepath', annotations=None):
     """
-    Create mock FileItem representing an .h5ad file.
+    Create mock FileItem representing .h5ad file.
 
     Parameters:
     -----------
@@ -51,8 +51,8 @@ class TestRenderEntry(unittest.TestCase):
     different subpath formats (slashes at start/end).
 
     Ensure that paths with varying leading and trailing slashes in subpath are
-    normalized correctly, resulting in a consistent URL with exactly one slash
-    separating components.
+    normalised, giving consistent URL with exactly one slash separating
+    components.
     """
 
     def setUp(self):
@@ -60,7 +60,7 @@ class TestRenderEntry(unittest.TestCase):
         Set up Flask request context needed by rendering helpers.
 
         render_item and render_annotation build URLs with url_for, which
-        requires an application context.
+        requires application context.
 
         Returns:
         --------
@@ -93,7 +93,7 @@ class TestRenderEntry(unittest.TestCase):
 
     def test_GIVEN_path_starts_slash_THEN_view_has_single_slash(self):
         """
-        Test rendering when subpath starts with a leading slash only.
+        Test rendering when subpath has leading slash only.
         """
 
         entry = make_entry(subpath='/somepath')
@@ -102,7 +102,7 @@ class TestRenderEntry(unittest.TestCase):
 
     def test_GIVEN_path_ends_slash_THEN_view_has_single_slash(self):
         """
-        Test rendering when subpath ends with a trailing slash only.
+        Test rendering when subpath has trailing slash only.
         """
 
         entry = make_entry(subpath='somepath/')
@@ -129,10 +129,10 @@ class TestRenderAnnotation(unittest.TestCase):
 
     def setUp(self):
         """
-        Set up the Flask request context the rendering helpers need.
+        Set up Flask request context for annotation rendering tests.
 
         render_item and render_annotation build URLs with url_for, which
-        requires an application context.
+        requires application context.
 
         Returns:
         --------
@@ -213,8 +213,8 @@ class TestRenderItemSource(unittest.TestCase):
     """
     Unit tests for `render_item_source` function.
 
-    Verify that rendered HTML output for a given `ItemSource` includes correct
-    headings and structure based on provided filter and source name.
+    Verify that rendered HTML for given `ItemSource` includes correct headings
+    and structure based on provided filter and source name.
     """
 
     @patch('cellxgene_gateway.items.file.fileitem_source.FileItemSource')
@@ -243,15 +243,15 @@ class TestRenderItemTree(unittest.TestCase):
     """
     Unit tests for `render_item_tree` function.
 
-    Verifies correct rendering of nested file and directory structures into HTML,
-    based on `ItemTree` and the behavior of associated item sources.
+    Verifies correct rendering of nested file and directory structures into
+    HTML, based on `ItemTree` and behaviour of associated item sources.
     """
 
     def setUp(self):
         """
-        Set up Flask test client and application context.
+        Set up Flask test client and application context for tree rendering.
 
-        Executed before each test to initialize Flask `test_request_context` and
+        Executed before each test to initialise Flask `test_request_context` and
         client used for simulating requests.
         """
 

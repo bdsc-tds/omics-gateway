@@ -20,7 +20,7 @@ key = CacheKey(
 class TestPruneProcessCache(unittest.TestCase):
     """
     Unit tests for `PruneProcessCache`, which handles removing expired entries
-    from backend cache based on a configured expiration time.
+    from backend cache based on configured expiration time.
 
     Ensure that only expired entries are pruned and non-expired entries are
     preserved.
@@ -35,14 +35,14 @@ class TestPruneProcessCache(unittest.TestCase):
         Test pruning logic when cache contains both expired and active entries.
 
         Ensures that:
-        - Entries older than `expire_seconds` are removed from the cache.
+        - Entries older than `expire_seconds` are removed from cache.
         - Non-expired entries remain.
         - Expired entries have their `terminate()` method called.
 
         Parameters:
         -----------
         old: Mocked CacheEntry
-            Represents expired cache entry with timestamp far in the past.
+            Represents expired cache entry with timestamp far in past.
 
         new: Mocked CacheEntry
             Represents recent (non-expired) cache entry.

@@ -36,8 +36,8 @@ def _environ_without(unset, **overrides):
 
 class EnvReloadCase(unittest.TestCase):
     """
-    Base case for tests that need env.py re-evaluated under a different
-    environment. env.py reads os.environ at import time, so changing a variable
+    Base case for tests that need env.py re-evaluated under different
+    environment. env.py reads os.environ at import time, so changing variable
     afterwards has no effect until module is reloaded.
     """
 
@@ -206,7 +206,7 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         """
         Test that no consumer invents data directory when variable is unset.
         Loader coerces None to '' because its path joins would otherwise raise
-        TypeError into an exception handler that hides it.
+        TypeError into exception handler that hides it.
         """
         self.reload_env(unset=['CELLXGENE_DATA'])
         self.assertIsNone(env.cellxgene_data)
@@ -259,7 +259,7 @@ class TestSpatialMetricsFlag(EnvReloadCase):
 class TestDataPathRoutes(EnvReloadCase):
     """
     Guard routes that serve files off disk. These previously 404'd because
-    Flask resolves a relative directory against package directory rather than
+    Flask resolves relative directory against package directory rather than
     working directory, and nothing covered them.
     """
 

@@ -10,14 +10,14 @@ class TestExtraScripts(unittest.TestCase):
     """
     Unit tests for `get_extra_scripts` function.
 
-    Validate how different values of the `GATEWAY_EXTRA_SCRIPTS` environment
+    Validate how different values of `GATEWAY_EXTRA_SCRIPTS` environment
     variable are parsed and handled.
     """
 
     @patch('cellxgene_gateway.env.extra_scripts', new='["abc","def"]')
     def test_GIVEN_two_scripts_THEN_returns_two_strings(self):
         """
-        Test that two scripts in a valid JSON string are parsed into a list of
+        Test that two scripts in valid JSON string are parsed into list of
         strings.
 
         Environment:
@@ -34,7 +34,7 @@ class TestExtraScripts(unittest.TestCase):
     @patch('cellxgene_gateway.env.extra_scripts', new='["abc", "def"]')
     def test_GIVEN_two_scripts_space_THEN_returns_two_strings(self):
         """
-        Test that two scripts in a JSON string with spaces are correctly parsed.
+        Test that two scripts in JSON string with spaces are correctly parsed.
 
         Environment:
         ------------
