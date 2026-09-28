@@ -1,51 +1,30 @@
-# Overview
+# Cellxgene Gateway
 
 Cellxgene Gateway allows you to use the Cellxgene Server provided by the Chan Zuckerberg Institute (https://github.com/chanzuckerberg/cellxgene) with multiple datasets. It displays an index of available h5ad (anndata) files. When a user clicks on a file name, it launches a Cellxgene Server instance that loads that particular data file and once it is available  proxies requests to that server.
 
-# Running locally
+This repository is the SSF BioHub fork of [Novartis/cellxgene-gateway](https://github.com/Novartis/cellxgene-gateway). It also serves spatial datasets (`.zarr` SpatialData stores), which open in a self-hosted [Vitessce](https://vitessce.io) viewer that runs entirely in the browser (see [Rebuilding the spatial viewer](#rebuilding-the-spatial-viewer)).
 
-## Prequisites
+## Installing
 
-1. This project requires python 3.6 or higher. Please check your version with
+### Prerequisites
 
-```bash
-$ python --version
-```
+A conda installation, for example [Miniforge](https://github.com/conda-forge/miniforge). `deploy/setup.sh` creates the `cellxgateway` environment with everything else the gateway needs.
 
-2. It is also a good idea to set up a venv
+### Installing from a fresh clone
 
 ```bash
-python -m venv .cellxgene-gateway
-source .cellxgene-gateway/bin/activate  # Type `deactivate` to deactivate venv
+git clone https://github.com/bdsc-tds/cellxgene-gateway.git
+cd cellxgene-gateway
+./deploy/setup.sh
 ```
 
-## Install cellxgene-gateway
+`deploy/setup.sh` creates the `cellxgateway` conda env from `deploy/cellxgateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
-Clone this repository and run `./deploy/setup.sh`, as described in [Deploying from a fresh clone](#deploying-from-a-fresh-clone).
+Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
 
-## Running cellxgene gateway
+## Configuring
 
-1. Prepare a folder with .h5ad files, for example
-
-```bash
-mkdir ../cellxgene_data
-wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../cellxgene_data/pbmc3k.h5ad
-```
-
-2. Set your environment variables correctly:
-
-```bash
-export CELLXGENE_DATA=../cellxgene_data  # Change this if you put data in a different place
-export CELLXGENE_LOCATION=`which cellxgene`
-```
-
-3. Now, execute the cellxgene gateway:
-
-```bash
-cellxgene-gateway
-```
-
-Here's what the environment variables mean:
+The gateway is configured through environment variables:
 
 * `CELLXGENE_LOCATION` - the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
 
@@ -77,22 +56,9 @@ If any of the following optional variables are set, [ProxyFix](https://werkzeug.
 * `PROXY_FIX_PORT` - Number of upstream proxies setting X-Forwarded-Port
 * `PROXY_FIX_PREFIX` - Number of upstream proxies setting X-Forwarded-Prefix
 
-The defaults should be fine if you set up a conda env/venv and cellxgene_data folder as above.
+## Running the gateway
 
-## Deploying from a fresh clone
-
-```bash
-git clone <repo-url> && cd cellxgene-gateway
-./deploy/setup.sh
-```
-
-`deploy/setup.sh` creates the `cellxgateway` conda env from `deploy/cellxgateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
-
-Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
-
-nginx and TLS are host-specific and are not covered here. For systemd, adapt `deploy/cellxgateway.service.example` by editing the paths and `User=` for the host.
-
-## Running cellxgene gateway
+### With gunicorn
 
 Use the gunicorn start script:
 
@@ -108,97 +74,88 @@ CELLXGENE_DATA=/path/to/data ( ./start_gunicorn.sh )
 
 In production the script runs under a systemd service, which can override settings with `Environment=` directives.
 
-# Customization
+nginx and TLS are host-specific and are not covered here. For systemd, adapt `deploy/cellxgateway.service.example` by editing the paths and `User=` for the host.
 
-The current paradigm for customization is to modify files during a build or deployment phase:
+### Ad hoc, for development
 
-* To modify CSS or JS on particular gateway pages, overwrite or append to the templates
-* To add script tags such as for user analytics to all pages, set GATEWAY_EXTRA_SCRIPTS
-  * these scripts will also be run on the pages served by cellxgene server via the --scripts parameter
-  * See https://github.com/chanzuckerberg/cellxgene/pull/680 for details on --scripts parameter
-
-Currently we use a bash script that copies the gateway to a "build" directory before modifying templates with sed and the like. There is probably a better way.
-
-# Development
-
-We’re actively developing.  Please see the "future work" section of the [wiki](https://github.com/Novartis/cellxgene-gateway/wiki#future-work). If you’re interested in being a contributor please reach out to [@alokito](https://github.com/alokito).
-
-## Developer Install
-
-If you want to develop the code, you will need to clone the repo. Make sure you have the prequesite listed above, then:
-
-1. Clone the repo
+1. Prepare a folder with .h5ad files, for example
 
 ```bash
-git clone https://github.com/bdsc-tds/cellxgene-gateway.git
-cd cellxgene-gateway
+mkdir ../cellxgene_data
+wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../cellxgene_data/pbmc3k.h5ad
 ```
 
-2. Install requirements with
+2. In the activated environment (`conda activate cellxgateway`), set the required environment variables (see [Configuring](#configuring)):
 
 ```bash
-pip install -r requirements.txt
+export CELLXGENE_DATA=../cellxgene_data  # Change this if you put data in a different place
+export CELLXGENE_LOCATION=`which cellxgene`
 ```
 
-3. Install the gateway in developer mode
+3. Now, execute the cellxgene gateway:
 
 ```bash
-python setup.py develop
+cellxgene-gateway
 ```
 
-For convenience, the code repo includes a `run.sh.example` shell script to run the gateway.
+## Updating
 
-4. Install pre-commit hooks
+Pull the changes:
 
 ```bash
-conda install -c conda-forge pre-commit
-pre-commit install
+git stash  # Stash local changes if needed
+git pull
+git stash pop  # Reapply stashed changes if needed
 ```
 
-## Running Tests
+Then restart the gateway, for example with `sudo systemctl restart cellxgateway` under systemd. The repository is installed in editable mode, so the restart picks up code changes. `deploy/setup.sh` leaves an existing environment alone, so if `deploy/cellxgateway_env.yaml` changed, remove the environment with `conda env remove -n cellxgateway` and re-run `./deploy/setup.sh`.
+
+## Development
+
+### Running tests
 
 ```bash
-python -m unittest discover tests
+conda run -n cellxgateway python -m unittest discover tests
 ```
 
-## Code Coverage
-```bash
-coverage run -m unittest discover tests
-coverage html
-```
+### Linting
 
-## Running Linters
-
-pip install isort flake8 black
+Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.toml`. Ruff is not part of the `cellxgateway` environment, so run it from any environment that has it:
 
 ```bash
-isort -rc . # rc means recursive, and was deprecated in dev version of isort
-black .
+ruff check .
+ruff format --check .
 ```
 
-# Getting Help
+### Rebuilding the spatial viewer
 
-If you need help for any reason, please make a github ticket. One of the contributors should help you out.
+Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript application that runs entirely in the visitor's browser: the gateway only serves files. Browsers cannot load npm packages directly, so [Vite](https://vite.dev) builds Vitessce and its dependencies into plain JavaScript files in `cellxgene_gateway/static/vitessce/`, which `cellxgene_gateway/templates/spatial_viewer.html` loads. The build inputs live in `spatial_viewer_src/`:
 
-# Releasing New Versions
+* `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
+* `vite.config.js`: build settings (output directory, browser shims for Node globals)
+* `package.json` and `package-lock.json`: the npm packages, pinned to exact versions
+* `viewer_build_env.yaml`: the conda environment providing Node
 
-## How to prepare for release
+The built files are committed, so deployment needs neither Node nor a build step, and no CDN is contacted at runtime. Rebuild only after upgrading Vitessce or editing `main.js` or `vite.config.js`:
 
-- Update Changelog.md and version number in __init__.py
-- Cut a release on github
-    - Go to your project homepage on GitHub
-    - On right side, you will see [Releases](https://github.com/Novartis/cellxgene-gateway/releases) link. Click on it.
-    - Click on Draft a new release
-    - Fill in all the details
-        - Tag version should be the version number of your package release
-        - Release Title can be anything you want, but we use v0.3.11 (the same as the tag to be created on publish)
-        - Description should be changelog
-    - Click Publish release at the bottom of the page
-    - Now under Releases you can view all of your releases.
-    - Copy the download link (tar.gz) and save it somewhere
+```bash
+conda env create -f spatial_viewer_src/viewer_build_env.yaml   # once
+cd spatial_viewer_src
+conda run -n viewer-build npm ci          # installs the locked packages into node_modules/ (about 1.8 GB)
+conda run -n viewer-build npm run build   # replaces the contents of ../cellxgene_gateway/static/vitessce/
+rm -rf node_modules                       # optional, frees the disk space
+```
 
-# Contributors
+The build is reproducible: rebuilding unchanged sources gives identical files. To upgrade Vitessce, run `conda run -n viewer-build npm install --save-exact vitessce@<version>` in `spatial_viewer_src/`, which updates `package.json` and `package-lock.json`, then build as above, update the version in `CREDITS.md`, and commit the sources and the built files together.
 
-* Niket Patel - https://github.com/NiketPatel9
-* Alok Saldanha - https://github.com/alokito
-* Yohann Potier - https://github.com/ypotier
+`spatial-viewer.js` keeps a fixed name, so it must be served with revalidation rather than long-term caching; the other built files have content hashes in their names and can be cached indefinitely.
+
+`spatial_viewer.html` also adjusts the viewer at runtime with CSS and scripts (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
+
+## Getting help
+
+If you run into a problem or have a question, please open an issue on [GitHub](https://github.com/bdsc-tds/cellxgene-gateway/issues), describing what you did, what you expected and what happened instead.
+
+## Contributing and Code of Conduct
+
+Interested in contributing? Pull requests are welcome! Check out the [contributing guidelines](CONTRIBUTING.md). Please note that this project is released with a [Contributor Code of Conduct](CONDUCT.md). By contributing to this project, you agree to abide by its terms.
