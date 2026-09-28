@@ -71,14 +71,8 @@ const CARD_CHROME = [12, 44];
 const REFERENCE_PANEL = [800, 450];
 const FIT_MARGIN = 0.95;
 
-/**
- * Refit generator's initial spatial zoom to real panel size.
- *
- * Generator fits image to fixed 800x450 panel and centres view on image, so
- * its target is half image size. Panel size depends on window, known only
- * here. Configs whose zoom differs from that reference fit (e.g. headless
- * probe framing) are left alone.
- */
+// Refit generator's zoom (800x450 panel, centred on image, so target is half
+// image size) to real panel; other zooms, e.g. headless probe's, are kept.
 function fitSpatialZoom(config, width, height) {
   const layout = config.layout || [];
   const view = layout.find((v) => v.component === 'spatialBeta');
