@@ -345,8 +345,8 @@
                 {% if dataset.file_path %}
                 <div class="action-btn-stack">
                   {% if dataset.is_spatial %}
-                  {# urlencode: URLSearchParams decodes '+' to a space, which
-                  would silently corrupt a stem containing one #}
+                  {# urlencode: URLSearchParams decodes '+' to space, which would silently
+                  corrupt stem containing one #}
                   <a href="/spatial-viewer?config={{ dataset.spatial_config|urlencode }}"
                     target="_blank" rel="noopener noreferrer"
                     class="btn btn-primary btn-sm">Explore (Spatial)</a>

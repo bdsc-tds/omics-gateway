@@ -149,7 +149,7 @@ handles */
   z-index: 0;
 }
 
-/* Filled track style class: blue segment between the two handles */
+/* Filled track style class: blue segment between both handles */
 .dual-range-track {
   position: absolute;
   height: 4px;

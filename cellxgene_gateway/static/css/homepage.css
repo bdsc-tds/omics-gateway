@@ -60,7 +60,7 @@ main.main-content {
   color: white;
   /* Background image for section */
   background-image: url('/static/cell.jpg');
-  /* Ensures image covers the entire section */
+  /* Ensures image covers entire section */
   background-size: cover;
   /* Centers image */
   background-position: center;

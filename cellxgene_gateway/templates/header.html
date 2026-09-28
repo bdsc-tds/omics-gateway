@@ -1,9 +1,8 @@
 <!-- Header used in all website pages -->
 <link rel="icon" type="image/png"
   href="{{ url_for('static', filename='favicon.png') }}" />
-<!-- Vendored locally: no third-party CDN is contacted at runtime. Filenames
-  carry version so they can be cached indefinitely. Popper must load before
-  Bootstrap, which needs it for dropdowns. -->
+<!-- Vendored: no third-party CDN at runtime; versioned filenames cache
+  forever. Popper loads before Bootstrap, whose dropdowns need it. -->
 <link rel="stylesheet"
   href="{{ url_for('static', filename='vendor/bootstrap-5.3.3.min.css') }}" />
 <script

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Check current visibility state before toggling
     const isHidden = sidebarCol.classList.contains('d-none')
 
-    // Show/hide the sidebar
+    // Show/hide sidebar
     sidebarCol.classList.toggle('d-none')
     // Expand main content when sidebar is hidden
     mainContent.classList.toggle('full-width', !isHidden)

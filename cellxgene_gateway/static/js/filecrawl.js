@@ -15,7 +15,7 @@ function formatBytes(bytes) {
 const selectedDiseases = new Set()
 const selectedTissues = new Set()
 
-// Renders selected value tags below a dropdown, each with × (remove) button
+// Renders selected value tags below dropdown, each with × (remove) button
 function renderTags(container, selectedSet, field) {
   container.innerHTML = ''
   selectedSet.forEach((val) => {
@@ -195,9 +195,8 @@ function submitFilters(e) {
 
 // Table sort
 
-// Add click-to-sort to all th[data-sort] columns: cycles asc → desc → original
-// order, sort numerically or lexicographically, and pushe NA/empty values to
-// the bottom
+// Click-to-sort on th[data-sort] columns: cycles asc → desc → original order,
+// sorts numerically or lexically, and pushes NA/empty values to bottom
 function initTableSort() {
   const tbody = document.querySelector('.table tbody')
   const ths = document.querySelectorAll('th[data-sort]')

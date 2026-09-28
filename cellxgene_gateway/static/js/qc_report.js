@@ -2,7 +2,7 @@
 // for QC report page
 
 (function () {
-  // Tab URL sync: update hash when a tab is activated, restore on page load
+  // Tab URL sync: update hash when tab activates, restore on page load
   const tabButtons = document.querySelectorAll('#qcTabs .nav-link');
 
   tabButtons.forEach(function (btn) {
@@ -64,7 +64,7 @@
     document.body.style.overflow = '';
   }
 
-  // Navigate to a given index, resetting zoom each time
+  // Navigate to given index, resetting zoom each time
   function showImage(index) {
     current = (index + gallery.length) % gallery.length;
     lbImg.src = gallery[current].dataset.src;
@@ -114,7 +114,7 @@
   btnPrev.addEventListener('click', () => showImage(current - 1));
   btnNext.addEventListener('click', () => showImage(current + 1));
 
-  // Close lightbox on backdrop click (click on overlay but not the image)
+  // Close lightbox on backdrop click (overlay, not image)
   lightbox.addEventListener('click', function (e) {
     if (e.target === lightbox) closeLightbox();
   });
