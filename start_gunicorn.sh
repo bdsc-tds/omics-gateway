@@ -48,6 +48,13 @@ if [ ! -x "$CELLXGENE_LOCATION" ]; then
     exit 1
 fi
 
+# Check data directory exists: gateway only checks it is set, on first request
+if [ ! -d "$CELLXGENE_DATA" ]; then
+    echo "Error: data directory not found at $CELLXGENE_DATA"
+    echo "Set CELLXGENE_DATA, or create $SCRIPT_DIR/data (deploy/setup.sh does)"
+    exit 1
+fi
+
 # Gunicorn config: one worker, since each keeps own in-memory cache and peers
 # 404 on its datasets (https://github.com/Novartis/cellxgene-gateway/pull/99)
 WORKERS=${GUNICORN_WORKERS:-1}
