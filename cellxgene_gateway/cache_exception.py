@@ -16,7 +16,7 @@ class CacheException(Exception):
 
     def __init__(self, message, http_status, context=None, filename=None):
         """
-        Initialise CacheException with a message and an HTTP status.
+        Initialise CacheException with message and HTTP status.
 
         Parameters:
         -----------
@@ -27,10 +27,10 @@ class CacheException(Exception):
           HTTP status code related to exception.
 
         context: str or None
-          Optional hint for the error template (e.g. 'download').
+          Optional hint for error template (e.g. 'download').
 
         filename: str or None
-          Optional filename that caused the error, for display in template.
+          Optional filename that caused error, for display in template.
 
         Returns:
         --------

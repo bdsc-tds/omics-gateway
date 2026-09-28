@@ -19,7 +19,7 @@ from cellxgene_gateway.cache_key import CacheKey
 
 def render_annotations(item, item_source):
     """
-    Render HTML link for annotations associated with a given item
+    Render HTML link for annotations associated with given item
 
     Parameters:
     -----------
@@ -32,7 +32,7 @@ def render_annotations(item, item_source):
     Returns:
     --------
     str
-      HTML string with annotation links, or an empty string if annotations are
+      HTML string with annotation links, or empty string if annotations are
       disabled.
     """
     if not env.enable_annotations:
@@ -55,7 +55,7 @@ def render_annotations(item, item_source):
 
 def render_item(item, item_source):
     """
-    Render HTML link item for a dataset item with annotations.
+    Render HTML link item for dataset item with annotations.
 
     Parameters:
     -----------
@@ -76,7 +76,7 @@ def render_item(item, item_source):
 
 def render_item_tree(item_tree, item_source):
     """
-    Render a hierarchical HTML tree of dataset items and subfolders.
+    Render hierarchical HTML tree of dataset items and subfolders.
 
     Parameters:
     -----------

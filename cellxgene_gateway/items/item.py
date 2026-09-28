@@ -20,10 +20,10 @@ class ItemType(Enum):
     Members:
     --------
     annotation: str
-      Represents an annotation file.
+      Represents annotation file.
 
     h5ad: str
-      Represents an h5ad dataset file.
+      Represents h5ad dataset file.
     """
 
     annotation = 'annotation'

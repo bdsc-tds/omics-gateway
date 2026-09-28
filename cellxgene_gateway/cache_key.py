@@ -188,7 +188,7 @@ class CacheKey:
         Parameters:
         -----------
         source: ItemSource
-          Source associated with the cache key.
+          Source associated with cache key.
 
         lookup: LookupResult
           Lookup result containing h5ad item and optional annotation item.

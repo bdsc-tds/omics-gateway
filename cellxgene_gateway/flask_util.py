@@ -22,7 +22,7 @@ def querystring():
     Returns:
     --------
     str
-      Decoded query string with "?" prefix, or an empty string if none.
+      Decoded query string with "?" prefix, or empty string if none.
     """
     qs = request.query_string.decode()
     return f'?{qs}' if len(qs) > 0 else ''

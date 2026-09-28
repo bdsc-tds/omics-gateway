@@ -116,7 +116,7 @@ def set_static_cache_headers(resp):
     """
     Mark content-addressed static assets as immutable so browsers stop
     revalidating them on every page load. Flask otherwise sends `no-cache`,
-    which costs a round trip per file, and Vitessce bundle alone is 29 files.
+    costing one round trip per file, and Vitessce bundle alone is 29 files.
 
     Parameters:
     -----------
@@ -126,7 +126,7 @@ def set_static_cache_headers(resp):
     Returns:
     --------
     resp: flask.Response
-      Response with a long-lived Cache-Control header where applicable.
+      Response with long-lived Cache-Control header where applicable.
     """
     path = request.path
     is_versioned = path.startswith('/static/vendor/') or (
@@ -207,8 +207,8 @@ def initialise_data_sources():
     Initialise data sources from environment variables.
 
     Reads CELLXGENE_DATA and CELLXGENE_BUCKET to set up local file and S3
-    item sources. Called lazily on the first WSGI request so Gunicorn workers
-    can import the module without triggering side effects at import time.
+    item sources. Called lazily on first WSGI request so Gunicorn workers can
+    import module without triggering side effects at import time.
 
     Returns:
     --------
@@ -360,13 +360,13 @@ def robots():
 @app.route('/view/static/<path:path>')
 def view_static(path):
     """
-    Proxy static asset requests that land at /view/static/ back to a running
+    Proxy static asset requests landing at /view/static/ back to running
     cellxgene instance.
 
-    Cellxgene's JS bundle references assets with a '../' prefix, so from a page
-    at /view/<dataset>/ the browser resolves them to /view/static/. These assets
-    (e.g. the logo PNG) are bundled with cellxgene, not with the gateway, so we
-    forward the request to any loaded cellxgene process.
+    Cellxgene's JS bundle references assets with '../' prefix, so from page at
+    /view/<dataset>/ browser resolves them to /view/static/. These assets (e.g.
+    logo PNG) ship with cellxgene, not gateway, so request is forwarded to any
+    loaded cellxgene process.
 
     Returns:
     --------
@@ -452,6 +452,21 @@ def filecrawl(path=None):
 
         # Parse integer, falling back to default when missing or invalid
         def _safe_int(val, default):
+            """
+            Parse integer from query-string value, falling back on failure.
+
+            Parameters:
+            -----------
+            val: str or None
+              Raw query-string value.
+            default: int
+              Value returned when val is missing or not integer.
+
+            Returns:
+            --------
+            parsed: int
+              Parsed integer, or default.
+            """
             try:
                 return int(val)
             except (TypeError, ValueError):
@@ -498,7 +513,7 @@ def filecrawl(path=None):
 
         def _in_range(raw_val, lo, hi, lo_active, hi_active):
             """
-            Return True if the value is within [lo, hi], skipping if empty.
+            Return True if value is within [lo, hi], skipping if empty.
             """
             if not raw_val:
                 return True  # Missing value always passes through
@@ -671,10 +686,10 @@ def matching_source(source_name):
 @app.route('/view/<path:path>', methods=['GET', 'PUT', 'POST'])
 def do_view(path, source_name=None):
     """
-    Proxy requests to a running cellxgene instance serving given dataset.
+    Proxy requests to running cellxgene instance serving given dataset.
 
-    Looks up or launches a cellxgene process for dataset, then proxies request
-    to it. Creates a new cache entry if none exists for key.
+    Looks up or launches cellxgene process for dataset, then proxies request to
+    it. Creates new cache entry if none exists for key.
 
     Parameters:
     -----------
@@ -686,8 +701,8 @@ def do_view(path, source_name=None):
     Returns:
     --------
     flask.Response
-      Proxied response from cellxgene process, or a loading page if the process
-      is still starting up.
+      Proxied response from cellxgene process, or loading page while process is
+      still starting up.
     """
 
     source = matching_source(source_name)
@@ -750,12 +765,12 @@ def do_instances():
 @app.route('/instances.json', methods=['GET'])
 def do_instances_json():
     """
-    Return cache status information as a JSON response.
+    Return cache status information as JSON response.
 
     Returns:
     --------
     str
-      JSON-encoded object with gateway launchtime and a list of active cache
+      JSON-encoded object with gateway launchtime and list of active cache
       entries, each including dataset path, annotation file, status, and
       timestamps.
     """
@@ -781,7 +796,7 @@ def do_instances_json():
 
 def get_cache_key(path):
     """
-    Build a CacheKey for given path using source from request args.
+    Build CacheKey for given path using source from request args.
 
     Parameters:
     -----------
@@ -808,7 +823,7 @@ def get_cache_key(path):
 @app.route('/relaunch/<path:path>', methods=['GET'])
 def do_relaunch(path):
     """
-    Terminate any existing process for a dataset and redirect to relaunch.
+    Terminate any existing process for dataset and redirect to relaunch.
 
     Parameters:
     -----------
@@ -832,7 +847,7 @@ def do_relaunch(path):
 @app.route('/terminate/<path:path>', methods=['GET'])
 def do_terminate(path):
     """
-    Terminate process serving a dataset and redirect to cache status page.
+    Terminate process serving dataset and redirect to cache status page.
 
     Parameters:
     -----------
@@ -856,7 +871,7 @@ def do_terminate(path):
 @app.route('/terminate-back/<path:path>', methods=['GET'])
 def do_terminate_back(path):
     """
-    Terminate process serving a dataset and redirect to filecrawl page.
+    Terminate process serving dataset and redirect to filecrawl page.
 
     Parameters:
     -----------
@@ -880,7 +895,7 @@ def do_terminate_back(path):
 @app.route('/metadata/ip_address', methods=['GET'])
 def ip_address():
     """
-    Return configured gateway IP address as a plain-text response.
+    Return configured gateway IP address as plain-text response.
 
     Returns:
     --------
@@ -1028,7 +1043,7 @@ _ROW_DEFS = {
 
 def _arrange_into_rows(imgs, step_key):
     """
-    Function to arrange a flat list of image paths into labelled thematic rows.
+    Function to arrange flat list of image paths into labelled thematic rows.
 
     Parameters:
     -----------
@@ -1042,7 +1057,7 @@ def _arrange_into_rows(imgs, step_key):
     rows: list of dicts
       Each dict has 'label' (str or None) and 'imgs' (list of dicts with
       'path' and 'title' keys). Figures not matched by any row definition are
-      appended in a final unlabelled row.
+      appended in final unlabelled row.
     """
     if not imgs:
         return []
@@ -1135,7 +1150,7 @@ def _annotate_per_sample(per_sample):
 
 def _walk_images(root_path, qc_dir):
     """
-    Walk a directory tree and return combined and per-sample image lists.
+    Walk directory tree and return combined and per-sample image lists.
 
     Parameters:
     -----------
@@ -1147,11 +1162,11 @@ def _walk_images(root_path, qc_dir):
     Returns:
     --------
     (combined_imgs, per_sample, group_label): tuple
-      combined_imgs is a sorted list of relative image paths.
-      per_sample is an ordered dict mapping sample/dataset id to list of
-      relative paths.
-      group_label is 'Sample' or 'Dataset', depending on which grouping was
-      detected in the walked paths.
+      combined_imgs: sorted list of relative image paths.
+      per_sample: ordered dict mapping sample/dataset id to list of relative
+      paths.
+      group_label: 'Sample' or 'Dataset', depending on grouping detected in
+      walked paths.
     """
     combined_imgs = []
     per_sample = {}
@@ -1187,12 +1202,12 @@ def _walk_images(root_path, qc_dir):
 @app.route('/qc/<dataset_id>')
 def qc_report(dataset_id):
     """
-    Render QC report page for a dataset.
+    Render QC report page for dataset.
 
     Parameters:
     -----------
     dataset_id: str
-      Dataset identifier matching a subfolder in QC base directory.
+      Dataset identifier matching subfolder in QC base directory.
 
     Returns:
     --------
@@ -1412,7 +1427,7 @@ def download_file(filename):
     Returns:
     --------
     Response
-      Requested file if valid and exists, or an error response.
+      Requested file if valid and existing, or error response.
     """
 
     # Security: only allow .h5ad files
@@ -1569,8 +1584,8 @@ def start_pruner_thread():
     """
     Start background thread that prunes expired cellxgene processes.
 
-    Thread is started as a daemon so it does not block interpreter shutdown when
-    main thread exits (e.g. on Ctrl-C). This avoids "Exception ignored in:
+    Thread runs as daemon so it does not block interpreter shutdown when main
+    thread exits (e.g. on Ctrl-C), avoiding "Exception ignored in:
     <module 'threading'...>" at exit.
 
     Returns:

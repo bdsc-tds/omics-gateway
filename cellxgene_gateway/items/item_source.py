@@ -49,7 +49,7 @@ class ItemSource(ABC):
     @abstractmethod
     def list_items(self, filter: str | None = None) -> list[Item]:
         """
-        List all items, optionally filtered by a string.
+        List all items, optionally filtered by string.
 
         Parameters:
         -----------
@@ -163,7 +163,7 @@ class ItemSource(ABC):
         Parameters:
         -----------
         descriptor: str
-          Descriptor such as URI or ID representing a resource.
+          Descriptor such as URI or ID representing resource.
 
         Returns:
         --------
@@ -208,5 +208,5 @@ class ItemSource(ABC):
         Returns:
         --------
         None
-          Need to be implemented by a subclass.
+          Must be implemented by subclass.
         """

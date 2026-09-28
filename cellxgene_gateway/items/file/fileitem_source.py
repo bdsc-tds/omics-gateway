@@ -115,7 +115,7 @@ class FileItemSource(ItemSource):
         Returns:
         --------
         bool
-          True if path ends with .h5ad and is a file, otherwise False.
+          True if path ends with .h5ad and points to file, otherwise False.
         """
 
         return path.endswith(self.h5ad_suffix) and os.path.isfile(path)
@@ -173,7 +173,7 @@ class FileItemSource(ItemSource):
 
     def get_annotations_subpath(self, item) -> str:
         """
-        Get relative subpath where annotations are stored for an item.
+        Get relative subpath where annotations are stored for item.
 
         Parameters:
         -----------
@@ -241,8 +241,8 @@ class FileItemSource(ItemSource):
 
         def is_annotation_dir(dir):
             """
-            Check if directory is annotation directory with corresponding
-            .h5ad file.
+            Check if local directory is annotation directory with matching .h5ad
+            file.
 
             Parameters:
             -----------
@@ -312,7 +312,7 @@ class FileItemSource(ItemSource):
 
     def update(self, item: FileItem) -> None:
         """
-        Update an item. Currently no-op for file-based sources.
+        Update item; currently no-op for file-based sources.
 
         Parameters:
         -----------
@@ -419,7 +419,7 @@ class FileItemSource(ItemSource):
           File path descriptor.
 
         is_annotation: bool, optional
-          Whether file is an annotation.
+          Whether file is annotation file.
 
         Returns:
         --------
@@ -449,7 +449,7 @@ class FileItemSource(ItemSource):
           Directory subpath.
 
         is_annotation: bool, optional
-          Whether file is an annotation.
+          Whether file is annotation file.
 
         is_shallow: bool, optional
           If True, do not populate annotations.

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # Function to find annotation files for given dataset file
 def find_annotations_for_file(file_path, data_dir):
     """
-    Find annotation files for a given dataset file.
+    Find annotation files for given dataset file.
 
     Parameters:
     -----------
@@ -117,7 +117,7 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
         data_dir = env.cellxgene_data or ''
 
     def _parse_multi(value):
-        """Split a semicolon-separated field into individual stripped values."""
+        """Split semicolon-separated field into individual stripped values."""
         if not value:
             return []
         return [v.strip() for v in value.split(';') if v.strip()]

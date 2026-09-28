@@ -102,7 +102,7 @@ optional_env_vars = {
 
 def validate():
     """
-    Check that all environment variables are properly set and raise an error if
+    Check that all environment variables are properly set and raise error if
     any are missing. Otherwise, confirm presence of required and optional
     environment variables in logs.
 

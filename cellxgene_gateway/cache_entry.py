@@ -152,7 +152,7 @@ class CacheEntry:
 
     def set_loaded(self, pid):
         """
-        Set cache entry status to 'loaded' and assign a process ID.
+        Set cache entry status to 'loaded' and assign process ID.
 
         Parameters:
         -----------
@@ -174,7 +174,7 @@ class CacheEntry:
         Parameters:
         -----------
         message: str
-          Error message describing the issue.
+          Error message describing issue.
 
         stderr: str
           Standard error output associated with error.

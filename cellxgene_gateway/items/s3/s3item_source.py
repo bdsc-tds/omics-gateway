@@ -296,13 +296,12 @@ class S3ItemSource(ItemSource):
 
         def is_annotation_dir(dir_s3key):
             """
-            Check if directory is annotation directory with corresponding
-            .h5ad file.
+            Check if S3 prefix is annotation directory with matching .h5ad file.
 
             Parameters:
             -----------
             dir_s3key: str
-              S3 key representing  directory to check.
+              S3 key representing directory to check.
 
             Returns:
             --------
@@ -366,7 +365,7 @@ class S3ItemSource(ItemSource):
 
     def update(self, item: S3Item) -> None:
         """
-        Update an item. Currently no-op for S3-based sources.
+        Update item; currently no-op for S3-based sources.
 
         Parameters:
         -----------
@@ -450,7 +449,7 @@ class S3ItemSource(ItemSource):
           S3 key.
 
         is_annotation: bool, optional
-          Whether item is an annotation.
+          Whether item is annotation file.
 
         Returns:
         --------
@@ -490,7 +489,7 @@ class S3ItemSource(ItemSource):
           S3 key (path within bucket).
 
         is_annotation: bool, optional
-          Whether item is an annotation.
+          Whether item is annotation file.
 
         is_shallow: bool, optional
           If True, annotations won't be loaded.

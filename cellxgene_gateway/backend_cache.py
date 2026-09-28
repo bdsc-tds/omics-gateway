@@ -27,7 +27,7 @@ process_backend = SubprocessBackend()
 
 def is_port_in_use(port):
     """
-    Check if a given port is already in use.
+    Check if given port is already in use.
 
     Parameters:
     -----------
@@ -50,7 +50,7 @@ class BackendCache:
 
     def __init__(self):
         """
-        Initialise BackendCache with an empty list of entries.
+        Initialise BackendCache with empty list of entries.
 
         Returns:
         --------
@@ -67,22 +67,21 @@ class BackendCache:
 
     def check_path(self, source, path):
         """
-        Check if given path matches any entry in cache for a specific source.
+        Check if given path matches any entry in cache for specific source.
 
         Parameters:
         -----------
         source: object
-          Represents source of the cache entry, typically containing metadata
-          such as name of the source
+          Source of cache entry, typically with metadata such as source name.
         path: str
-          Path to be checked against cache entries. It is used to determine if
-          it starts with the descriptor of any cache entry.
+          Path checked against cache entries, to find any entry whose descriptor
+          it starts with.
 
         Returns:
         --------
         CacheEntry, CacheException or None: object or None
-          Returns matching cache entry if one is found, raises an exception
-          if multiple matches are found, and returns None if no matches exist.
+          Matching cache entry if exactly one is found, or None if none match;
+          raises exception if several match.
         """
         contents = self.entry_list
         matches = [
@@ -105,19 +104,19 @@ class BackendCache:
 
     def check_entry(self, key):
         """
-        Check if specific key matches any entry in the cache.
+        Check if specific key matches any entry in cache.
 
         Parameters:
         -----------
         key: CacheKey
-          Key to be checked against cache entries. It typically contains metadata
-          such as source and descriptor of cache entry.
+          Key checked against cache entries, typically holding metadata such as
+          source and descriptor of cache entry.
 
         Returns:
         --------
         CacheEntry, CacheException or None: object or None
-          Returns matching cache entry if one is found, raises an exception
-          if multiple matches are found, and returns None if no matches exist.
+          Matching cache entry if exactly one is found, or None if none match;
+          raises exception if several match.
         """
         contents = self.entry_list
         matches = [
@@ -138,16 +137,16 @@ class BackendCache:
 
     def create_entry(self, key: CacheKey, scripts: list[str]):
         """
-        Create a new cache entry for a given key and a list of scripts. Finds an
-        available port, launches background thread to start process, and adds
-        new entry to cache.
+        Create new cache entry for given key and list of scripts. Finds free
+        port, launches background thread to start process, and adds new entry to
+        cache.
 
         Parameters:
         -----------
         key: CacheKey
           Unique key representing cache entry.
         scripts: List[str]
-          List of script paths to be executed as part of the backend process.
+          Script paths to execute as part of backend process.
 
         Returns:
         --------
@@ -173,12 +172,12 @@ class BackendCache:
 
     def prune(self, process):
         """
-        Remove a process from cache and terminate it.
+        Remove process from cache and terminate it.
 
         Parameters:
         -----------
         process: CacheEntry
-          Cache entry representing the process to be removed and terminated.
+          Cache entry of process to remove and terminate.
 
         Returns:
         --------

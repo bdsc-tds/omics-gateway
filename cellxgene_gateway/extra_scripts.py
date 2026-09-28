@@ -40,7 +40,7 @@ def get_extra_scripts():
     Array of script tags to inject on every page, e.g. google analytics could be
     ['https://www.googletagmanager.com/gtag/js?id=UA-123456-2',
     f"{env.external_protocol}://{env.external_host}/static/js/google_ua.js"]
-    where google_ua.js is a script you add to static/js folder prior to
+    where google_ua.js is script you add to static/js folder before
     deployment.
     """
 
