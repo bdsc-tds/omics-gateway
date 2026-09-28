@@ -4,8 +4,7 @@
 // on failure, so watch #root to tell which arrived
 (function() {
   var root = document.getElementById('root');
-  // Bootstrap's line-height and font resets inflate Vitessce's own rows
-  // until list footers overlap, so chrome's CSS goes when chrome does.
+  // Bootstrap resets inflate Vitessce's rows, so chrome's CSS leaves with it.
   // Collected before bundle runs, so only chrome's own links are taken
   var chromeStyles = Array.prototype.slice.call(document.querySelectorAll(
     'head link[rel="stylesheet"]:not([data-keep])'));
@@ -21,9 +20,8 @@
     return [];
   });
 
-  // Extra segmentations have different obsType from their layer, so viewer
-  // cannot find their data. Metric channel differs too but declares own
-  // featureType, which does resolve
+  // Extra segmentations' obsType differs from their layer's, so their data is
+  // not found; Metric's featureType does resolve
   function extraChannelTypes(config) {
     var space = config.coordinationSpace || {};
     var values = space.obsType || {};
@@ -85,9 +83,7 @@
     }
   }).observe(root, { childList: true, subtree: true });
 
-  // Extra segmentations only draw their fixed colour: gene values reach
-  // neither polygons nor sets, so their menu keeps Static Color and drops
-  // other controls
+  // Extra segmentations only get fixed colour: menu keeps Static Color alone
   function constrainExtraEncodings(root, extraTypes) {
     if (!extraTypes.length) return;
     var openedFor = null;
@@ -111,9 +107,8 @@
         options[i].hidden = true;
         options[i].disabled = true;
       }
-      // Colormap and range only apply to feature values, so hide them with
-      // those encodings. Inline style because menu row's class overrides
-      // [hidden] attribute
+      // Colormap rows apply only to feature values, so they go too; inline
+      // style, as row's class overrides [hidden]
       var labels = document.querySelectorAll(
         '[class*="imageLayerMenuLabel"]');
       for (var j = 0; j < labels.length; j++) {
@@ -124,9 +119,8 @@
     }).observe(document.body, { childList: true, subtree: true });
   }
 
-  // Vitessce tooltips list only ids and sets, so cell tooltips get selected
-  // metric from generator's sidecar file, fetched on first hover, while
-  // Metric layer is on
+  // Vitessce tooltips list only ids and sets: add selected metric from
+  // generator's sidecar, fetched on first hover, while Metric layer is on
   function patchMetricTooltips(config, configUrl) {
     var featureTypes = (config.coordinationSpace || {}).featureType || {};
     var hasMetrics = Object.keys(featureTypes).some(function(scope) {
@@ -345,9 +339,8 @@
       }
     }
 
-    // Bundle omits channel colour, so fixed-colour swatches default to grey
-    // Span legend width minus padding (96), then shrink to squares when
-    // recoloured
+    // Bundle leaves fixed-colour swatches grey: recolour them, shrinking
+    // full-width bar (96, legend minus padding) to square
     function recolourSwatches() {
       var bars = root.querySelectorAll('[class*="legend"] rect[width="96"]');
       for (var i = 0; i < bars.length; i++) {
@@ -399,9 +392,8 @@
       }
     }
 
-    // Legends follow draw order, so Metric would sit above Cell; list it
-    // after Cell, matching layer controller. Cell legend's title varies
-    // (set name when set-coloured), so extras are matched instead
+    // List Metric legend after Cell's, as in layer controller; extras matched
+    // by title, since Cell's varies (set name when set-coloured)
     function orderLegends() {
       var legends = root.querySelectorAll('[class*="multiLegend"]');
       for (var i = 0; i < legends.length; i++) {
