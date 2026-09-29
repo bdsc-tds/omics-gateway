@@ -1,24 +1,24 @@
-# Cellxgene Gateway
+# Omics Gateway
 
-Cellxgene Gateway allows you to use the Cellxgene Server provided by the Chan Zuckerberg Institute (https://github.com/chanzuckerberg/cellxgene) with multiple datasets. It displays an index of available h5ad (anndata) files. When a user clicks on a file name, it launches a Cellxgene Server instance that loads that particular data file and once it is available  proxies requests to that server.
+Omics Gateway is a web portal for browsing and exploring a collection of omics datasets. It displays an index of the available datasets and opens each one in a suitable viewer. For `.h5ad` (AnnData) files, it launches a [cellxgene](https://github.com/chanzuckerberg/cellxgene) server that loads that particular file and, once it is available, proxies requests to it. Spatial datasets (`.zarr` SpatialData stores) open in a self-hosted [Vitessce](https://vitessce.io) viewer that runs entirely in the browser (see [Rebuilding the spatial viewer](#rebuilding-the-spatial-viewer)).
 
-This repository is the SSF BioHub fork of [Novartis/cellxgene-gateway](https://github.com/Novartis/cellxgene-gateway). It also serves spatial datasets (`.zarr` SpatialData stores), which open in a self-hosted [Vitessce](https://vitessce.io) viewer that runs entirely in the browser (see [Rebuilding the spatial viewer](#rebuilding-the-spatial-viewer)).
+Omics Gateway started as a fork of [Novartis/cellxgene-gateway](https://github.com/Novartis/cellxgene-gateway), by Niket Patel, Yohann Potier and Alok Saldanha (Novartis Institutes for BioMedical Research), and has since been developed independently by CHUV. Both are released under the Apache License 2.0 (see `LICENSE`), and files from the original project keep their copyright headers.
 
 ## Installing
 
 ### Prerequisites
 
-A conda installation, for example [Miniforge](https://github.com/conda-forge/miniforge). `deploy/setup.sh` creates the `cellxgateway` environment with everything else the gateway needs.
+A conda installation, for example [Miniforge](https://github.com/conda-forge/miniforge). `deploy/setup.sh` creates the `omics-gateway` environment with everything else the gateway needs.
 
 ### Installing from a fresh clone
 
 ```bash
-git clone https://github.com/bdsc-tds/cellxgene-gateway.git
-cd cellxgene-gateway
+git clone https://github.com/bdsc-tds/omics-gateway.git
+cd omics-gateway
 ./deploy/setup.sh
 ```
 
-`deploy/setup.sh` creates the `cellxgateway` conda env from `deploy/cellxgateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
+`deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
 Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
 
@@ -29,9 +29,9 @@ The gateway is configured through environment variables:
 * `CELLXGENE_LOCATION`: the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
 
 At least one of the following is required:
-* `CELLXGENE_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/cellxgene_data`
-* `CELLXGENE_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-cellxgene-data-bucket`
-Cellxgene Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
+* `GATEWAY_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/gateway_data`
+* `GATEWAY_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-gateway-data-bucket`
+Omics Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
 
 Optional environment variables:
 * `CELLXGENE_ARGS`: catch-all variable that can be used to pass additional command line args to cellxgene server
@@ -59,7 +59,7 @@ If any of the following optional variables are set, [ProxyFix](https://werkzeug.
 
 ## Data layout
 
-The gateway reads datasets from three places, none of them tracked in git: the data directory (`CELLXGENE_DATA`, `data/` with `start_gunicorn.sh`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
+The gateway reads datasets from three places, none of them tracked in git: the data directory (`GATEWAY_DATA`, `data/` with `start_gunicorn.sh`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
 
 ```
 data/
@@ -100,7 +100,7 @@ A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generat
 `/qc/<dataset_id>` shows one tab per step folder, in folder-name order. Inside a step, folders named `1_raw`, `2_filtered`, `filtered`, `3_doublets`, `results` or `training` become headed sections; a step without them is shown as one section. Figures (`.jpg`, `.jpeg`, `.png` or `.svg`) under `per_sample/`, `per_dataset/` or `3_doublets/` are grouped by the part of their file name before `_QC_` or `_doublet_`; all other figures are shown together. The gateway builds thumbnails into `QC_THUMB_CACHE` the first time a report is opened; `data_prep/build_qc_thumbnails.py` builds them all in advance, so run it after each QC sync:
 
 ```bash
-conda run -n cellxgateway python data_prep/build_qc_thumbnails.py --qc-data analysis_qc
+conda run -n omics-gateway python data_prep/build_qc_thumbnails.py --qc-data analysis_qc
 ```
 
 ## Running the gateway
@@ -113,36 +113,36 @@ Use the gunicorn start script:
 ( ./start_gunicorn.sh )
 ```
 
-Configuration is inlined at the top of `start_gunicorn.sh`. Paths derive from the conda env (`CONDA_ENV`, default `cellxgateway`) and the repo location, so the script is host-independent. Every setting is written as `${VAR:-default}`, so any of them can still be overridden from the environment:
+Configuration is inlined at the top of `start_gunicorn.sh`. Paths derive from the conda env (`CONDA_ENV`, default `omics-gateway`) and the repo location, so the script is host-independent. Every setting is written as `${VAR:-default}`, so any of them can still be overridden from the environment:
 
 ```bash
-CELLXGENE_DATA=/path/to/data ( ./start_gunicorn.sh )
+GATEWAY_DATA=/path/to/data ( ./start_gunicorn.sh )
 ```
 
 In production the script runs under a systemd service, which can override settings with `Environment=` directives.
 
-nginx and TLS are host-specific and are not covered here. For systemd, adapt `deploy/cellxgateway.service.example` by editing the paths and `User=` for the host.
+nginx and TLS are host-specific and are not covered here. For systemd, adapt `deploy/omics-gateway.service.example` by editing the paths and `User=` for the host.
 
 ### Ad hoc, for development
 
 1. Prepare a folder with .h5ad files, for example
 
 ```bash
-mkdir ../cellxgene_data
-wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../cellxgene_data/pbmc3k.h5ad
+mkdir ../gateway_data
+wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../gateway_data/pbmc3k.h5ad
 ```
 
-2. In the activated environment (`conda activate cellxgateway`), set the required environment variables (see [Configuring](#configuring)):
+2. In the activated environment (`conda activate omics-gateway`), set the required environment variables (see [Configuring](#configuring)):
 
 ```bash
-export CELLXGENE_DATA=../cellxgene_data  # Change this if you put data in a different place
+export GATEWAY_DATA=../gateway_data  # Change this if you put data in a different place
 export CELLXGENE_LOCATION=`which cellxgene`
 ```
 
-3. Now, execute the cellxgene gateway:
+3. Now, execute the gateway:
 
 ```bash
-cellxgene-gateway
+omics-gateway
 ```
 
 ## Updating
@@ -155,21 +155,21 @@ git pull
 git stash pop  # Reapply stashed changes if needed
 ```
 
-Then restart the gateway, for example with `sudo systemctl restart cellxgateway` under systemd. The repository is installed in editable mode, so the restart picks up code changes. `deploy/setup.sh` leaves an existing environment alone, so if `deploy/cellxgateway_env.yaml` changed, remove the environment with `conda env remove -n cellxgateway` and re-run `./deploy/setup.sh`.
+Then restart the gateway, for example with `sudo systemctl restart omics-gateway` under systemd. The repository is installed in editable mode, so the restart picks up code changes. `deploy/setup.sh` leaves an existing environment alone, so if `deploy/omics-gateway_env.yaml` changed, remove the environment with `conda env remove -n omics-gateway` and re-run `./deploy/setup.sh`.
 
 ## Development
 
-GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `main`, in an environment built from `deploy/cellxgateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `main`.
+GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `main`, in an environment built from `deploy/omics-gateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `main`.
 
 ### Running tests
 
 ```bash
-conda run -n cellxgateway python -m unittest discover tests
+conda run -n omics-gateway python -m unittest discover tests
 ```
 
 ### Linting
 
-Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.toml`. Ruff is not part of the `cellxgateway` environment, so run it from any environment that has it:
+Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.toml`. Ruff is not part of the `omics-gateway` environment, so run it from any environment that has it:
 
 ```bash
 ruff check .
@@ -178,7 +178,7 @@ ruff format --check .
 
 ### Rebuilding the spatial viewer
 
-Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript application that runs entirely in the visitor's browser: the gateway only serves files. Browsers cannot load npm packages directly, so [Vite](https://vite.dev) builds Vitessce and its dependencies into plain JavaScript files in `cellxgene_gateway/static/vitessce/`, which `cellxgene_gateway/templates/spatial_viewer.html` loads. The build inputs live in `spatial_viewer_src/`:
+Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript application that runs entirely in the visitor's browser: the gateway only serves files. Browsers cannot load npm packages directly, so [Vite](https://vite.dev) builds Vitessce and its dependencies into plain JavaScript files in `omics_gateway/static/vitessce/`, which `omics_gateway/templates/spatial_viewer.html` loads. The build inputs live in `spatial_viewer_src/`:
 
 * `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
 * `vite.config.js`: build settings (output directory, browser shims for Node globals)
@@ -191,7 +191,7 @@ The built files are committed, so deployment needs neither Node nor a build step
 conda env create -f spatial_viewer_src/viewer_build_env.yaml   # once
 cd spatial_viewer_src
 conda run -n viewer-build npm ci          # installs the locked packages into node_modules/ (about 1.8 GB)
-conda run -n viewer-build npm run build   # replaces the contents of ../cellxgene_gateway/static/vitessce/
+conda run -n viewer-build npm run build   # replaces the contents of ../omics_gateway/static/vitessce/
 rm -rf node_modules                       # optional, frees the disk space
 ```
 
@@ -199,11 +199,11 @@ The build is reproducible: rebuilding unchanged sources gives identical files. T
 
 `spatial-viewer.js` keeps a fixed name, so it must be served with revalidation rather than long-term caching; the other built files have content hashes in their names and can be cached indefinitely.
 
-The spatial viewer page also adjusts Vitessce at runtime, through `cellxgene_gateway/static/css/spatial_viewer.css` and `cellxgene_gateway/static/js/spatial_viewer.js` (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
+The spatial viewer page also adjusts Vitessce at runtime, through `omics_gateway/static/css/spatial_viewer.css` and `omics_gateway/static/js/spatial_viewer.js` (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
 
 ## Getting help
 
-If you run into a problem or have a question, please open an issue on [GitHub](https://github.com/bdsc-tds/cellxgene-gateway/issues), describing what you did, what you expected and what happened instead.
+If you run into a problem or have a question, please open an issue on [GitHub](https://github.com/bdsc-tds/omics-gateway/issues), describing what you did, what you expected and what happened instead.
 
 ## Contributing and Code of Conduct
 

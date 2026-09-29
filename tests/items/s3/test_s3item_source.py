@@ -3,10 +3,10 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 # Import other functions from package
-from cellxgene_gateway.gateway import app
-from cellxgene_gateway.items.item import ItemType
-from cellxgene_gateway.items.s3.s3item import S3Item
-from cellxgene_gateway.items.s3.s3item_source import S3ItemSource
+from omics_gateway.gateway import app
+from omics_gateway.items.item import ItemType
+from omics_gateway.items.s3.s3item import S3Item
+from omics_gateway.items.s3.s3item_source import S3ItemSource
 
 
 class TestScanDirectory(unittest.TestCase):

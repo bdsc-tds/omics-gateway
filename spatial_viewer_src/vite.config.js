@@ -3,7 +3,7 @@
  *
  * Builds main.js in library mode into ES module entry (spatial-viewer.js) plus
  * content-hashed chunks, written directly into Flask app's static directory
- * (cellxgene_gateway/static/vitessce/), where templates/spatial_viewer.html
+ * (omics_gateway/static/vitessce/), where templates/spatial_viewer.html
  * loads entry via url_for('static', ...).
  *
  * Vitessce and its Zarr/loader dependencies reference Node globals such as
@@ -20,7 +20,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 export default defineConfig({
   plugins: [nodePolyfills()],
   build: {
-    outDir: '../cellxgene_gateway/static/vitessce',
+    outDir: '../omics_gateway/static/vitessce',
     emptyOutDir: true,
     // Single stylesheet rather than per-chunk CSS, so template has one
     // predictable file to link.

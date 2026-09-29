@@ -23,21 +23,20 @@ with open('README.md', 'r') as fh:
 
 setup(
     # mandatory
-    name='cellxgene_gateway',
+    name='omics-gateway',
     # mandatory
-    version=get_version('cellxgene_gateway/__init__.py'),
+    version=get_version('omics_gateway/__init__.py'),
     # mandatory
-    author='Niket Patel, Yohann Potier, Alok Saldanha',
-    author_email='alok.saldanha@novartis.com',
-    description=('Cellxgene Gateway'),
+    author='CHUV',
+    description=('Web portal for browsing and exploring omics datasets'),
     long_description=long_description,
     long_description_content_type='text/markdown',
-    license='MIT',
+    license='Apache-2.0',
     keywords='visualization, genomics',
-    url='http://github.com/Novartis/cellxgene-gateway',
+    url='https://github.com/bdsc-tds/omics-gateway',
     packages=find_packages(),
     package_data={
-        'cellxgene_gateway': [
+        'omics_gateway': [
             'static/css/*.css',
             'templates/*.html',
             'static/js/*.js',
@@ -48,7 +47,7 @@ setup(
     },
     data_files=[('', ['README.md', 'LICENSE'])],
     entry_points={
-        'console_scripts': ['cellxgene-gateway=cellxgene_gateway.gateway:main']
+        'console_scripts': ['omics-gateway=omics_gateway.gateway:main']
     },
     classifiers=['Topic :: Scientific/Engineering :: Visualization'],
     python_requires='>=3.6',

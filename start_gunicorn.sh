@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# start_gunicorn.sh - Start Cellxgene Gateway with Gunicorn
+# start_gunicorn.sh - Start Omics Gateway with Gunicorn
 #
 # PREREQUISITES:
 # - Gunicorn installed (included with cellxgene 1.3.0, or: pip install gunicorn)
-# - Conda env named by CONDA_ENV (default: cellxgateway)
+# - Conda env named by CONDA_ENV (default: omics-gateway)
 #
 # USAGE:
 # ./start_gunicorn.sh
@@ -23,13 +23,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Server config; paths derive from conda env and repo, so host-independent
 # Conda variables
 CONDA_ROOT=${CONDA_ROOT:-$HOME/miniforge3}
-CONDA_ENV=${CONDA_ENV:-cellxgateway}
+CONDA_ENV=${CONDA_ENV:-omics-gateway}
 CONDA_ENV_BIN="$CONDA_ROOT/envs/$CONDA_ENV/bin"
 
 # Cellxgene variables
 export PATH="$CONDA_ENV_BIN:$PATH"
 export CELLXGENE_LOCATION=${CELLXGENE_LOCATION:-$CONDA_ENV_BIN/cellxgene}
-export CELLXGENE_DATA=${CELLXGENE_DATA:-$SCRIPT_DIR/data}
+export GATEWAY_DATA=${GATEWAY_DATA:-$SCRIPT_DIR/data}
 export QC_DATA=${QC_DATA:-$SCRIPT_DIR/analysis_qc}
 export GATEWAY_LOG_LEVEL=${GATEWAY_LOG_LEVEL:-INFO}
 export GATEWAY_IP=${GATEWAY_IP:-127.0.0.1}
@@ -49,9 +49,9 @@ if [ ! -x "$CELLXGENE_LOCATION" ]; then
 fi
 
 # Check data directory exists: gateway only checks it is set, on first request
-if [ ! -d "$CELLXGENE_DATA" ]; then
-    echo "Error: data directory not found at $CELLXGENE_DATA"
-    echo "Set CELLXGENE_DATA, or create $SCRIPT_DIR/data (deploy/setup.sh does)"
+if [ ! -d "$GATEWAY_DATA" ]; then
+    echo "Error: data directory not found at $GATEWAY_DATA"
+    echo "Set GATEWAY_DATA, or create $SCRIPT_DIR/data (deploy/setup.sh does)"
     exit 1
 fi
 
@@ -80,10 +80,10 @@ if ! command -v gunicorn &> /dev/null; then
 fi
 
 # Display configuration
-echo "Starting Cellxgene Gateway with Gunicorn..."
+echo "Starting Omics Gateway with Gunicorn..."
 echo "Configuration:"
 echo "  Cellxgene executable: ${CELLXGENE_LOCATION}"
-echo "  Data source: ${CELLXGENE_DATA:-$CELLXGENE_BUCKET}"
+echo "  Data source: ${GATEWAY_DATA:-$GATEWAY_BUCKET}"
 echo "  QC data: ${QC_DATA}"
 echo "  Binding to: $BIND"
 echo "  Workers: $WORKERS"
@@ -102,7 +102,7 @@ cd "$SCRIPT_DIR"
 
 # Optional: GUNICORN_MAX_REQUESTS restarts worker after N requests (memory
 # leaks), GUNICORN_MAX_REQUESTS_JITTER randomises that count
-exec gunicorn cellxgene_gateway.gateway:app \
+exec gunicorn omics_gateway.gateway:app \
     --workers "$WORKERS" \
     --worker-class "$WORKER_CLASS" \
     --threads "$THREADS" \

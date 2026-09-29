@@ -1,6 +1,6 @@
 # Environment for offline spatial data preparation: Xenium conversion and
 # Vitessce view-config generation. Not gateway runtime, which is pinned
-# separately in deploy/cellxgateway_env.yaml and must stay free of these deps.
+# separately in deploy/omics-gateway_env.yaml and must stay free of these deps.
 #
 #   conda env create -f data_prep/spatial_env.yaml
 #

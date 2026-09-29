@@ -6,8 +6,8 @@ import unittest
 from unittest import mock
 
 # Import other functions from package
-from cellxgene_gateway import dataset_metadata_loader as dml
-from cellxgene_gateway import env, flask_util, gateway
+from omics_gateway import dataset_metadata_loader as dml
+from omics_gateway import env, flask_util, gateway
 
 
 # Function to build os.environ replacement with keys removed and added
@@ -99,7 +99,7 @@ class TestQcDataResolution(EnvReloadCase):
 
 class TestCellxgeneDataResolution(EnvReloadCase):
     """
-    Check CELLXGENE_DATA is resolved in one place (env.py) and that every
+    Check GATEWAY_DATA is resolved in one place (env.py) and that every
     consumer agrees with it whether or not variable is set.
     """
 
@@ -147,7 +147,7 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         gateway.item_sources.clear()
         # Patched at its source module: gateway imports it inside function
         with mock.patch(
-            'cellxgene_gateway.items.file.fileitem_source.FileItemSource'
+            'omics_gateway.items.file.fileitem_source.FileItemSource'
         ) as source:
             gateway.initialise_data_sources()
 
@@ -158,16 +158,16 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         Test that env module leaves value as None when variable is unset, which
         is what keeps 'unset' distinguishable from configured directory.
         """
-        self.reload_env(unset=['CELLXGENE_DATA'])
-        self.assertIsNone(env.cellxgene_data)
+        self.reload_env(unset=['GATEWAY_DATA'])
+        self.assertIsNone(env.gateway_data)
 
     def test_GIVEN_unset_THEN_loader_takes_fallback_from_env(self):
         """
         Test that metadata loader has no default of its own and reads resolved
         value from env module instead.
         """
-        self.reload_env(unset=['CELLXGENE_DATA'])
-        with mock.patch.object(env, 'cellxgene_data', '/sentinel/data'):
+        self.reload_env(unset=['GATEWAY_DATA'])
+        with mock.patch.object(env, 'gateway_data', '/sentinel/data'):
             self.assertEqual(
                 '/sentinel/data', self._effective_loader_data_dir()
             )
@@ -177,8 +177,8 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         Test that relative directory is made absolute, since Flask resolves
         relative directories against package directory rather than working one.
         """
-        self.reload_env(CELLXGENE_DATA='relative_data')
-        self.assertEqual(os.path.abspath('relative_data'), env.cellxgene_data)
+        self.reload_env(GATEWAY_DATA='relative_data')
+        self.assertEqual(os.path.abspath('relative_data'), env.gateway_data)
 
     def test_GIVEN_unset_and_no_bucket_THEN_gateway_raises(self):
         """
@@ -186,19 +186,19 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         bucket. Its None default is what makes this check reachable, so any
         unification must keep 'unset' distinguishable from 'set'.
         """
-        self.reload_env(unset=['CELLXGENE_DATA', 'CELLXGENE_BUCKET'])
+        self.reload_env(unset=['GATEWAY_DATA', 'GATEWAY_BUCKET'])
         with self.assertRaises(ValueError) as raised:
             self._effective_gateway_base_path()
-        self.assertIn('CELLXGENE_DATA', str(raised.exception))
+        self.assertIn('GATEWAY_DATA', str(raised.exception))
 
     def test_GIVEN_set_THEN_all_three_consumers_agree(self):
         """
         Test that env, metadata loader and gateway resolve same directory when
-        CELLXGENE_DATA is set.
+        GATEWAY_DATA is set.
         """
         with tempfile.TemporaryDirectory() as tmp:
-            self.reload_env(CELLXGENE_DATA=tmp)
-            self.assertEqual(tmp, env.cellxgene_data)
+            self.reload_env(GATEWAY_DATA=tmp)
+            self.assertEqual(tmp, env.gateway_data)
             self.assertEqual(tmp, self._effective_loader_data_dir())
             self.assertEqual(tmp, self._effective_gateway_base_path())
 
@@ -208,8 +208,8 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         Loader coerces None to '' because its path joins would otherwise raise
         TypeError into exception handler that hides it.
         """
-        self.reload_env(unset=['CELLXGENE_DATA'])
-        self.assertIsNone(env.cellxgene_data)
+        self.reload_env(unset=['GATEWAY_DATA'])
+        self.assertIsNone(env.gateway_data)
         self.assertEqual('', self._effective_loader_data_dir())
 
 
@@ -283,7 +283,7 @@ class TestDataPathRoutes(EnvReloadCase):
         with open(os.path.join(self.qc_dir, 'plot.png'), 'wb') as png:
             png.write(b'not really a png')
         self.reload_env(
-            CELLXGENE_DATA=self.data_dir,
+            GATEWAY_DATA=self.data_dir,
             QC_DATA=os.path.join(self.tmp.name, 'analysis_qc'),
         )
 
@@ -301,7 +301,7 @@ class TestDataPathRoutes(EnvReloadCase):
         Test that `/download` refuses cleanly when only bucket is configured,
         rather than failing on None directory.
         """
-        self.reload_env(unset=['CELLXGENE_DATA'])
+        self.reload_env(unset=['GATEWAY_DATA'])
         with (
             gateway.app.test_request_context('/download/sample.h5ad'),
             self.assertRaises(Exception) as raised,

@@ -4,15 +4,15 @@ from collections import defaultdict
 from unittest.mock import patch
 
 # Import other functions from package
-from cellxgene_gateway import flask_util
-from cellxgene_gateway.filecrawl import (
+from omics_gateway import flask_util
+from omics_gateway.filecrawl import (
     render_item,
     render_item_source,
     render_item_tree,
 )
-from cellxgene_gateway.items.file.fileitem import FileItem
-from cellxgene_gateway.items.file.fileitem_source import FileItemSource
-from cellxgene_gateway.items.item import ItemTree, ItemType
+from omics_gateway.items.file.fileitem import FileItem
+from omics_gateway.items.file.fileitem_source import FileItemSource
+from omics_gateway.items.item import ItemTree, ItemType
 
 # Initialise FileItemSource pointing to /tmp directory
 source = FileItemSource('/tmp')
@@ -67,7 +67,7 @@ class TestRenderEntry(unittest.TestCase):
         None
         """
 
-        from cellxgene_gateway.gateway import app
+        from omics_gateway.gateway import app
 
         self.app_context = app.test_request_context()
         self.app_context.push()
@@ -139,7 +139,7 @@ class TestRenderAnnotation(unittest.TestCase):
         None
         """
 
-        from cellxgene_gateway.gateway import app
+        from omics_gateway.gateway import app
 
         self.app_context = app.test_request_context()
         self.app_context.push()
@@ -154,7 +154,7 @@ class TestRenderAnnotation(unittest.TestCase):
         )
         flask_util.include_source_in_url = True
 
-    @patch('cellxgene_gateway.env.enable_annotations', new=True)
+    @patch('omics_gateway.env.enable_annotations', new=True)
     def test_GIVEN_no_annotation_THEN_new_alone(self):
         """
         Test rendering when no annotations are present.
@@ -167,7 +167,7 @@ class TestRenderAnnotation(unittest.TestCase):
             rendered,
         )
 
-    @patch('cellxgene_gateway.env.enable_annotations', new=True)
+    @patch('omics_gateway.env.enable_annotations', new=True)
     def test_GIVEN_annotation_THEN_new_before(self):
         """
         Test rendering when at least one annotation exists.
@@ -187,7 +187,7 @@ class TestRenderAnnotation(unittest.TestCase):
             rendered,
         )
 
-    @patch('cellxgene_gateway.env.enable_annotations', new=True)
+    @patch('omics_gateway.env.enable_annotations', new=True)
     def test_GIVEN_annotation_THEN_escaped(self):
         """
         Test rendering when annotation names include characters requiring HTML
@@ -217,7 +217,7 @@ class TestRenderItemSource(unittest.TestCase):
     and structure based on provided filter and source name.
     """
 
-    @patch('cellxgene_gateway.items.file.fileitem_source.FileItemSource')
+    @patch('omics_gateway.items.file.fileitem_source.FileItemSource')
     def test_GIVEN_some_filter_THEN_includes_filterpart_in_heading(
         self, item_source
     ):
@@ -255,7 +255,7 @@ class TestRenderItemTree(unittest.TestCase):
         client used for simulating requests.
         """
 
-        from cellxgene_gateway.gateway import app
+        from omics_gateway.gateway import app
 
         self.app = app
         self.app_context = self.app.test_request_context()
@@ -272,7 +272,7 @@ class TestRenderItemTree(unittest.TestCase):
         )
         flask_util.include_source_in_url = True
 
-    @patch('cellxgene_gateway.items.file.fileitem_source.FileItemSource')
+    @patch('omics_gateway.items.file.fileitem_source.FileItemSource')
     def test_GIVEN_deep_nested_dirs_THEN_includes_dirs_in_output(
         self, item_source
     ):

@@ -1,3 +1,13 @@
+# 1.0.0
+
+Renamed to omics-gateway: standalone continuation of Novartis/cellxgene-gateway 0.4.2, maintained by CHUV.
+
+* Reworked interface: homepage, navbar, dataset browser with metadata filters, download options
+* Added per-dataset QC reports
+* Added spatial datasets (SpatialData `.zarr`) in a self-hosted Vitessce viewer
+* Gunicorn-only deployment with `deploy/setup.sh`; Docker, uWSGI and Travis files removed
+* Renamed `CELLXGENE_DATA` and `CELLXGENE_BUCKET` to `GATEWAY_DATA` and `GATEWAY_BUCKET`
+
 # 0.4.2
 
 * update package name

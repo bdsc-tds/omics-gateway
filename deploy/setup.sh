@@ -11,10 +11,10 @@
 #
 # Config follows same ${VAR:-default} convention as start_gunicorn.sh, so both
 # scripts agree on which environment they mean:
-#   CONDA_ROOT (default $HOME/miniforge3), CONDA_ENV (default cellxgateway)
+#   CONDA_ROOT (default $HOME/miniforge3), CONDA_ENV (default omics-gateway)
 #
 # Deliberately out of scope: nginx, systemd and TLS are host-specific and need
-# root. See cellxgateway.service.example alongside this script, and README.
+# root. See omics-gateway.service.example alongside this script, and README.
 
 set -euo pipefail
 
@@ -22,10 +22,10 @@ DEPLOY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_DIR="$( cd "$DEPLOY_DIR/.." && pwd )"
 
 CONDA_ROOT=${CONDA_ROOT:-$HOME/miniforge3}
-CONDA_ENV=${CONDA_ENV:-cellxgateway}
+CONDA_ENV=${CONDA_ENV:-omics-gateway}
 CONDA_ENV_DIR="$CONDA_ROOT/envs/$CONDA_ENV"
 CONDA_ENV_BIN="$CONDA_ENV_DIR/bin"
-ENV_FILE="$DEPLOY_DIR/cellxgateway_env.yaml"
+ENV_FILE="$DEPLOY_DIR/omics-gateway_env.yaml"
 
 # Prefer mamba when present, if not default to conda
 if [ -x "$CONDA_ROOT/bin/mamba" ]; then
@@ -34,7 +34,7 @@ else
     CONDA_BIN="$CONDA_ROOT/bin/conda"
 fi
 
-echo "Setting up cellxgene-gateway"
+echo "Setting up omics-gateway"
 echo "  Repository: $REPO_DIR"
 echo "  Conda root: $CONDA_ROOT"
 echo "  Conda env:  $CONDA_ENV"
@@ -55,7 +55,7 @@ else
 fi
 
 # 2. Install repo into conda env: env file cannot express editable install,
-# so env would otherwise resolve `cellxgene_gateway` to PyPI release
+# so env would otherwise lack gateway package
 echo "[2/5] Installing (editable) repo into conda env..."
 "$CONDA_ENV_BIN/pip" install --quiet --no-deps --editable "$REPO_DIR"
 
@@ -97,7 +97,7 @@ if [ ! -x "$CONDA_ENV_BIN/gunicorn" ]; then
     echo "Error: gunicorn not found at $CONDA_ENV_BIN/gunicorn"
     exit 1
 fi
-"$CONDA_ENV_BIN/python" -c "import cellxgene_gateway; print('      cellxgene_gateway', cellxgene_gateway.__version__, 'from', cellxgene_gateway.__file__)"
+"$CONDA_ENV_BIN/python" -c "import omics_gateway; print('      omics_gateway', omics_gateway.__version__, 'from', omics_gateway.__file__)"
 
 echo ""
 echo "Setup complete."
@@ -108,4 +108,4 @@ fi
 echo ""
 echo "Start gateway with:"
 echo "  ./start_gunicorn.sh"
-echo "or install a systemd unit based on deploy/cellxgateway.service.example."
+echo "or install a systemd unit based on deploy/omics-gateway.service.example."

@@ -36,7 +36,7 @@ jobs:
       # Same pinned env as deployed gateway
       - uses: mamba-org/setup-micromamba@v3
         with:
-          environment-file: deploy/cellxgateway_env.yaml
+          environment-file: deploy/omics-gateway_env.yaml
           cache-environment: true
       # --no-deps as in deploy/setup.sh: env file pins every dependency
       - name: Install gateway

@@ -3,7 +3,6 @@
 __pycache__
 *.pyc
 run.sh
-.cellxgene-gateway
 
 
 # Created by https://www.gitignore.io/api/python

@@ -2,8 +2,8 @@ import json
 import unittest
 from types import SimpleNamespace
 
-from cellxgene_gateway.cache_entry import CacheEntry, CacheEntryStatus
-from cellxgene_gateway.gateway import app, cache, do_instances_json
+from omics_gateway.cache_entry import CacheEntry, CacheEntryStatus
+from omics_gateway.gateway import app, cache, do_instances_json
 
 
 class TestGatewayStatusJson(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestGatewayStatusJson(unittest.TestCase):
 
         # Install into the gateway cache and set app launchtime
         cache.entry_list = [entry]
-        app.extensions.setdefault('cellxgene_gateway', {})['launchtime'] = (
+        app.extensions.setdefault('omics_gateway', {})['launchtime'] = (
             'LAUNCH_TIME'
         )
 

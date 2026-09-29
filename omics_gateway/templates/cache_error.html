@@ -1,0 +1,124 @@
+<!--
+ Copyright 2019 Novartis Institutes for BioMedical Research Inc. Licensed
+ under the Apache License, Version 2.0 (the "License"); you may not use
+ this file except in compliance with the License. You may obtain a copy
+ of the License at http://www.apache.org/licenses/LICENSE-2.0. Unless
+ required by applicable law or agreed to in writing, software distributed
+ under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+ OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+ the specific language governing permissions and limitations under the License.
+ Modified by CHUV, 2025-2026.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Default header -->
+  {% include 'header.html' %}
+
+  <!-- Page title -->
+  <title>{% if context == 'download' %}Download Error{% else %}Error{% endif %}
+    - SSF BioHub</title>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/buttons.css') }}" />
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/common.css') }}" />
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/navbar.css') }}" />
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/table.css') }}" />
+</head>
+
+<body>
+  <!-- Navbar -->
+  {% include 'navbar.html' %}
+
+  <!-- Main content with error message -->
+  <div class="container-fluid p-3">
+    {% if context == 'download' %}
+    <!-- Download-specific error: friendly empty-state card -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-7 col-lg-5">
+        <div class="error-card">
+          <div class="error-icon">
+            {% if http_status == 404 %}⬇{% else %}⚠{% endif %}
+          </div>
+          <h2 class="error-title">
+            {% if http_status == 404 %}File not found
+            {% elif http_status == 400 %}Invalid request
+            {% else %}Download failed
+            {% endif %}
+          </h2>
+          {% if filename %}
+          <div class="error-filename">{{ filename }}</div>
+          {% endif %}
+          <p class="error-body">{{ message }}</p>
+          {% if http_status == 404 %}
+          <p class="error-hint">
+            The file may have been moved or renamed. Browse the dataset
+            catalogue to find the correct download link.
+          </p>
+          {% endif %}
+          <div class="cta-buttons" style="margin-top: 1.5rem;">
+            <a href="{{ url_for('filecrawl') }}" class="btn-primary">Browse
+              Datasets</a>
+            <a href="{{ url_for('homepage') }}"
+              class="btn-secondary">Homepage</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <!-- Generic cache error: technical table view, full width to match
+      cellxgene_error.html -->
+    <div class="row">
+      <div class="col-12">
+        <h2>Error Details</h2>
+
+        <!-- Error table -->
+        <div class="table-responsive">
+          <table
+            class="table table-hover table-striped table-sm error-table-col1">
+            <tr>
+              <th>Message</th>
+              <td>{{ message }}</td>
+            </tr>
+            <tr>
+              <th>Status</th>
+              <td>{{ http_status }}</td>
+            </tr>
+            <!-- Cache errors have no subprocess, so these stay blank rather
+              than rendering "None" -->
+            <tr>
+              <th>Stdout</th>
+              <td>{{ stdout | default('', true) }}</td>
+            </tr>
+            <tr>
+              <th>Stderr</th>
+              <td>{{ stderr | default('', true) }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Possible actions -->
+        <div class="cta-buttons">
+          <!-- Handler passes no relaunch_url, so link would point at page
+            itself; spatial has no process to relaunch either -->
+          {% if relaunch_url %}
+          <a href="{{ relaunch_url }}" class="btn-secondary">Relaunch
+            Cellxgene</a>
+          {% endif %}
+          <a href="{{ url_for('filecrawl') }}"
+            class="btn-secondary">Datasets</a>
+          <a href="{{ url_for('homepage') }}" class="btn-secondary">Homepage</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+
+</html>
