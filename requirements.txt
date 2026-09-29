@@ -1,7 +1,0 @@
-cellxgene
-flask
-werkzeug
-psutil
-requests
-gunicorn
-pillow==11.3.0

@@ -1,91 +1,45 @@
-# Tests that run on every PR
+# Lint and test every pull request and every push to master
 
-name: Pull Request Checks
+name: Checks
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: [master]
+  # Allow manual runs on any branch from Actions tab
+  workflow_dispatch:
 
 jobs:
-  black:
+  ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        name: Checkout repository
-
-      - uses: actions/setup-python@v2
-        name: Setup Python
+      - uses: actions/checkout@v7
+      - name: Lint
+        uses: astral-sh/ruff-action@v4
         with:
-          python-version: 3.9
+          version: '0.16.0'
+          args: 'check'
+      - name: Check formatting
+        uses: astral-sh/ruff-action@v4
+        with:
+          version: '0.16.0'
+          args: 'format --diff'
 
-      - name: Install black
-        run: |
-          python -m pip install --upgrade pip
-          pip install black
-      - name: Run black
-        run: |
-          black . --check
-  # This job is copied over from `deploy.yaml`
-  run-tests:
+  tests:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # Login shell activates micromamba env
+        shell: bash -el {0}
     steps:
-      - uses: actions/checkout@v2
-
-      # See: https://github.com/marketplace/actions/setup-conda
-      - uses: s-weigand/setup-conda@v1
+      - uses: actions/checkout@v7
+      # Same pinned env as deployed gateway
+      - uses: mamba-org/setup-micromamba@v3
         with:
-          conda-channels: "conda-forge"
-
-      - name: Build environment
-        run: |
-          conda env create -f environment.yml
-          eval "$(conda shell.bash hook)"
-          conda activate cellxgene-gateway
-          python setup.py install
-          pip install -r requirements-test.txt
-
+          environment-file: deploy/cellxgateway_env.yaml
+          cache-environment: true
+      # --no-deps as in deploy/setup.sh: env file pins every dependency
+      - name: Install gateway
+        run: pip install --no-deps --editable .
       - name: Run tests
-        run: |
-          eval "$(conda shell.bash hook)"
-          conda activate cellxgene-gateway
-          coverage run -m unittest discover tests
-
-      - name: Check coverage
-        run: |
-          eval "$(conda shell.bash hook)"
-          conda activate cellxgene-gateway
-          coverage report --fail-under 41
-          coverage report > coverage.txt
-          coverage html -i
-          coverage xml -i
-
-      - name: Upload coverage HTML report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-html
-          path: htmlcov/
-          retention-days: 30
-
-      - name: Upload coverage xml
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-xml
-          path: coverage.xml
-          retention-days: 30
-
-      - name: Upload coverage summary
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-summary
-          path: coverage.txt
-          retention-days: 30
-      - name: "Upload coverage to Codecov"
-        if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: unittests
-          env_vars: OS,PYTHON
-          name: codecov-umbrella
-          fail_ci_if_error: true
-          path_to_write_report: ./codecov_report.txt
-          verbose: true
+        run: python -m unittest discover tests

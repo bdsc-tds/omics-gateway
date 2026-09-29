@@ -18,18 +18,8 @@ def get_version(rel_path):
     raise RuntimeError('Unable to find version string.')
 
 
-def parse_requirements():
-    reqs = []
-    with open('requirements.txt', 'r') as f:
-        for line in f:
-            reqs.append(line.strip('\n'))
-    return reqs
-
-
 with open('README.md', 'r') as fh:
     long_description = fh.read()
-
-install_reqs = parse_requirements()
 
 setup(
     # mandatory
@@ -57,7 +47,6 @@ setup(
         ]
     },
     data_files=[('', ['README.md', 'LICENSE'])],
-    install_requires=install_reqs,
     entry_points={
         'console_scripts': ['cellxgene-gateway=cellxgene_gateway.gateway:main']
     },
