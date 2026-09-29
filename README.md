@@ -1,41 +1,129 @@
-# Overview
+# Cellxgene Gateway
 
 Cellxgene Gateway allows you to use the Cellxgene Server provided by the Chan Zuckerberg Institute (https://github.com/chanzuckerberg/cellxgene) with multiple datasets. It displays an index of available h5ad (anndata) files. When a user clicks on a file name, it launches a Cellxgene Server instance that loads that particular data file and once it is available  proxies requests to that server.
 
-[![codecov](https://codecov.io/gh/Novartis/cellxgene-gateway/branch/master/graph/badge.svg?token=ndEFSzRKJn)](https://codecov.io/gh/Novartis/cellxgene-gateway) [![PyPI](https://img.shields.io/pypi/v/cellxgene-gateway)](https://pypi.org/project/cellxgene-gateway/) [![PyPI - Downloads](https://img.shields.io/pypi/dm/cellxgene-gateway)](https://pypistats.org/packages/cellxgene-gateway)
+This repository is the SSF BioHub fork of [Novartis/cellxgene-gateway](https://github.com/Novartis/cellxgene-gateway). It also serves spatial datasets (`.zarr` SpatialData stores), which open in a self-hosted [Vitessce](https://vitessce.io) viewer that runs entirely in the browser (see [Rebuilding the spatial viewer](#rebuilding-the-spatial-viewer)).
 
-# Running locally
+## Installing
 
-## Prequisites
+### Prerequisites
 
-1. This project requires python 3.6 or higher. Please check your version with
+A conda installation, for example [Miniforge](https://github.com/conda-forge/miniforge). `deploy/setup.sh` creates the `cellxgateway` environment with everything else the gateway needs.
 
-```bash
-$ python --version
-```
-
-2. It is also a good idea to set up a venv
+### Installing from a fresh clone
 
 ```bash
-python -m venv .cellxgene-gateway
-source .cellxgene-gateway/bin/activate # type `deactivate` to deactivate the venv
+git clone https://github.com/bdsc-tds/cellxgene-gateway.git
+cd cellxgene-gateway
+./deploy/setup.sh
 ```
 
-## Install cellxgene-gateway
+`deploy/setup.sh` creates the `cellxgateway` conda env from `deploy/cellxgateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
-### Option 1: Pip Install from Github
+Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
+
+## Configuring
+
+The gateway is configured through environment variables:
+
+* `CELLXGENE_LOCATION`: the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
+
+At least one of the following is required:
+* `CELLXGENE_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/cellxgene_data`
+* `CELLXGENE_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-cellxgene-data-bucket`
+Cellxgene Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
+
+Optional environment variables:
+* `CELLXGENE_ARGS`: catch-all variable that can be used to pass additional command line args to cellxgene server
+* `EXTERNAL_HOST`: the hostname and port from the perspective of the web browser, typically `localhost:5005` if running locally. Defaults to "localhost:{GATEWAY_PORT}"
+* `EXTERNAL_PROTOCOL`: typically http when running locally, can be https when deployed if the gateway is behind a load balancer or reverse proxy that performs https termination. No default; when unset, the gateway does not override the scheme and Flask infers it from the incoming request
+* `GATEWAY_IP`: ip addess of instance gateway is running on, mostly used to display SSH instructions. No default; when unset, `/metadata/ip_address` returns an empty response
+* `GATEWAY_PORT`: local port that the gateway should bind to, defaults to 5005
+* `GATEWAY_EXPIRE_SECONDS`: time in seconds that a cellxgene process will remain idle before being terminated. Defaults to 3600 (one hour)
+* `GATEWAY_EXTRA_SCRIPTS`: JSON array of script paths, will be embedded into each page and forwarded with `--scripts` to cellxgene server
+* `GATEWAY_ENABLE_ANNOTATIONS`: Set to `true` or to `1` to enable cellxgene annotations and gene sets.
+* `GATEWAY_ENABLE_BACKED_MODE`: Set to `true` or to `1` to load AnnData in file-backed mode. This saves memory and speeds up launch time but may reduce overall performance.
+* `GATEWAY_LOG_LEVEL`: default is `INFO`. set to `DEBUG` to increase logging and to `WARNING` to decrease logging.
+* `DATASET_METADATA_TSV`: tab-separated file describing datasets, used to render the filterable dataset browser at `/filecrawl`. Defaults to `datasets.tsv`. When the file is absent, the browser falls back to listing files from the configured item sources
+* `QC_DATA`: a directory containing per-dataset QC report folders, served at `/qc/<dataset_id>`. Defaults to `analysis_qc`. A relative path is resolved against the working directory
+* `QC_THUMB_CACHE`: a directory for the thumbnails shown in QC reports, which the gateway builds on demand. Defaults to `<QC_DATA>_thumbs`, outside the QC tree so that tree can stay read-only
+* `SPATIAL_METRICS`: Set to `false` or to `0` to open spatial (`.zarr`) datasets without the Metric layer, which colours cells by per-cell measurements such as cell area. Defaults to `true`. `data_prep/generate_spatial_config.py` writes both configs for each store (`<name>.vitessce.json` and `<name>.nometrics.vitessce.json`), and this variable picks which one the dataset browser links to
+* `S3_ENABLE_LISTINGS_CACHE`: Set to `true` or to `1` to cache listings of S3 folders for performance. If the cache becomes stale, set `filecrawl?refresh=true` query parameter to refresh the cache.
+
+If any of the following optional variables are set, [ProxyFix](https://werkzeug.palletsprojects.com/en/1.0.x/middleware/proxy_fix/) will be used.
+* `PROXY_FIX_FOR`: Number of upstream proxies setting X-Forwarded-For
+* `PROXY_FIX_PROTO`: Number of upstream proxies setting X-Forwarded-Proto
+* `PROXY_FIX_HOST`: Number of upstream proxies setting X-Forwarded-Host
+* `PROXY_FIX_PORT`: Number of upstream proxies setting X-Forwarded-Port
+* `PROXY_FIX_PREFIX`: Number of upstream proxies setting X-Forwarded-Prefix
+
+## Data layout
+
+The gateway reads datasets from three places, none of them tracked in git: the data directory (`CELLXGENE_DATA`, `data/` with `start_gunicorn.sh`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
+
+```
+data/
+    <dataset>.h5ad                          single-cell dataset, opened in cellxgene
+    <dataset>_annotations/                  optional, next to its .h5ad
+        <name>.csv                          cell annotations, loadable in cellxgene
+        <name>_gene_sets.csv                gene sets, offered for download only
+    <sample>.zarr/                          SpatialData store, opened in the spatial viewer
+    vitessce_configs/
+        <sample>.vitessce.json              viewer config, with the Metric layer
+        <sample>.nometrics.vitessce.json    viewer config, without it
+        <sample>.metrics.json               per-cell values shown in cell tooltips
+analysis_qc/
+    <dataset_id>/                           one folder per dataset_id in datasets.tsv
+        <N>_<step>/                         e.g. 1_preprocessing, 2_normalisation
+            [<section>/]                    optional, e.g. 1_raw, results (see below)
+                <figure>.jpg                shown for all samples together
+                per_sample/<sample>_QC_<figure>.jpg
+```
+
+### Dataset table
+
+`datasets.tsv` is tab-separated, with one row per dataset and these columns:
+
+* `dataset_id`: short identifier, also the name of the dataset's QC folder
+* `name`, `description`: shown in the dataset browser
+* `file_path`: path of the `.h5ad` file or `.zarr` store, relative to the data directory. A `.zarr` row is shown as spatial and opens its viewer config
+* `assay`, `disease`, `tissue`, `sex`: semicolon-separated values, used as filters
+* `patients`, `cell_count`, `gene_count`, `year`: numbers, used for display and as range filters
+* `authors`, `journal`, `doi`: publication details
+
+### Spatial datasets
+
+A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generated for it. The configs must live in `data/vitessce_configs/` and be named after the store, because the viewer loads them, like the store itself, through `/spatial-data/`, the only route that serves byte ranges. `SPATIAL_METRICS` picks which of the two configs the dataset browser links to.
+
+### QC reports
+
+`/qc/<dataset_id>` shows one tab per step folder, in folder-name order. Inside a step, folders named `1_raw`, `2_filtered`, `filtered`, `3_doublets`, `results` or `training` become headed sections; a step without them is shown as one section. Figures (`.jpg`, `.jpeg`, `.png` or `.svg`) under `per_sample/`, `per_dataset/` or `3_doublets/` are grouped by the part of their file name before `_QC_` or `_doublet_`; all other figures are shown together. The gateway builds thumbnails into `QC_THUMB_CACHE` the first time a report is opened; `data_prep/build_qc_thumbnails.py` builds them all in advance, so run it after each QC sync:
 
 ```bash
-pip install git+https://github.com/Novartis/cellxgene-gateway
+conda run -n cellxgateway python data_prep/build_qc_thumbnails.py --qc-data analysis_qc
 ```
-Note: you may need to downgrade h5py with `pip install h5py==2.9.0` due to an [issue](https://github.com/theislab/scanpy/issues/832) in a dependency.
-### Option 2: Install from PyPI
+
+## Running the gateway
+
+### With gunicorn
+
+Use the gunicorn start script:
 
 ```bash
-pip install cellxgene-gateway
+( ./start_gunicorn.sh )
 ```
 
-## Running cellxgene gateway
+Configuration is inlined at the top of `start_gunicorn.sh`. Paths derive from the conda env (`CONDA_ENV`, default `cellxgateway`) and the repo location, so the script is host-independent. Every setting is written as `${VAR:-default}`, so any of them can still be overridden from the environment:
+
+```bash
+CELLXGENE_DATA=/path/to/data ( ./start_gunicorn.sh )
+```
+
+In production the script runs under a systemd service, which can override settings with `Environment=` directives.
+
+nginx and TLS are host-specific and are not covered here. For systemd, adapt `deploy/cellxgateway.service.example` by editing the paths and `User=` for the host.
+
+### Ad hoc, for development
 
 1. Prepare a folder with .h5ad files, for example
 
@@ -44,11 +132,10 @@ mkdir ../cellxgene_data
 wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../cellxgene_data/pbmc3k.h5ad
 ```
 
-
-2. Set your environment variables correctly:
+2. In the activated environment (`conda activate cellxgateway`), set the required environment variables (see [Configuring](#configuring)):
 
 ```bash
-export CELLXGENE_DATA=../cellxgene_data  # change this directory if you put data in a different place.
+export CELLXGENE_DATA=../cellxgene_data  # Change this if you put data in a different place
 export CELLXGENE_LOCATION=`which cellxgene`
 ```
 
@@ -58,185 +145,66 @@ export CELLXGENE_LOCATION=`which cellxgene`
 cellxgene-gateway
 ```
 
-Here's what the environment variables mean:
+## Updating
 
-* `CELLXGENE_LOCATION` - the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
-
-At least one of the following is required:
-* `CELLXGENE_DATA` - a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/cellxgene_data`
-* `CELLXGENE_BUCKET` - an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-cellxgene-data-bucket`
-Cellxgene Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
-
-Optional environment variables:
-* `CELLXGENE_ARGS` - catch-all variable that can be used to pass additional command line args to cellxgene server
-* `EXTERNAL_HOST` - the hostname and port from the perspective of the web browser, typically `localhost:5005` if running locally. Defaults to "localhost:{GATEWAY_PORT}"
-* `EXTERNAL_PROTOCOL` - typically http when running locally, can be https when deployed if the gateway is behind a load balancer or reverse proxy that performs https termination. Default value "http"
-* `GATEWAY_IP` - ip addess of instance gateway is running on, mostly used to display SSH instructions. Defaults to `socket.gethostbyname(socket.gethostname())`
-* `GATEWAY_PORT` - local port that the gateway should bind to, defaults to 5005
-* `GATEWAY_EXPIRE_SECONDS` - time in seconds that a cellxgene process will remain idle before being terminated. Defaults to 3600 (one hour)
-* `GATEWAY_EXTRA_SCRIPTS` - JSON array of script paths, will be embedded into each page and forwarded with `--scripts` to cellxgene server
-* `GATEWAY_ENABLE_ANNOTATIONS` - Set to `true` or to `1` to enable cellxgene annotations and gene sets.
-* `GATEWAY_ENABLE_BACKED_MODE` - Set to `true` or to `1` to load AnnData in file-backed mode. This saves memory and speeds up launch time but may reduce overall performance.
-* `GATEWAY_LOG_LEVEL` - default is `INFO`. set to `DEBUG` to increase logging and to `WARNING` to decrease logging.
-* `S3_ENABLE_LISTINGS_CACHE` - Set to `true` or to `1` to cache listings of S3 folders for performance. If the cache becomes stale, set `filecrawl.html?refresh=true` query parameter to refresh the cache.
-
-If any of the following optional variables are set, [ProxyFix](https://werkzeug.palletsprojects.com/en/1.0.x/middleware/proxy_fix/) will be used.
-* `PROXY_FIX_FOR` - Number of upstream proxies setting X-Forwarded-For
-* `PROXY_FIX_PROTO` - Number of upstream proxies setting X-Forwarded-Proto
-* `PROXY_FIX_HOST` - Number of upstream proxies setting X-Forwarded-Host
-* `PROXY_FIX_PORT` - Number of upstream proxies setting X-Forwarded-Port
-* `PROXY_FIX_PREFIX` - Number of upstream proxies setting X-Forwarded-Prefix
-
-The defaults should be fine if you set up a venv and cellxgene_data folder as above.
-
-## Running cellxgene-gateway with Docker
-
-First, build Docker image:
+Pull the changes:
 
 ```bash
-docker build -t cellxgene-gateway .
+git stash  # Stash local changes if needed
+git pull
+git stash pop  # Reapply stashed changes if needed
 ```
 
-Then, cellxgene-gateway can be launched as such:
+Then restart the gateway, for example with `sudo systemctl restart cellxgateway` under systemd. The repository is installed in editable mode, so the restart picks up code changes. `deploy/setup.sh` leaves an existing environment alone, so if `deploy/cellxgateway_env.yaml` changed, remove the environment with `conda env remove -n cellxgateway` and re-run `./deploy/setup.sh`.
+
+## Development
+
+GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `main`, in an environment built from `deploy/cellxgateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `main`.
+
+### Running tests
 
 ```bash
-docker run -it --rm \
--v <local_data_dir>:/cellxgene-data \
--p 5005:5005 \
-cellxgene-gateway
+conda run -n cellxgateway python -m unittest discover tests
 ```
 
-Additional environment variables can be provided with the `-e` parameter:
+### Linting
+
+Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.toml`. Ruff is not part of the `cellxgateway` environment, so run it from any environment that has it:
 
 ```bash
-docker run -it --rm \
--v ../cellxgene_data:/cellxgene-data \
--e GATEWAY_PORT=8080 \
--p 8080:8080 \
-cellxgene-gateway
-```
-## Running cellxgene gateway with start scripts
-
-For your convenience, we provide start scripts for flask, gunicorn and uwsgi.
-
-First, set up a .env
-```bash
-cp env_example .env
-# edit .env
-open .env
+ruff check .
+ruff format --check .
 ```
 
-Then run the scripts in a subshell
-```bash
-( ./start_flask.sh )
-```
+### Rebuilding the spatial viewer
 
-# Customization
+Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript application that runs entirely in the visitor's browser: the gateway only serves files. Browsers cannot load npm packages directly, so [Vite](https://vite.dev) builds Vitessce and its dependencies into plain JavaScript files in `cellxgene_gateway/static/vitessce/`, which `cellxgene_gateway/templates/spatial_viewer.html` loads. The build inputs live in `spatial_viewer_src/`:
 
-The current paradigm for customization is to modify files during a build or deployment phase:
+* `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
+* `vite.config.js`: build settings (output directory, browser shims for Node globals)
+* `package.json` and `package-lock.json`: the npm packages, pinned to exact versions
+* `viewer_build_env.yaml`: the conda environment providing Node
 
-* To modify CSS or JS on particular gateway pages, overwrite or append to the templates
-* To add script tags such as for user analytics to all pages, set GATEWAY_EXTRA_SCRIPTS
-  * these scripts will also be run on the pages served by cellxgene server via the --scripts parameter
-  * See https://github.com/chanzuckerberg/cellxgene/pull/680 for details on --scripts parameter
-
-Currently we use a bash script that copies the gateway to a "build" directory before modifying templates with sed and the like. There is probably a better way.
-
-# Development
-
-We’re actively developing.  Please see the "future work" section of the [wiki](https://github.com/Novartis/cellxgene-gateway/wiki#future-work). If you’re interested in being a contributor please reach out to [@alokito](https://github.com/alokito).
-
-## Developer Install
-
-If you want to develop the code, you will need to clone the repo. Make sure you have the prequesite listed above, then:
-
-1. Clone the repo
+The built files are committed, so deployment needs neither Node nor a build step, and no CDN is contacted at runtime. Rebuild only after upgrading Vitessce or editing `main.js` or `vite.config.js`:
 
 ```bash
-    git clone https://github.com/Novartis/cellxgene-gateway.git
-    cd cellxgene-gateway
+conda env create -f spatial_viewer_src/viewer_build_env.yaml   # once
+cd spatial_viewer_src
+conda run -n viewer-build npm ci          # installs the locked packages into node_modules/ (about 1.8 GB)
+conda run -n viewer-build npm run build   # replaces the contents of ../cellxgene_gateway/static/vitessce/
+rm -rf node_modules                       # optional, frees the disk space
 ```
 
-2. Install requirements with
+The build is reproducible: rebuilding unchanged sources gives identical files. To upgrade Vitessce, run `conda run -n viewer-build npm install --save-exact vitessce@<version>` in `spatial_viewer_src/`, which updates `package.json` and `package-lock.json`, then build as above, update the version in `CREDITS.md`, and commit the sources and the built files together.
 
-```bash
-pip install -r requirements.txt
-```
+`spatial-viewer.js` keeps a fixed name, so it must be served with revalidation rather than long-term caching; the other built files have content hashes in their names and can be cached indefinitely.
 
-3. Install the gateway in developer mode
+The spatial viewer page also adjusts Vitessce at runtime, through `cellxgene_gateway/static/css/spatial_viewer.css` and `cellxgene_gateway/static/js/spatial_viewer.js` (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
 
-```bash
-python setup.py develop
-```
+## Getting help
 
-For convenience, the code repo includes a `run.sh.example` shell script to run the gateway.
+If you run into a problem or have a question, please open an issue on [GitHub](https://github.com/bdsc-tds/cellxgene-gateway/issues), describing what you did, what you expected and what happened instead.
 
-4. Install pre-commit hooks
+## Contributing and Code of Conduct
 
-```bash
-conda install -c conda-forge pre-commit
-pre-commit install
-```
-
-
-## Running Tests
-
-[![Build Status](https://travis-ci.org/Novartis/cellxgene-gateway.svg?branch=master)](https://travis-ci.org/Novartis/cellxgene-gateway)
-
-```bash
-    python -m unittest discover tests
-```
-
-## Code Coverage
-```bash
-    coverage run -m unittest discover tests
-    coverage html
-```
-
-## Running Linters
-
-pip install isort flake8 black
-
-```bash
-isort -rc . # rc means recursive, and was deprecated in dev version of isort
-black .
-```
-
-# Getting Help
-
-If you need help for any reason, please make a github ticket. One of the contributors should help you out.
-
-# Releasing New Versions
-
-## How to prepare for release
-
-- Update Changelog.md and version number in __init__.py
-- Cut a release on github
-	- Go to your project homepage on GitHub
-	- On right side, you will see [Releases](https://github.com/Novartis/cellxgene-gateway/releases) link. Click on it.
-	- Click on Draft a new release
-	- Fill in all the details
-		- Tag version should be the version number of your package release
-		- Release Title can be anything you want, but we use v0.3.11 (the same as the tag to be created on publish)
-		- Description should be changelog
-	- Click Publish release at the bottom of the page
-	- Now under Releases you can view all of your releases.
-	- Copy the download link (tar.gz) and save it somewhere
-
-## How to publish to PyPI
-
-Make sure your `.pypirc` is set up for testpypi and pypi index servers.
- 
-
-```bash
-rm -rf dist
-python setup.py sdist bdist_wheel
-python -m twine upload --repository testpypi dist/*
-python -m twine upload dist/*
-```
-
-# Contributors
-
-* Niket Patel - https://github.com/NiketPatel9
-* Alok Saldanha - https://github.com/alokito
-* Yohann Potier - https://github.com/ypotier
+Interested in contributing? Pull requests are welcome! Check out the [contributing guidelines](CONTRIBUTING.md). Please note that this project is released with a [Contributor Code of Conduct](CONDUCT.md). By contributing to this project, you agree to abide by its terms.

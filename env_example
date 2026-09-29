@@ -1,3 +1,0 @@
-export CELLXGENE_LOCATION=$(pwd)/.venv/bin/cellxgene
-export CELLXGENE_DATA=../cellxgene_data
-export GATEWAY_IP=127.0.0.1

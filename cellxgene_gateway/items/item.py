@@ -7,18 +7,56 @@
 # OR CONDITIONS OF ANY KIND, either express or implied. See the License for
 # the specific language governing permissions and limitations under the License.
 
+
+# Import utility modules
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List
 
 
 class ItemType(Enum):
-    annotation = "annotation"
-    h5ad = "h5ad"
+    """
+    Enum class to represent possible item types
+
+    Members:
+    --------
+    annotation: str
+      Represents annotation file.
+
+    h5ad: str
+      Represents h5ad dataset file.
+    """
+
+    annotation = 'annotation'
+    h5ad = 'h5ad'
 
 
 class Item(ABC):
-    def __init__(self, name: str, type: ItemType, annotations: List["Item"] = None):
+    """
+    Abstract base class to represent data or annotation items.
+    """
+
+    def __init__(
+        self, name: str, type: ItemType, annotations: list['Item'] | None = None
+    ):
+        """
+        Initialise new Item.
+
+        Parameters:
+        -----------
+        name: str
+          Item name.
+
+        type: ItemType
+          Item type (e.g., h5ad or annotation).
+
+        annotations: List[Item], optional
+          List of annotation items linked to this item.
+
+        Returns:
+        --------
+        None
+        """
+
         self.name = name
         self.type = type
         self.annotations = annotations
@@ -26,16 +64,39 @@ class Item(ABC):
     @property
     @abstractmethod
     def descriptor(self):
-        raise Exception('"descriptor" not implemented')
+        """
+        Placeholder for 'descriptor' method to be implemented by subclasses.
+        """
+
+        raise NotImplementedError('"descriptor" not implemented')
 
 
 class ItemTree:
+    """
+    Class to represent tree structure of items and directories
+    """
+
     def __init__(
         self,
         descriptor: str,
-        items: List[Item] = None,
-        branches: List["ItemTree"] = None,
+        items: list[Item] | None = None,
+        branches: list['ItemTree'] | None = None,
     ):
+        """
+        Initialise new ItemTree node.
+
+        Parameters:
+        -----------
+        descriptor: str
+          Unique identifier for tree node (e.g., directory path).
+
+        items: List[Item], optional
+          List of items (files) at this tree level.
+
+        branches: List[ItemTree], optional
+          List of subtrees (subdirectories) under this node.
+        """
+
         self.descriptor = descriptor
         self.items = items
         self.branches = branches

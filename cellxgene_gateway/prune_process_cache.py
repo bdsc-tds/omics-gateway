@@ -7,41 +7,71 @@
 # OR CONDITIONS OF ANY KIND, either express or implied. See the License for
 # the specific language governing permissions and limitations under the License.
 
+
+# Import utility modules
 import logging
 import time
 
+# Import other functions from package
 from cellxgene_gateway import env, util
 
+# Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)
 
 
 class PruneProcessCache:
+    """
+    Background process class to periodically remove expired cache entries.
+    """
+
     def __init__(self, cache):
+        """
+        Initialise with reference to process cache.
+
+        Parameters:
+        -----------
+        cache: ProcessCache
+          Cache storing process entries to be monitored and pruned.
+
+        Returns:
+        --------
+        None
+        """
         self.cache = cache
         self.expire_seconds = env.expire_seconds
 
     def __call__(self):
+        """
+        Start pruning loop. Sleeps for 60 seconds between pruning attempts.
+        """
         while True:
             time.sleep(60)
             self.prune()
 
     def prune(self):
+        """
+        Remove expired processes from cache.
+        """
         timestamp = util.current_time_stamp()
         cutoff = timestamp - self.expire_seconds
-        processes_to_delete = [p for p in self.cache.entry_list if p.timestamp < cutoff]
+        processes_to_delete = [
+            p for p in self.cache.entry_list if p.timestamp < cutoff
+        ]
         processes_to_keep = [
             p for p in self.cache.entry_list if not p.timestamp < cutoff
         ]
 
         logger.debug(
-            f"Cutoff {cutoff} = timestamp {timestamp} - expire seconds {self.expire_seconds} , keeping {processes_to_keep}, pruning {processes_to_delete}"
+            f'Cutoff {cutoff} = timestamp {timestamp} - expire seconds {self.expire_seconds} , keeping {processes_to_keep}, pruning {processes_to_delete}'
         )
 
         for process in processes_to_delete:
             try:
-                logger.info(f"pruning process {process.pid} ({process.key.descriptor})")
+                logger.info(
+                    f'Pruning process {process.pid} ({process.key.descriptor})'
+                )
                 self.cache.prune(process)
             except Exception:
                 logger.exception(
-                    "failed to prune process {process.pid} ({process.key.descriptor})"
+                    'Failed to prune process {process.pid} ({process.key.descriptor})'
                 )

@@ -1,0 +1,129 @@
+/* General customisation with style classes shared across several pages */
+
+/* Base layout for every element */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* body tag style class */
+body {
+  background: #f8f9fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  color: #333333;
+}
+
+/* Full-width responsive container style class */
+.container-fluid {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* Title style class */
+h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+/* Error card style class */
+.error-card {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  margin-top: 3rem;
+}
+
+/* Error icon style class */
+.error-icon {
+  font-size: 2.8rem;
+  opacity: 0.35;
+  margin-bottom: 0.75rem;
+  line-height: 1;
+}
+
+/* Error card title style class */
+.error-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a2433;
+  margin-bottom: 0.5rem;
+}
+
+/* Error filename pill style class */
+.error-filename {
+  display: inline-block;
+  background: #f4f6f8;
+  border: 1px solid #e0e4e9;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.8rem;
+  color: #495057;
+  padding: 0.2rem 0.6rem;
+  margin-bottom: 1rem;
+  word-break: break-all;
+}
+
+/* Error body text style class */
+.error-body {
+  font-size: 0.95rem;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+/* Error hint text style class */
+.error-hint {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+/* Back to top button style class */
+.back-to-top {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: #0066cc;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* Back to top button visible state style class */
+.back-to-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Back to top button style class during hovering */
+.back-to-top:hover {
+  background: #0052a3;
+}
+
+
+/* Preformatted text style class */
+pre {
+  display: block;
+  padding: 8.5px;
+  margin: 0 0 9px;
+  font-size: 0.8rem;
+  line-height: 1.385;
+  color: #333333;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #cccccc;
+  border-radius: 3px;
+  margin-bottom: 1.5rem;
+}

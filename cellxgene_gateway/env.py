@@ -7,66 +7,118 @@
 # OR CONDITIONS OF ANY KIND, either express or implied. See the License for
 # the specific language governing permissions and limitations under the License.
 
+
+# Import utility modules
 import logging
 import os
 
-cellxgene_location = os.environ.get("CELLXGENE_LOCATION")
-cellxgene_data = os.environ.get("CELLXGENE_DATA", "")
-cellxgene_args = os.environ.get("CELLXGENE_ARGS", None)
-gateway_port = int(os.environ.get("GATEWAY_PORT", "5005"))
+# Cellxgene variables
+cellxgene_location = os.environ.get('CELLXGENE_LOCATION')
+# None when unset, so 'no data directory configured' differs from
+# 'configured as working directory'; absolutised only when set (see QC)
+cellxgene_data = os.environ.get('CELLXGENE_DATA')
+if cellxgene_data:
+    cellxgene_data = os.path.abspath(cellxgene_data)
+cellxgene_bucket = os.environ.get('CELLXGENE_BUCKET')
+cellxgene_args = os.environ.get('CELLXGENE_ARGS', None)
+env_vars = {'CELLXGENE_LOCATION': cellxgene_location}
+
+# Dataset metadata variables
+# Not absolutised: opened with `open`, which resolves against working directory
+dataset_metadata_tsv = os.environ.get('DATASET_METADATA_TSV', 'datasets.tsv')
+
+# QC variables; absolutised, as Flask's `send_from_directory` resolves
+# relative directory against package dir, not working directory
+qc_data = os.path.abspath(os.environ.get('QC_DATA', 'analysis_qc'))
+# Kept outside QC tree, which is pipeline-synced and may be read-only
+qc_thumb_cache = os.path.abspath(
+    os.environ.get('QC_THUMB_CACHE', f'{qc_data}_thumbs')
+)
+
+# Gateway variables
+gateway_port = int(os.environ.get('GATEWAY_PORT', '5005'))
 external_host = os.environ.get(
-    "EXTERNAL_HOST",
-    os.environ.get("GATEWAY_HOST", f"localhost:{gateway_port}"),
+    'EXTERNAL_HOST', os.environ.get('GATEWAY_HOST', f'localhost:{gateway_port}')
 )
 external_protocol = os.environ.get(
-    "EXTERNAL_PROTOCOL", os.environ.get("GATEWAY_PROTOCOL", None)
+    'EXTERNAL_PROTOCOL', os.environ.get('GATEWAY_PROTOCOL', None)
 )
-ip = os.environ.get("GATEWAY_IP")
-extra_scripts = os.environ.get("GATEWAY_EXTRA_SCRIPTS")
+ip = os.environ.get('GATEWAY_IP')
+extra_scripts = os.environ.get('GATEWAY_EXTRA_SCRIPTS')
 expire_seconds = int(
-    os.environ.get("GATEWAY_EXPIRE_SECONDS", os.environ.get("GATEWAY_TTL", "3600"))
+    os.environ.get(
+        'GATEWAY_EXPIRE_SECONDS', os.environ.get('GATEWAY_TTL', '3600')
+    )
 )
-enable_annotations = os.environ.get("GATEWAY_ENABLE_ANNOTATIONS", "").lower() in [
-    "true",
-    "1",
+enable_annotations = os.environ.get(
+    'GATEWAY_ENABLE_ANNOTATIONS', ''
+).lower() in ['true', '1']
+enable_backed_mode = os.environ.get(
+    'GATEWAY_ENABLE_BACKED_MODE', ''
+).lower() in ['true', '1']
+# On unless disabled: picks which of two generated configs spatial rows link to
+spatial_metrics = os.environ.get('SPATIAL_METRICS', 'true').lower() in [
+    'true',
+    '1',
 ]
-enable_backed_mode = os.environ.get("GATEWAY_ENABLE_BACKED_MODE", "").lower() in [
-    "true",
-    "1",
-]
-log_level = logging.getLevelName(os.environ.get("GATEWAY_LOG_LEVEL", "INFO"))
 
-env_vars = {
-    "CELLXGENE_LOCATION": cellxgene_location,
-}
 
-proxy_fix_for = int(os.environ.get("PROXY_FIX_FOR", "0"))
-proxy_fix_proto = int(os.environ.get("PROXY_FIX_PROTO", "0"))
-proxy_fix_host = int(os.environ.get("PROXY_FIX_HOST", "0"))
-proxy_fix_port = int(os.environ.get("PROXY_FIX_PORT", "0"))
-proxy_fix_prefix = int(os.environ.get("PROXY_FIX_PREFIX", "0"))
+# Set similar logging level for gateway and werkzeug
+log_level = logging.getLevelName(os.environ.get('GATEWAY_LOG_LEVEL', 'INFO'))
+logging.getLogger('werkzeug').setLevel(log_level)  # Werkzeug logs
 
+
+# Proxy variables
+proxy_fix_for = int(os.environ.get('PROXY_FIX_FOR', '0'))
+proxy_fix_proto = int(os.environ.get('PROXY_FIX_PROTO', '0'))
+proxy_fix_host = int(os.environ.get('PROXY_FIX_HOST', '0'))
+proxy_fix_port = int(os.environ.get('PROXY_FIX_PORT', '0'))
+proxy_fix_prefix = int(os.environ.get('PROXY_FIX_PREFIX', '0'))
+
+# Optional variables
 optional_env_vars = {
-    "EXTERNAL_HOST": external_host,
-    "EXTERNAL_PROTOCOL": external_protocol,
-    "GATEWAY_IP": ip,
-    "GATEWAY_PORT": gateway_port,
-    "GATEWAY_EXTRA_SCRIPTS": extra_scripts,
-    "GATEWAY_EXPIRE_SECONDS": expire_seconds,
-    "GATEWAY_ENABLE_ANNOTATIONS": enable_annotations,
-    "GATEWAY_ENABLE_BACKED_MODE": enable_backed_mode,
-    "GATEWAY_LOG_LEVEL": log_level,
-    "CELLXGENE_ARGS": cellxgene_args,
-    "CELLXGENE_DATA": cellxgene_data,
-    "PROXY_FIX_FOR": proxy_fix_for,
-    "PROXY_FIX_PROTO": proxy_fix_proto,
-    "PROXY_FIX_HOST": proxy_fix_host,
-    "PROXY_FIX_PORT": proxy_fix_port,
-    "PROXY_FIX_PREFIX": proxy_fix_prefix,
+    'EXTERNAL_HOST': external_host,
+    'EXTERNAL_PROTOCOL': external_protocol,
+    'GATEWAY_IP': ip,
+    'GATEWAY_PORT': gateway_port,
+    'GATEWAY_EXTRA_SCRIPTS': extra_scripts,
+    'GATEWAY_EXPIRE_SECONDS': expire_seconds,
+    'GATEWAY_ENABLE_ANNOTATIONS': enable_annotations,
+    'GATEWAY_ENABLE_BACKED_MODE': enable_backed_mode,
+    'GATEWAY_LOG_LEVEL': log_level,
+    'CELLXGENE_ARGS': cellxgene_args,
+    'CELLXGENE_DATA': cellxgene_data,
+    'CELLXGENE_BUCKET': cellxgene_bucket,
+    'DATASET_METADATA_TSV': dataset_metadata_tsv,
+    'QC_DATA': qc_data,
+    'QC_THUMB_CACHE': qc_thumb_cache,
+    'PROXY_FIX_FOR': proxy_fix_for,
+    'PROXY_FIX_PROTO': proxy_fix_proto,
+    'PROXY_FIX_HOST': proxy_fix_host,
+    'PROXY_FIX_PORT': proxy_fix_port,
+    'PROXY_FIX_PREFIX': proxy_fix_prefix,
 }
 
 
 def validate():
+    """
+    Check that all environment variables are properly set and raise error if
+    any are missing. Otherwise, confirm presence of required and optional
+    environment variables in logs.
+
+    Parameters:
+    -----------
+    None
+
+    Returns:
+    --------
+    None
+
+    Raises:
+    -------
+    ValueError
+      If any required environment variables are not set.
+    """
     if not all(env_vars.values()):
         raise ValueError(
             f"""
@@ -83,9 +135,9 @@ def validate():
     """
         )
     else:
-        logging.getLogger("cellxgene_gateway").info(
-            f"Got required env: {env_vars}",
+        logging.getLogger('cellxgene_gateway').info(
+            f'Got required env: {env_vars}'
         )
-        logging.getLogger("cellxgene_gateway").info(
-            f"Got optional env: {optional_env_vars}"
+        logging.getLogger('cellxgene_gateway').info(
+            f'Got optional env: {optional_env_vars}'
         )

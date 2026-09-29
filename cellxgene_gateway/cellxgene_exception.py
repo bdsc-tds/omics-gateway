@@ -9,7 +9,62 @@
 
 
 class CellxgeneException(Exception):
-    def __init__(self, message, http_status):
+    """
+    Custom exception class to handle dataset processing errors during Cellxgene
+    launch. This exception is raised when there are issues within Cellxgene.
+    """
+
+    def __init__(self, message, stdout, stderr, http_status, key):
+        """
+        Initialise CellxgeneException with process output and metadata.
+
+        Parameters:
+        -----------
+        message: str
+          Error message describing failure.
+
+        stdout: str
+          Standard output from failed process.
+
+        stderr: str
+          Standard error from failed process.
+
+        http_status: int
+          HTTP status code associated with failure.
+
+        key: CacheKey
+          Cache key identifying dataset or process.
+
+        Returns:
+        --------
+        None
+        """
         Exception.__init__(self)
         self.message = message
+        self.stdout = stdout
+        self.stderr = stderr
         self.http_status = http_status
+        self.key = key
+
+    @classmethod
+    def from_cache_entry(cls, cache_entry):
+        """
+        Create CellxgeneException from CacheEntry.
+
+        Parameters:
+        -----------
+        cache_entry: CacheEntry
+          Cache entry containing information about failed process.
+
+        Returns:
+        --------
+        CellxgeneException
+          New CellxgeneException initialised with cache entry's data.
+        """
+        return cls(
+            cache_entry.message,
+            cache_entry.all_output,
+            cache_entry.stderr,
+            cache_entry.http_status,
+            cache_entry.key,
+        )

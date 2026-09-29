@@ -1,0 +1,660 @@
+"""
+Script to convert Xenium Ranger output bundle into SpatialData .zarr store for
+Vitessce spatial viewer.
+
+Memory is binding constraint: full-resolution morphology image is
+(4, 40866, 14354), so naive `SpatialData.write()` under dask's default threaded
+scheduler exhausts 16 GB workstation. This script forces single-threaded
+scheduler and small chunks, and writes element by element, so peak usage stays
+bounded and failure is partial rather than total.
+
+Transcripts below quality 20 (qv) and control probes are dropped, so
+Transcript layer shows only molecules counted in Xenium Ranger's cell counts,
+which drive gene colouring.
+
+Always run it under cgroup memory cap so runaway process cannot take desktop
+down with it:
+
+Usage:
+    systemd-run --user --scope -p MemoryMax=5G -p MemorySwapMax=0 \
+        conda run -n spatial python data_prep/convert_xenium.py \
+            --xenium-dir /path/to/xenium_output \
+            --out data/xenium_sample.zarr \
+            --metadata data/xenium_sample.metadata.yaml
+
+--metadata writes dataset metadata into table (see write_store_metadata.py),
+from which generate_datasets_tsv.py builds store's datasets.tsv row.
+"""
+
+# Import utility modules
+import argparse
+import os
+import resource
+import time
+
+import dask
+import numpy as np
+import pandas as pd
+import spatialdata_io
+from spatialdata import SpatialData
+from spatialdata.models import PointsModel, TableModel
+from spatialdata.transformations import get_transformation, set_transformation
+from vitessce.data_utils import (
+    sdata_morton_sort_points,
+    sdata_points_modify_row_group_size,
+)
+
+# Import sibling script; data_prep/ is on sys.path when scripts run directly
+from write_store_metadata import load_metadata, write_store_metadata
+
+# Single-threaded: dask's default scheduler runs one task per core, each
+# materialising image chunk, so peak memory scales with core count
+dask.config.set(scheduler='synchronous')
+
+# Written singly, lightest first, so failure leaves partial store; shapes
+# precede table, which annotates them by region name
+ELEMENT_ORDER = [
+    'cell_boundaries',
+    'nucleus_boundaries',
+    'table',
+    'cell_labels',
+    'morphology_focus',
+    'transcripts',
+]
+
+# Only columns viewer reads. Xenium carries nine more per transcript, and at
+# 13.5M rows dropping them is what keeps sort and store affordable
+TRANSCRIPT_COLUMNS = ['x', 'y', 'z', 'feature_name']
+
+# Xenium Ranger's cell counts, behind gene colouring, keep only calls at or
+# above this quality (checked: transcript_counts sum matches exactly)
+MIN_TRANSCRIPT_QV = 20
+
+# Row group small enough that browser can fetch spatial tile as byte range
+# instead of pulling whole file
+TRANSCRIPT_ROW_GROUP_SIZE = 50_000
+
+
+# Function to report peak resident memory of process
+def peak_rss_gb():
+    """
+    Report peak resident set size of current process.
+
+    Returns:
+    --------
+    peak: float
+      Maximum resident set size reached so far, in gibibytes.
+    """
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024
+
+
+# Function to attach cell type labels to table
+def add_cell_types(table, csv_path):
+    """
+    Attach externally curated cell type labels to SpatialData table.
+
+    Cells missing from annotation file are labelled 'Unassigned' rather than
+    left as NaN, since Vitessce's obsSets view cannot render missing values.
+
+    Parameters:
+    -----------
+    table: anndata.AnnData
+      Table element of SpatialData object, indexed by cell id.
+    csv_path: str
+      Path to .csv with 'cell_id' and 'group' columns.
+
+    Returns:
+    --------
+    n_unassigned: int
+      Number of cells without annotation.
+    """
+    types = pd.read_csv(csv_path).set_index('cell_id')['group']
+    mapped = table.obs['cell_id'].map(types).fillna('Unassigned')
+    table.obs['cell_type'] = pd.Categorical(mapped)
+
+    return int((mapped == 'Unassigned').sum())
+
+
+# Function to attach precomputed UMAP embedding to table
+def add_umap(table, csv_path):
+    """
+    Attach Xenium Ranger UMAP projection to SpatialData table.
+
+    Parameters:
+    -----------
+    table: anndata.AnnData
+      Table element of SpatialData object, indexed by cell id.
+    csv_path: str
+      Path to Xenium Ranger's umap projection.csv ('Barcode', 'UMAP-1',
+      'UMAP-2').
+
+    Returns:
+    --------
+    n_missing: int
+      Number of cells with no embedding coordinates, filled with zeros.
+    """
+    umap = pd.read_csv(csv_path).set_index('Barcode')
+    aligned = umap.reindex(table.obs['cell_id'])
+    n_missing = int(aligned.isna().any(axis=1).sum())
+    table.obsm['X_umap'] = aligned.fillna(0.0).to_numpy()
+
+    return n_missing
+
+
+# Function to add cell centroids in viewer's rendered coordinates
+def add_global_centroids(sdata, region, key='spatial_global'):
+    """
+    Copy table's cell centroids into obsm, scaled to region's coordinate system.
+
+    Vitessce does lasso selection and cross-view hover by point-in-polygon on
+    obsLocations. Its AnnData loader applies no coordinate transform, while
+    shapes loader bakes element's transform into polygon coordinates, so
+    centroids must be stored already transformed. Xenium writes them in
+    microns, so region's own scale is read from store rather than hardcoded.
+
+    Parameters:
+    -----------
+    sdata: spatialdata.SpatialData
+      Object holding table and shapes element table annotates.
+    region: str
+      Name of that shapes element (e.g. 'cell_boundaries').
+    key: str
+      obsm key to write transformed centroids under.
+
+    Returns:
+    --------
+    scale: list of float
+      x and y scale factors applied, for logging.
+    """
+    table = sdata.tables['table']
+    affine = get_transformation(sdata.shapes[region]).to_affine_matrix(
+        input_axes=('x', 'y'), output_axes=('x', 'y')
+    )
+    centroids = np.asarray(table.obsm['spatial'], dtype='float64')
+    homogeneous = np.column_stack([
+        centroids,
+        np.ones(len(centroids), dtype='float64'),
+    ])
+    table.obsm[key] = (homogeneous @ affine.T)[:, :2]
+
+    return [float(affine[0, 0]), float(affine[1, 1])]
+
+
+# Function to make string columns readable by viewer
+def normalise_string_dtypes(table):
+    """
+    Rewrite pandas string-dtype columns as plain object columns.
+
+    AnnData writes pandas `str` dtype as 'nullable-string-array', which is zarr
+    group of mask and values arrays. Vitessce only reads plain 'string-array',
+    so gene names and any string annotation stored like this load as empty and
+    heatmap/gene list render nothing.
+
+    Parameters:
+    -----------
+    table: anndata.AnnData
+      Table element whose var index and obs columns are rewritten in place.
+
+    Returns:
+    --------
+    converted: list of str
+      Names of columns that were rewritten ('var index' for index).
+    """
+    converted = []
+    if table.var.index.dtype != object:
+        table.var.index = pd.Index(table.var.index.astype(object))
+        converted.append('var index')
+    for frame_name, frame in (('obs', table.obs), ('var', table.var)):
+        for column in frame.columns:
+            dtype = frame[column].dtype
+            # Categoricals already write their categories as plain string-array,
+            # and SpatialData requires region column to stay categorical
+            if isinstance(dtype, pd.CategoricalDtype) or dtype == object:
+                continue
+            if pd.api.types.is_string_dtype(frame[column]):
+                frame[column] = frame[column].astype(object)
+                converted.append(f'{frame_name}/{column}')
+
+    return converted
+
+
+# Function to make integer obs columns loadable as viewer metrics
+def downcast_int64_obs(table):
+    """
+    Rewrite int64 obs columns as int32 when their values fit.
+
+    Zarr reader in viewer returns int64 as BigInt64Array, which its obs column
+    loader cannot copy into Float32Array: load throws and every metric sharing
+    that file definition comes up blank. Xenium counts peak in low thousands.
+
+    Parameters:
+    -----------
+    table: anndata.AnnData
+      Table element whose obs columns are rewritten in place.
+
+    Returns:
+    --------
+    converted: list of str
+      Names of obs columns that were downcast.
+    """
+    info = np.iinfo('int32')
+    converted = []
+    for column in table.obs.columns:
+        values = table.obs[column]
+        if values.dtype != 'int64':
+            continue
+        # Out-of-range column stays int64; config generator then skips it
+        if values.min() < info.min or values.max() > info.max:
+            continue
+        table.obs[column] = values.astype('int32')
+        converted.append(column)
+
+    return converted
+
+
+# Function to point table at segmentation element that was written
+def retarget_table_region(sdata, region):
+    """
+    Repoint table's annotated region at element held by store.
+
+    Xenium reader annotates table against 'cell_labels', but rasterised label
+    pyramid is skipped when polygon boundaries are used. Vitessce joins table to
+    segmentations through region name, so dangling reference leaves every view
+    unlinked.
+
+    Parameters:
+    -----------
+    sdata: spatialdata.SpatialData
+      Object whose table should be repointed.
+    region: str
+      Name of element annotated by table.
+
+    Returns:
+    --------
+    None
+    """
+    table = sdata.tables['table']
+    table.obs['region'] = pd.Categorical([region] * table.n_obs)
+    TableModel.parse(
+        table,
+        region=region,
+        region_key='region',
+        instance_key='cell_id',
+        overwrite_metadata=True,
+    )
+
+
+# Function to index nucleus polygons by cell they belong to
+def reindex_nucleus_boundaries(sdata):
+    """
+    Replace nucleus boundaries' positional index with their cell id.
+
+    Xenium reader leaves nuclei on meaningless integer range with cell id in
+    ordinary column, so parquet records '__index_level_0__' as index column.
+    Vitessce reads that metadata for its obs index whenever file def carries no
+    tablePath, which is how extra segmentations are served, so ids there must
+    mean something. Cells are already indexed by cell id, so this mirrors them.
+
+    Index is deliberately left non-unique: cells carrying several nucleus
+    polygons repeat their id, and dropping those polygons would lose real data.
+
+    Parameters:
+    -----------
+    sdata: spatialdata.SpatialData
+      Object whose 'nucleus_boundaries' element is reindexed in place.
+
+    Returns:
+    --------
+    n_duplicated: int
+      Number of nuclei whose cell id is shared with another nucleus.
+    """
+    nuclei = sdata.shapes['nucleus_boundaries']
+
+    # Assigned in place: set_index returns new frame, losing transform in .attrs
+    nuclei.index = pd.Index(nuclei['cell_id'])
+    del nuclei['cell_id']
+
+    return int(nuclei.index.duplicated().sum())
+
+
+# Function to re-parse points element without losing its coordinate transform
+def parse_points_keeping_transform(points, transformations):
+    """
+    Parse points element and restore coordinate transform afterwards.
+
+    PointsModel.parse refuses transformations passed alongside element that
+    already carries one, and applies identity when none is given. Setting it
+    after parsing sidesteps both, and identity here would place transcripts in
+    microns while image and shapes are in pixels.
+
+    Parameters:
+    -----------
+    points: dask.dataframe.DataFrame
+      Points to parse.
+    transformations: dict
+      Coordinate-system name to transformation, as captured before parsing.
+
+    Returns:
+    --------
+    parsed: dask.dataframe.DataFrame
+      Parsed points element carrying original transform.
+    """
+    parsed = PointsModel.parse(points, feature_key='feature_name')
+    set_transformation(parsed, transformations, set_all=True)
+
+    return parsed
+
+
+# Function to make transcripts spatially queryable by viewer
+def prepare_transcripts(sdata, var_names):
+    """
+    Rewrite transcripts point cloud in form Vitessce can query by region.
+
+    Viewer fetches points for visible rectangle only when store carries
+    Morton (Z-order) code per point and rows are sorted by it. It also needs
+    integer index into table's var names per point, since it colours points by
+    gene without reading gene strings. Dictionary-encoded columns must be
+    rightmost, which is why columns are reordered last.
+
+    Parameters:
+    -----------
+    sdata: spatialdata.SpatialData
+      Object whose 'transcripts' element is rewritten in place.
+    var_names: pandas.Index
+      Gene names of annotating table, defining feature index per point.
+
+    Returns:
+    --------
+    n_dropped: int
+      Number of control-probe detections removed.
+    n_low_qv: int
+      Number of gene transcripts removed for quality below MIN_TRANSCRIPT_QV.
+    """
+    points = sdata.points['transcripts']
+
+    # Captured because morton sort re-parses element without them, which would
+    # silently reset micron-to-pixel scale to identity
+    transformations = get_transformation(points, get_all=True)
+
+    # Control probes are absent from var names, so they cannot carry feature
+    # index; dropping beats writing them with sentinel code
+    is_gene = points['is_gene']
+    # Low-quality calls are not counted, so layer would show uncounted molecules
+    passes_qv = points['qv'] >= MIN_TRANSCRIPT_QV
+    n_dropped, n_low_qv = dask.compute(
+        (~is_gene).sum(), (is_gene & ~passes_qv).sum()
+    )
+    points = points[is_gene & passes_qv][TRANSCRIPT_COLUMNS]
+
+    # Map through categories rather than per-row lookup: 13.5M string lookups
+    # against list is minutes, this is one pass over ~500 categories
+    points['feature_name'] = points['feature_name'].cat.as_known()
+    lookup = pd.Series(
+        [
+            var_names.get_loc(name) if name in var_names else -1
+            for name in points['feature_name'].cat.categories
+        ],
+        dtype='int32',
+    )
+    points['feature_name_codes'] = (
+        points['feature_name']
+        .cat.codes.map(lookup, meta=('feature_name_codes', 'int32'))
+        .astype('int32')
+    )
+
+    sdata.points['transcripts'] = parse_points_keeping_transform(
+        points, transformations
+    )
+    sdata_morton_sort_points(sdata, 'transcripts')
+
+    # Reordered after sort because sort appends its own numeric columns
+    sorted_points = sdata.points['transcripts']
+    ordered = [
+        name
+        for name in sorted_points.columns
+        if not isinstance(sorted_points[name].dtype, pd.CategoricalDtype)
+    ]
+    ordered += [name for name in sorted_points.columns if name not in ordered]
+    sdata.points['transcripts'] = parse_points_keeping_transform(
+        sorted_points[ordered], transformations
+    )
+
+    return int(n_dropped), int(n_low_qv)
+
+
+# Function to read Xenium bundle into SpatialData object
+def read_xenium(xenium_dir, transcripts, cells_labels, nucleus_boundaries):
+    """
+    Read Xenium Ranger bundle, skipping elements not used by viewer.
+
+    4 GB morphology MIP is always skipped in favour of multi-channel
+    morphology_focus images, and nucleus labels are skipped because nuclei are
+    drawn from polygon boundaries.
+
+    Parameters:
+    -----------
+    xenium_dir: str
+      Path to Xenium Ranger output directory.
+    transcripts: bool
+      Whether to include transcripts point cloud.
+    cells_labels: bool
+      Whether to rasterise cell segmentation masks. Polygon boundaries are
+      preferred; this is fallback when viewer cannot render them.
+    nucleus_boundaries: bool
+      Whether to include nucleus polygon boundaries as second segmentation.
+
+    Returns:
+    --------
+    sdata: spatialdata.SpatialData
+      Lazily loaded SpatialData object.
+    """
+    return spatialdata_io.xenium(
+        xenium_dir,
+        cells_boundaries=True,
+        nucleus_boundaries=nucleus_boundaries,
+        cells_labels=cells_labels,
+        nucleus_labels=False,
+        transcripts=transcripts,
+        morphology_mip=False,
+        morphology_focus=True,
+        aligned_images=False,
+        cells_table=True,
+        n_jobs=1,
+        image_models_kwargs={'chunks': (1, 2048, 2048)},
+        labels_models_kwargs={'chunks': (2048, 2048)},
+    )
+
+
+# Function to write SpatialData object element by element
+def write_incrementally(source, out_path, skip=()):
+    """
+    Write SpatialData store element by element, reporting peak memory.
+
+    Writing whole object in one call materialises several large pyramids
+    concurrently; writing per element bounds peak. Empty store is created first
+    because write_element requires object to be backed.
+
+    Parameters:
+    -----------
+    source: spatialdata.SpatialData
+      Lazily loaded object whose elements are copied into store.
+    out_path: str
+      Destination .zarr store path.
+    skip: tuple of str
+      Element names to leave unwritten, for elements needing preparation that
+      must happen after heavier elements have been written and released.
+
+    Returns:
+    --------
+    backed: spatialdata.SpatialData
+      Store-backed object, ready for further write_element calls.
+    """
+    # gen_elements yields (element_type, name, element)
+    names = [name for _, name, _ in source.gen_elements()]
+    ordered = [n for n in ELEMENT_ORDER if n in names]
+    ordered += [n for n in names if n not in ordered]
+    ordered = [n for n in ordered if n not in skip]
+
+    # write_element only works on backed object, so establish store first
+    backed = SpatialData()
+    backed.write(out_path, overwrite=True)
+
+    for name in ordered:
+        start = time.time()
+        backed[name] = source[name]
+        backed.write_element(name, overwrite=True)
+        print(
+            f'  wrote {name} in {time.time() - start:.1f}s '
+            f'(peak RSS {peak_rss_gb():.2f} GB)',
+            flush=True,
+        )
+
+    return backed
+
+
+# Function to parse command-line arguments
+def parse_args():
+    """
+    Parse command-line arguments for Xenium conversion.
+
+    Returns:
+    --------
+    args: argparse.Namespace
+      Parsed arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description='Convert a Xenium bundle to a SpatialData .zarr store.'
+    )
+    parser.add_argument(
+        '--xenium-dir', required=True, help='Xenium Ranger output directory.'
+    )
+    parser.add_argument(
+        '--out', required=True, help='Destination .zarr store path.'
+    )
+    parser.add_argument(
+        '--cell-types',
+        default=None,
+        help="Optional .csv with 'cell_id' and 'group' columns.",
+    )
+    parser.add_argument(
+        '--no-transcripts',
+        dest='transcripts',
+        action='store_false',
+        help='Skip the transcripts point cloud (much the slowest element).',
+    )
+    parser.add_argument(
+        '--no-nucleus-boundaries',
+        dest='nucleus_boundaries',
+        action='store_false',
+        help='Skip nucleus polygon boundaries.',
+    )
+    parser.add_argument(
+        '--cells-labels',
+        action='store_true',
+        help='Rasterise cell masks instead of using polygon boundaries.',
+    )
+    parser.add_argument(
+        '--metadata',
+        default=None,
+        help='Optional YAML of dataset metadata for datasets.tsv '
+        '(see write_store_metadata.py).',
+    )
+
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    # Fail before expensive read rather than on silently empty result
+    if not os.path.isdir(args.xenium_dir):
+        raise FileNotFoundError(
+            f'Xenium directory {os.path.abspath(args.xenium_dir)} does not exist.'
+        )
+    metadata = load_metadata(args.metadata) if args.metadata else None
+
+    # Elements are dask-backed, so cheap operation
+    start = time.time()
+    sdata = read_xenium(
+        args.xenium_dir,
+        args.transcripts,
+        args.cells_labels,
+        args.nucleus_boundaries,
+    )
+    print(f'read in {time.time() - start:.1f}s', flush=True)
+    print(sdata, flush=True)
+
+    if 'nucleus_boundaries' in sdata.shapes:
+        n = reindex_nucleus_boundaries(sdata)
+        print(f'nuclei reindexed by cell id ({n} duplicate ids)', flush=True)
+
+    # Enrich table before writing it: store is written once, per element
+    table = sdata.tables['table']
+    if not args.cells_labels:
+        retarget_table_region(sdata, 'cell_boundaries')
+        print('table region repointed to cell_boundaries', flush=True)
+    if args.cell_types:
+        n = add_cell_types(table, args.cell_types)
+        print(f'cell types attached ({n} cells unassigned)', flush=True)
+
+    # Xenium Ranger's own UMAP, so viewer doesn't need another embedding
+    umap_csv = os.path.join(
+        args.xenium_dir,
+        'analysis',
+        'umap',
+        'gene_expression_2_components',
+        'projection.csv',
+    )
+    if os.path.isfile(umap_csv):
+        n = add_umap(table, umap_csv)
+        print(f'UMAP attached ({n} cells without coordinates)', flush=True)
+
+    # Lasso and cross-view hover test centroids, not polygons; label
+    # segmentations have no shapes element to read scale from
+    if not args.cells_labels:
+        scale = add_global_centroids(sdata, 'cell_boundaries')
+        print(f'global centroids written (scale {scale})', flush=True)
+
+    # Must run last, after every column steps above may add
+    converted = normalise_string_dtypes(table)
+    if converted:
+        print(f'string dtypes normalised: {", ".join(converted)}', flush=True)
+    converted = downcast_int64_obs(table)
+    if converted:
+        print(f'int64 obs downcast: {", ".join(converted)}', flush=True)
+
+    # Peak memory is reported so cap can be sized from real run. Transcripts are
+    # held back so their sort does not run alongside image pyramids
+    backed = write_incrementally(sdata, args.out, skip=('transcripts',))
+
+    if args.transcripts:
+        step = time.time()
+        n, n_low_qv = prepare_transcripts(sdata, table.var.index)
+        print(
+            f'transcripts prepared in {time.time() - step:.1f}s '
+            f'({n} control-probe detections and {n_low_qv} below qv '
+            f'{MIN_TRANSCRIPT_QV} dropped)',
+            flush=True,
+        )
+        step = time.time()
+        backed['transcripts'] = sdata['transcripts']
+        backed.write_element('transcripts', overwrite=True)
+        print(
+            f'  wrote transcripts in {time.time() - step:.1f}s '
+            f'(peak RSS {peak_rss_gb():.2f} GB)',
+            flush=True,
+        )
+        sdata_points_modify_row_group_size(
+            backed, 'transcripts', TRANSCRIPT_ROW_GROUP_SIZE
+        )
+
+    if metadata is not None:
+        keys = write_store_metadata(args.out, metadata)
+        print(f'metadata written: {", ".join(keys)}', flush=True)
+
+    backed.write_consolidated_metadata()
+    print(
+        f'done in {time.time() - start:.1f}s, peak RSS '
+        f'{peak_rss_gb():.2f} GB -> {args.out}',
+        flush=True,
+    )

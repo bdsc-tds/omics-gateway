@@ -4,52 +4,74 @@
 #
 # PREREQUISITES:
 # - Gunicorn installed (included with cellxgene 1.3.0, or: pip install gunicorn)
-# - Virtual environment activated
-# - .env file with CELLXGENE_LOCATION and CELLXGENE_DATA (or CELLXGENE_BUCKET)
+# - Conda env named by CONDA_ENV (default: cellxgateway)
 #
 # USAGE:
 # ./start_gunicorn.sh
+#
+# Configuration lives here, not in .env: every setting below is written as
+# ${VAR:-default}, so environment still overrides it (e.g. systemd
+# Environment= or inline export)
 
 # Exit on error
 set -e
 
-# Get the directory where this script is located
+# Get directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Source environment variables
-echo "Loading environment variables..."
-if [ -f "$SCRIPT_DIR/.env" ]; then
-    source "$SCRIPT_DIR/.env"
-else
-    echo "Error: .env file not found at $SCRIPT_DIR/.env"
-    echo "Please create it with required environment variables"
+
+# Server config; paths derive from conda env and repo, so host-independent
+# Conda variables
+CONDA_ROOT=${CONDA_ROOT:-$HOME/miniforge3}
+CONDA_ENV=${CONDA_ENV:-cellxgateway}
+CONDA_ENV_BIN="$CONDA_ROOT/envs/$CONDA_ENV/bin"
+
+# Cellxgene variables
+export PATH="$CONDA_ENV_BIN:$PATH"
+export CELLXGENE_LOCATION=${CELLXGENE_LOCATION:-$CONDA_ENV_BIN/cellxgene}
+export CELLXGENE_DATA=${CELLXGENE_DATA:-$SCRIPT_DIR/data}
+export QC_DATA=${QC_DATA:-$SCRIPT_DIR/analysis_qc}
+export GATEWAY_LOG_LEVEL=${GATEWAY_LOG_LEVEL:-INFO}
+export GATEWAY_IP=${GATEWAY_IP:-127.0.0.1}
+
+# Trust forwarded headers set by reverse proxy
+export PROXY_FIX_FOR=${PROXY_FIX_FOR:-1}
+export PROXY_FIX_PROTO=${PROXY_FIX_PROTO:-1}
+export PROXY_FIX_HOST=${PROXY_FIX_HOST:-1}
+export PROXY_FIX_PREFIX=${PROXY_FIX_PREFIX:-1}
+
+# Check cellxgene binary exists: defaults always set, but may point nowhere
+if [ ! -x "$CELLXGENE_LOCATION" ]; then
+    echo "Error: cellxgene not found at $CELLXGENE_LOCATION"
+    echo "Set CELLXGENE_LOCATION, or CONDA_ROOT/CONDA_ENV (currently:"
+    echo "  CONDA_ROOT=$CONDA_ROOT, CONDA_ENV=$CONDA_ENV)"
     exit 1
 fi
 
-# Verify required environment variables
-if [ -z "$CELLXGENE_LOCATION" ]; then
-    echo "Error: CELLXGENE_LOCATION not set"
+# Check data directory exists: gateway only checks it is set, on first request
+if [ ! -d "$CELLXGENE_DATA" ]; then
+    echo "Error: data directory not found at $CELLXGENE_DATA"
+    echo "Set CELLXGENE_DATA, or create $SCRIPT_DIR/data (deploy/setup.sh does)"
     exit 1
 fi
 
-if [ -z "$CELLXGENE_DATA" ] && [ -z "$CELLXGENE_BUCKET" ]; then
-    echo "Error: Either CELLXGENE_DATA or CELLXGENE_BUCKET must be set"
-    exit 1
-fi
-
-# Gunicorn configuration
-# WARNING: Multi-worker mode has cache synchronization issues (see plans/002-shared-cache-implementation.md)
-# Each worker maintains its own in-memory cache, causing 404s for static assets when different
-# workers handle requests for the same dataset. Use GUNICORN_WORKERS=1 until shared cache is implemented.
+# Gunicorn config: one worker, since each keeps own in-memory cache and peers
+# 404 on its datasets (https://github.com/Novartis/cellxgene-gateway/pull/99)
 WORKERS=${GUNICORN_WORKERS:-1}
+# gthread workers serve requests on threads sharing one BackendCache, so
+# multi-worker cache sync issues never arise
+WORKER_CLASS=${GUNICORN_WORKER_CLASS:-gthread}
+THREADS=${GUNICORN_THREADS:-8}
 BIND=${GATEWAY_IP:-0.0.0.0}:${GATEWAY_PORT:-5005}
 TIMEOUT=${GUNICORN_TIMEOUT:-120}
-WORKER_CLASS=${GUNICORN_WORKER_CLASS:-sync}
 KEEPALIVE=${GUNICORN_KEEPALIVE:-5}
 LOG_LEVEL=${GUNICORN_LOG_LEVEL:-info}
 
-# Production optimization: enable backed mode to reduce memory usage
+# Production optimisation: enable backed mode to reduce memory usage
 export GATEWAY_ENABLE_BACKED_MODE=${GATEWAY_ENABLE_BACKED_MODE:-true}
+
+# Spatial viewer: false links no-Metric configs (generator writes both)
+export SPATIAL_METRICS=${SPATIAL_METRICS:-true}
 
 # Check if gunicorn is installed
 if ! command -v gunicorn &> /dev/null; then
@@ -60,29 +82,33 @@ fi
 # Display configuration
 echo "Starting Cellxgene Gateway with Gunicorn..."
 echo "Configuration:"
+echo "  Cellxgene executable: ${CELLXGENE_LOCATION}"
 echo "  Data source: ${CELLXGENE_DATA:-$CELLXGENE_BUCKET}"
+echo "  QC data: ${QC_DATA}"
 echo "  Binding to: $BIND"
 echo "  Workers: $WORKERS"
 echo "  Worker class: $WORKER_CLASS"
+echo "  Threads per worker: $THREADS"
 echo "  Timeout: ${TIMEOUT}s"
 echo "  Keepalive: ${KEEPALIVE}s"
 echo "  Log level: $LOG_LEVEL"
+echo "  Gateway log level: ${GATEWAY_LOG_LEVEL}"
 echo "  Backed mode: ${GATEWAY_ENABLE_BACKED_MODE}"
+echo "  Spatial metrics: ${SPATIAL_METRICS}"
+echo "  Proxy fix (for/proto/host/prefix): ${PROXY_FIX_FOR}/${PROXY_FIX_PROTO}/${PROXY_FIX_HOST}/${PROXY_FIX_PREFIX}"
 echo ""
 
 cd "$SCRIPT_DIR"
 
-# Start Gunicorn with optimized settings
-# Additional options you can add via environment variables:
-# - GUNICORN_MAX_REQUESTS: Restart worker after N requests (prevents memory leaks)
-# - GUNICORN_MAX_REQUESTS_JITTER: Add randomness to max-requests
+# Optional: GUNICORN_MAX_REQUESTS restarts worker after N requests (memory
+# leaks), GUNICORN_MAX_REQUESTS_JITTER randomises that count
 exec gunicorn cellxgene_gateway.gateway:app \
     --workers "$WORKERS" \
     --worker-class "$WORKER_CLASS" \
+    --threads "$THREADS" \
     --bind "$BIND" \
     --timeout "$TIMEOUT" \
     --keep-alive "$KEEPALIVE" \
-    --access-logfile - \
     --error-logfile - \
     --log-level "$LOG_LEVEL" \
     --preload \

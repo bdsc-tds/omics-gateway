@@ -140,3 +140,15 @@ dmypy.json
 
 *.patch
 .vscode
+
+# Avoid importing data and QC
+data/
+analysis_qc/
+analysis_qc_thumbs/
+summary/
+
+# Runtime directories created by deploy/setup.sh
+logs/
+
+# Restored by `npm ci` from tracked package-lock.json
+spatial_viewer_src/node_modules/

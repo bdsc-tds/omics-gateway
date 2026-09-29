@@ -6,6 +6,9 @@
 # under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
 # OR CONDITIONS OF ANY KIND, either express or implied. See the License for
 # the specific language governing permissions and limitations under the License.
+
+
+# Import utility modules
 import datetime
 import logging
 import re
@@ -13,25 +16,34 @@ from enum import Enum
 
 import psutil
 from flask import make_response, render_template, request
-from flask.wrappers import Response
 from requests import get, post, put
 
-from cellxgene_gateway import env
-from cellxgene_gateway.cellxgene_exception import CellxgeneException
+# Import other functions from package
+from cellxgene_gateway.cache_exception import CacheException
 from cellxgene_gateway.flask_util import querystring
 from cellxgene_gateway.util import current_time_stamp
 
+# Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)
 
 
 class CacheEntryStatus(Enum):
-    loaded = "loaded"
-    loading = "loading"
-    error = "error"
-    terminated = "terminated"
+    """
+    Enum class to list possible cache entry statuses.
+    """
+
+    loaded = 'Loaded'
+    loading = 'Loading'
+    error = 'Error'
+    terminated = 'Terminated'
 
 
 class CacheEntry:
+    """
+    Class to manage cache entries and associated metadata like process ID,
+    key, port, timestamp, and status.
+    """
+
     def __init__(
         self,
         pid,
@@ -45,6 +57,45 @@ class CacheEntry:
         stderr,
         http_status,
     ):
+        """
+        Initialise new CacheEntry with provided parameters.
+
+        Parameters:
+        -----------
+        pid: int
+          Process ID associated with cache entry.
+
+        key: str
+          Unique key associated with cache entry.
+
+        port: int
+          Port number associated with cache entry.
+
+        launchtime: float
+          Timestamp when cache entry was launched.
+
+        timestamp: float
+          Timestamp when cache entry was created.
+
+        status: CacheEntryStatus
+          Cache entry status (loading, loaded, error, or terminated).
+
+        message: str or None
+          Message describing current state or error associated with cache entry.
+
+        all_output: str or None
+          Complete output generated for cache entry.
+
+        stderr: str or None
+          Standard error output associated with cache entry.
+
+        http_status: int or None
+          HTTP status code related to cache entry.
+
+        Returns:
+        --------
+        None
+        """
         self.pid = pid
         self.key = key
         self.port = port
@@ -58,6 +109,22 @@ class CacheEntry:
 
     @classmethod
     def for_key(cls, key, port):
+        """
+        Create new CacheEntry for given key and port with default values.
+
+        Parameters:
+        -----------
+        key: str
+          Unique key associated with cache entry.
+
+        port: int
+          Port number associated with cache entry.
+
+        Returns:
+        --------
+        CacheEntry: object
+          New CacheEntry with default values.
+        """
         return cls(
             None,
             key,
@@ -73,27 +140,86 @@ class CacheEntry:
 
     @property
     def source_name(self):
-        return self.key.source_name
+        """
+        Get source name of cache entry.
+
+        Returns:
+        --------
+        self.key.source_name: str
+          Source name associated with cache entry's key.
+        """
+        return self.key.source_name.capitalize()
 
     def set_loaded(self, pid):
+        """
+        Set cache entry status to 'loaded' and assign process ID.
+
+        Parameters:
+        -----------
+        pid: int
+          Process ID to associate with cache entry.
+
+        Returns:
+        --------
+        None
+        """
         self.pid = pid
         self.status = CacheEntryStatus.loaded
 
     def set_error(self, message, stderr, http_status):
+        """
+        Set cache entry status to 'error' and set error message stderr and HTTP
+        status code.
+
+        Parameters:
+        -----------
+        message: str
+          Error message describing issue.
+
+        stderr: str
+          Standard error output associated with error.
+
+        http_status: int
+          HTTP status code associated with error.
+
+        Returns:
+        --------
+        None
+        """
         self.message = message
         self.stderr = stderr
         self.http_status = http_status
         self.status = CacheEntryStatus.error
 
     def append_output(self, output):
-        if self.all_output == None:
+        """
+        Append output to cache entry's output.
+
+        Parameters:
+        -----------
+        output: str
+          Output to append to cache entry.
+
+        Returns:
+        --------
+        None
+        """
+        if self.all_output is None:
             self.all_output = output
         else:
             self.all_output += output
 
     def terminate(self):
+        """
+        Terminate processes associated with this entry, including child
+        processes. Ensures all child processes are terminated before parent.
+
+        Returns:
+        --------
+        None
+        """
         pid = self.pid
-        if pid != None and self.status != CacheEntryStatus.terminated:
+        if pid is not None and self.status != CacheEntryStatus.terminated:
             terminated = []
 
             def on_terminate(p):
@@ -111,57 +237,110 @@ class CacheEntry:
             except psutil.NoSuchProcess:
                 pass
 
-            logger.info(f"terminated {terminated}")
+            logger.info(f'Terminated {terminated}')
         self.status = CacheEntryStatus.terminated
 
     def rewrite_text_content(self, cellxgene_content):
-        # for v0.16.0 compatibility, see issue #24
+        """
+        Rewrite content for compatibility, replacing base paths for static
+        resources.
+
+        Parameters:
+        -----------
+        cellxgene_content: str
+          Content to modify.
+
+        Returns:
+        --------
+        gateway_content: str
+          Modified content with updated paths for static resources.
+
+        Note: for v0.16.0 compatibility, see issue #24
+        """
         gateway_content = (
-            re.sub(
-                '(="|\()/static/',
-                f"\\1{self.key.gateway_basepath()}static/",
+            re
+            .sub(
+                r'(="|\()/static/',
+                f'\\1{self.key.gateway_basepath()}static/',
                 cellxgene_content,
             )
-            .replace("http://fonts.gstatic.com", "https://fonts.gstatic.com")
+            .replace('http://fonts.gstatic.com', 'https://fonts.gstatic.com')
             .replace(self.cellxgene_basepath(), self.key.gateway_basepath())
         )
+        if '</body>' in gateway_content:
+            btn = (
+                f'<a href="/terminate-back/{self.key.descriptor}" style="'
+                'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;'
+                'background:#0066cc;color:#fff;border-radius:6px;'
+                'padding:0.55rem 1.1rem;font-size:1rem;text-decoration:none;'
+                'box-shadow:0 2px 8px rgba(0,0,0,0.18);'
+                '">&#8592;&nbsp; Datasets</a>'
+            )
+            gateway_content = gateway_content.replace(
+                '</body>', btn + '</body>', 1
+            )
         return gateway_content
 
     def cellxgene_basepath(self):
-        return f"http://127.0.0.1:{self.port}"
+        """
+        Get base URL for Cellxgene.
+
+        Returns:
+        --------
+        str
+          Base URL for Cellxgene, including port.
+        """
+        return f'http://127.0.0.1:{self.port}'
 
     def serve_content(self, path):
+        """
+        Serve content for given path based on cache entry's status.
+
+        Parameters:
+        -----------
+        path: str
+          Requested path to serve content from.
+
+        Returns:
+        --------
+        Response: object
+          Response containing content or redirection.
+        """
         gateway_basepath = self.key.gateway_basepath()
-        subpath = path[len(self.key.descriptor) :]  # noqa: E203
+        subpath = path[len(self.key.descriptor) :]
         if len(subpath) == 0:
-            r = make_response(f"Redirect to {gateway_basepath}\n", 302)
-            r.headers["location"] = gateway_basepath + querystring()
+            r = make_response(f'Redirect to {gateway_basepath}\n', 302)
+            r.headers['location'] = gateway_basepath + querystring()
             return r
         elif self.status == CacheEntryStatus.loading:
-            launch_time = datetime.datetime.fromtimestamp(self.launchtime)
+            # Converted back to local time so loading page still shows server's
+            # wall clock; tz-aware so offset is explicit
+            launch_time = datetime.datetime.fromtimestamp(
+                self.launchtime, tz=datetime.timezone.utc
+            ).astimezone()
             return render_template(
-                "loading.html",
+                'loading.html',
                 launchtime=launch_time,
                 all_output=self.all_output,
             )
 
         headers = {}
         copy_headers = [
-            "accept",
+            'accept',
             # "accept-encoding" - removed: let requests library handle compression/decompression
-            "accept-language",
-            "cache-control",
-            "connection",
-            "content-length",
-            "content-type",
-            "cookie",
-            "host",
-            "origin",
-            "pragma",
-            "referer",
-            "sec-fetch-mode",
-            "sec-fetch-site",
-            "user-agent",
+            'accept-language',
+            'cache-control',
+            'connection',
+            'content-length',
+            'content-type',
+            'cookie',
+            # 'host' removed: let requests set correct Host for internal target
+            # 'origin' removed: external origin must not reach internal cellxgene
+            'pragma',
+            'referer',
+            'sec-fetch-mode',
+            'sec-fetch-site',
+            'user-agent',
         ]
         for h in copy_headers:
             if h in request.headers:
@@ -170,24 +349,20 @@ class CacheEntry:
         full_path = self.cellxgene_basepath() + subpath + querystring()
         cellxgene_response = None
         try:
-            if request.method in ["GET", "HEAD", "OPTIONS"]:
+            if request.method in ['GET', 'HEAD', 'OPTIONS']:
                 cellxgene_response = get(full_path, headers=headers)
-            elif request.method == "PUT":
+            elif request.method == 'PUT':
                 cellxgene_response = put(
-                    full_path,
-                    headers=headers,
-                    data=request.data,
+                    full_path, headers=headers, data=request.data
                 )
-            elif request.method == "POST":
+            elif request.method == 'POST':
                 cellxgene_response = post(
-                    full_path,
-                    headers=headers,
-                    data=request.data,
+                    full_path, headers=headers, data=request.data
                 )
             else:
-                raise CellxgeneException(f"Unexpected method {request.method}", 400)
-            content_type = cellxgene_response.headers["content-type"]
-            if "text" in content_type:
+                raise CacheException(f'Unexpected method {request.method}', 400)
+            content_type = cellxgene_response.headers['content-type']
+            if 'text' in content_type:
                 gateway_content = self.rewrite_text_content(
                     cellxgene_response.content.decode()
                 )
@@ -200,9 +375,7 @@ class CacheEntry:
                     resp_headers[h] = cellxgene_response.headers[h]
 
             gateway_response = make_response(
-                gateway_content,
-                cellxgene_response.status_code,
-                resp_headers,
+                gateway_content, cellxgene_response.status_code, resp_headers
             )
         finally:
             if cellxgene_response is not None:

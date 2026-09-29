@@ -1,0 +1,62 @@
+/* Spatial viewer page: gateway chrome and Vitessce overrides */
+
+/* Full-page root: Vitessce grid measures its container */
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Loading chrome covers viewer, never hides it, so #root keeps its size */
+#chrome {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: auto;
+  background: inherit;
+}
+
+/* Flip controller's reversed layer rows; their container has no class */
+div:has(> [class*="layerControllerGrid"]) {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+/* Keep Cell Sets tree's 17px gutter within width, avoiding horizontal scroll */
+[class*="setsManagerTree"] {
+  box-sizing: border-box;
+}
+
+/* Chromium draws hanging legend titles ~1.8px above SVG; do not clip them */
+[class*="legend"] svg {
+  overflow: visible;
+}
+
+/* Lift continuous legend's second title beside obsType, clear of colour bar */
+[class*="legend"] svg[height="36"] text[y="18"] {
+  transform: translateY(-18px);
+}
+
+/* Titles set ellipsis but never shrink, pushing buttons out of panel */
+[class*="titleLeft"] {
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Dot plot's fixed-width columns overflow panel with 39 sets: scroll instead */
+[class*="vegaContainer"] {
+  overflow: auto !important;
+}
+
+/* Legends stack in reverse of spatial layer order; flip to match panel */
+[class*="multiLegend"] {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+/* Hide redundant gene title when colour does not encode it */
+[class*="legend"] svg[height="20"] text[y="18"] {
+  display: none;
+}

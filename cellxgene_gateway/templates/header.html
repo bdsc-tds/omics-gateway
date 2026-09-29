@@ -1,0 +1,16 @@
+<!-- Header used in all website pages -->
+<link rel="icon" type="image/png"
+  href="{{ url_for('static', filename='favicon.png') }}" />
+<!-- Vendored: no third-party CDN at runtime; versioned filenames cache
+  forever. Popper loads before Bootstrap, whose dropdowns need it. -->
+<link rel="stylesheet"
+  href="{{ url_for('static', filename='vendor/bootstrap-5.3.3.min.css') }}" />
+<script
+  src="{{ url_for('static', filename='vendor/jquery-3.7.1.min.js') }}"></script>
+<script
+  src="{{ url_for('static', filename='vendor/popper-2.9.2.min.js') }}"></script>
+<script
+  src="{{ url_for('static', filename='vendor/bootstrap-5.3.3.min.js') }}"></script>
+{% for script in extra_scripts %}
+<script src="{{ script }}"></script>
+{% endfor %}

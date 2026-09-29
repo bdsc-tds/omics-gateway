@@ -9,43 +9,605 @@
  the specific language governing permissions and limitations under the License.
 -->
 
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
-     <title>Cellxgene Gateway - FILE CRAWLER</title>
-     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-     <link rel="icon" type="image/png" href="{{ url_for('static', filename='nibr.ico') }}">
-	{% for script in extra_scripts %}
-	<script src="{{ script }}"></script>
-     {% endfor %}
-     <script src="{{ url_for('static', filename='js/annotation.js') }}"></script>
-     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <!-- Default header -->
+  {% include 'header.html' %}
+
+  <!-- Page title -->
+  <title>Datasets - SSF BioHub</title>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/common.css') }}" />
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/filecrawl.css') }}" />
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/navbar.css') }}" />
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/table.css') }}" />
+
+  <!-- Miscellaneous -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="{{ url_for('static', filename='js/annotation.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/filecrawl.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/toggle_filter.js') }}"></script>
 </head>
+
 <body>
-     <header class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar">
-          {% if path %}
-          <h3>Cellxgene Gateway - {{ path }}</h3>
-          {% else %}
-          <h3>Cellxgene Gateway - FILE CRAWLER</h3>
-          {% endif %}
-     </header>
+  <!-- Navbar -->
+  {% include 'navbar.html' %}
 
-     <h4>Please click on a dataset to view it in Cellxgene Server.</h4>
+  {% if use_metadata %}
+  <!-- Sidebar for filters (fixed) -->
+  <div id="sidebarCol">
+    <div class="sidebar" id="sidebar">
+      <h5 class="mb-3">Filter Datasets</h5>
+      <form id="filter-form">
 
-     {{ rendered_html|safe }}
-     <p>
-          Navigation:
-     <ul>
-     {% if path %}
-     <li><a href="{{ url_for('filecrawl') }}">top level</a></li>
-     {% else %}
-     {% endif %}
-     <li><a href="{{ url_for('index') }}">homepage</a></li>
-     </ul>
-     </p>
-     <script>
-          $(() => {
-               $("a.new").click(new_annotation_callback);
-          })
-     </script>
+        <!-- Search form filter -->
+        <div class="mb-3">
+          <label><strong>Search</strong></label>
+          <input type="text" class="form-control form-control-sm" name="search"
+            id="search-input" placeholder="Search datasets..."
+            value="{{ request.args.get('search', '') }}" />
+        </div>
+
+        <!-- Assay checkboxes -->
+        {% if assays is defined %}
+        <div class="mb-3">
+          <label><strong>Assay</strong></label>
+          {% for assay in assays %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="assay"
+              value="{{ assay }}" id="assay-{{ loop.index }}" />
+            <label class="form-check-label" for="assay-{{ loop.index }}">{{
+              assay }}</label>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Disease dropdown -->
+        <div class="mb-3">
+          <label><strong>Disease</strong></label>
+          <div class="dropdown-filter" id="disease-dropdown">
+            <button type="button" class="dropdown-filter-btn" id="disease-btn">
+              Select diseases ▾
+            </button>
+            <div class="dropdown-filter-panel" id="disease-panel">
+              <input type="text" class="dropdown-search" id="disease-search"
+                placeholder="Search…" autocomplete="off" />
+              <ul class="dropdown-option-list" id="disease-list">
+                {% for disease in diseases %}
+                <li class="dropdown-option" data-value="{{ disease }}">{{
+                  disease }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          <!-- Selected disease tags appear here -->
+          <div class="selected-tags" id="disease-tags"></div>
+        </div>
+
+        <!-- Tissue dropdown -->
+        <div class="mb-3">
+          <label><strong>Tissue</strong></label>
+          <div class="dropdown-filter" id="tissue-dropdown">
+            <button type="button" class="dropdown-filter-btn" id="tissue-btn">
+              Select tissues ▾
+            </button>
+            <div class="dropdown-filter-panel" id="tissue-panel">
+              <input type="text" class="dropdown-search" id="tissue-search"
+                placeholder="Search…" autocomplete="off" />
+              <ul class="dropdown-option-list" id="tissue-list">
+                {% for tissue in tissues %}
+                <li class="dropdown-option" data-value="{{ tissue }}">{{ tissue
+                  }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          <div class="selected-tags" id="tissue-tags"></div>
+        </div>
+
+        <!-- Sex checkboxes on single horizontal row -->
+        {% if sexes is defined %}
+        <div class="mb-3">
+          <label><strong>Sex</strong></label>
+          <div class="d-flex flex-wrap gap-3">
+            {% for sex in sexes %}
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" name="sex"
+                value="{{ sex }}" id="sex-{{ loop.index }}" />
+              <label class="form-check-label" for="sex-{{ loop.index }}">{{ sex
+                }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Cells dual-range slider -->
+        {% if cell_count_range is defined and cell_count_range[0] !=
+        cell_count_range[1] %}
+        <div class="mb-3">
+          <label><strong>Cells</strong>
+            <span class="range-display" id="cc-display">
+              {{ cell_count_range[0] }} – {{ cell_count_range[1] }}
+            </span>
+          </label>
+          <div class="dual-range-wrap">
+            <input type="range" class="dual-range" id="cc-min"
+              name="cell_count_min" min="{{ cell_count_range[0] }}"
+              max="{{ cell_count_range[1] }}" value="{{ cell_count_range[0] }}"
+              step="1" />
+            <input type="range" class="dual-range" id="cc-max"
+              name="cell_count_max" min="{{ cell_count_range[0] }}"
+              max="{{ cell_count_range[1] }}" value="{{ cell_count_range[1] }}"
+              step="1" />
+            <div class="dual-range-track" id="cc-track"></div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Genes dual-range slider -->
+        {% if gene_count_range is defined and gene_count_range[0] !=
+        gene_count_range[1] %}
+        <div class="mb-3">
+          <label><strong>Genes</strong>
+            <span class="range-display" id="gc-display">
+              {{ gene_count_range[0] }} – {{ gene_count_range[1] }}
+            </span>
+          </label>
+          <div class="dual-range-wrap">
+            <input type="range" class="dual-range" id="gc-min"
+              name="gene_count_min" min="{{ gene_count_range[0] }}"
+              max="{{ gene_count_range[1] }}" value="{{ gene_count_range[0] }}"
+              step="1" />
+            <input type="range" class="dual-range" id="gc-max"
+              name="gene_count_max" min="{{ gene_count_range[0] }}"
+              max="{{ gene_count_range[1] }}" value="{{ gene_count_range[1] }}"
+              step="1" />
+            <div class="dual-range-track" id="gc-track"></div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Year dual-range slider -->
+        {% if year_range is defined and year_range[0] != year_range[1] %}
+        <div class="mb-3">
+          <label><strong>Date</strong>
+            <span class="range-display" id="year-display">
+              {{ year_range[0] }} – {{ year_range[1] }}
+            </span>
+          </label>
+          <div class="dual-range-wrap">
+            <input type="range" class="dual-range" id="year-min" name="year_min"
+              min="{{ year_range[0] }}" max="{{ year_range[1] }}"
+              value="{{ year_range[0] }}" step="1" />
+            <input type="range" class="dual-range" id="year-max" name="year_max"
+              min="{{ year_range[0] }}" max="{{ year_range[1] }}"
+              value="{{ year_range[1] }}" step="1" />
+            <div class="dual-range-track" id="year-track"></div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% endif %}{# end if assays is defined #}
+
+        <!-- Apply and reset buttons -->
+        <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">
+          Apply Filters
+        </button>
+        <button type="button"
+          class="btn btn-outline-secondary btn-sm w-100 mt-2"
+          id="reset-filters-btn">
+          Reset Filters
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main content (scrollable, offset by sidebar width) -->
+  <div id="mainContent" class="main-content-wrapper">
+    <div class="p-3">
+      <!-- Toggle button -->
+      <div class="d-flex align-items-center" style="margin-bottom: 0.75rem;">
+        <button id="formToggle">◀</button>
+        <h2 class="mb-0">Browse Datasets</h2>
+      </div>
+
+      <!-- General stats -->
+      {% if assays is defined %}
+      <div class="filter-stats">
+        <span>{{ datasets|length }} dataset{{ 's' if datasets|length != 1 else
+          '' }}</span>
+        <span class="filter-stats-sep">·</span>
+        <span>{{ "{:,}".format(total_patients) }} patient{{ 's' if
+          total_patients != 1 else '' }}</span>
+        <span class="filter-stats-sep">·</span>
+        <span>{{ "{:,}".format(total_cells) }} cell{{ 's' if total_cells != 1
+          else '' }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Datasets table -->
+      <div class="table-responsive">
+        <table class="table table-hover table-striped table-sm"
+          style="width:100%; table-layout:fixed;">
+
+          <!-- Table header -->
+          <thead class="table-light">
+            <tr>
+              {% if assays is defined %}
+              <th style="width:30%;" data-sort="disease" data-sort-type="text">
+                Disease</th>
+              <th style="width:21%;" data-sort="description"
+                data-sort-type="text">Description</th>
+              <th style="width:5%;" data-sort="cells" data-sort-type="number">
+                Cells</th>
+              <th style="width:5%;" data-sort="genes" data-sort-type="number">
+                Genes</th>
+              <th style="width:6%;" data-sort="assay" data-sort-type="text">
+                Assay</th>
+              <th style="width:9%;" data-sort="authors" data-sort-type="text">
+                Authors</th>
+              <th style="width:4%;" data-sort="year" data-sort-type="number">
+                Year</th>
+              <th style="width:8%;" data-sort="journal" data-sort-type="text">
+                Journal</th>
+              <th style="width:4%;" data-sort="doi" data-sort-type="text">DOI
+              </th>
+              <th style="width:8%;">Actions</th>
+              {% else %}
+              <th style="width:25%; padding-left:0.75rem;">Dataset</th>
+              <th style="width:25%">Description</th>
+              <th style="width:18%">Actions</th>
+              {% endif %}
+            </tr>
+          </thead>
+
+          <!-- Table body -->
+          <tbody>
+            {% for dataset in datasets %}
+            <tr>
+              {% if assays is defined %}
+
+              <!-- Disease -->
+              <td>
+                <div class="cell-small cell-wrap">{{ dataset.disease or "" }}
+                </div>
+              </td>
+
+              <!-- Description -->
+              {% set desc = dataset.description or "" %}
+              <td>
+                <div class="small cell-wrap" style="line-height:1.3">{{ desc }}
+                </div>
+              </td>
+
+              <!-- Cells -->
+              <td>
+                <span class="cell-small">{{ dataset.cell_count or "" }}</span>
+              </td>
+
+              <!-- Genes -->
+              <td>
+                <span class="cell-small">{{ dataset.gene_count or "" }}</span>
+              </td>
+
+              <!-- Assay -->
+              <td>
+                {% if dataset.assay %}
+                <span class="badge bg-primary">{{ dataset.assay }}</span>
+                {% endif %}
+              </td>
+
+              <!-- Authors (truncated) -->
+              {% set authors = dataset.authors or "" %}
+              <td>
+                <div class="small text-muted cell-truncate"
+                  title="{{ authors }}" style="line-height:1.3">
+                  {% if authors|length > 40 %}{{ authors[:40] }}…{% else %}{{
+                  authors }}{% endif %}
+                </div>
+              </td>
+
+              <!-- Year -->
+              <td>
+                <div class="small text-muted" style="line-height:1.3">{{
+                  dataset.year or "" }}</div>
+              </td>
+
+              <!-- Journal (truncated) -->
+              {% set journal = dataset.journal or "" %}
+              <td>
+                <div class="small text-muted cell-truncate"
+                  title="{{ journal }}" style="line-height:1.3">
+                  {% if journal|length > 30 %}{{ journal[:30] }}…{% else %}{{
+                  journal }}{% endif %}
+                </div>
+              </td>
+
+              <!-- DOI (clickable link) -->
+              <td>
+                {% set doi = dataset.doi or "" %}
+                {% if doi %}
+                <a href="{{ doi }}" target="_blank" rel="noopener noreferrer"
+                  class="small">DOI ↗</a>
+                {% endif %}
+              </td>
+
+              <!-- Actions -->
+              <td>
+                {% if dataset.file_path %}
+                <div class="action-btn-stack">
+                  {% if dataset.is_spatial %}
+                  {# urlencode: URLSearchParams decodes '+' to space, which would silently
+                  corrupt stem containing one #}
+                  <a href="/spatial-viewer?config={{ dataset.spatial_config|urlencode }}"
+                    target="_blank" rel="noopener noreferrer"
+                    class="btn btn-primary btn-sm">Explore (Spatial)</a>
+                  {% else %}
+                  <a href="/view/{{ dataset.file_path }}/" target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-primary btn-sm">Explore</a>
+                  {% endif %}
+                  {% if dataset.has_qc %}
+                  <a href="/qc/{{ dataset.dataset_id }}" target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-outline-secondary btn-sm">QC Report</a>
+                  {% endif %}
+                  {% if not dataset.is_spatial %}
+                  <button type="button"
+                    class="btn btn-outline-primary btn-sm download-btn"
+                    data-dataset-name="{{ dataset.name }}"
+                    data-dataset-file="{{ dataset.file_path }}"
+                    data-dataset-size="{{ dataset.file_size_bytes }}">Download</button>
+                  {% if enable_annotations %}{% if dataset.annotations %}
+                  <div class="btn-group" style="width:100%">
+                    <button type="button"
+                      class="btn btn-info btn-sm dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                      style="width:100%">Annotations</button>
+                    <ul class="dropdown-menu">
+                      {% for ann in dataset.annotations %}
+                      <li>
+                        <a class="dropdown-item"
+                          href="/view/{{ dataset.file_path.replace('.h5ad','_annotations') }}/{{ ann.file }}/">
+                          {{ ann.name }}</a>
+                      </li>
+                      {% endfor %}
+                      <li>
+                        <hr class="dropdown-divider" />
+                      </li>
+                      <li>
+                        <a class="dropdown-item create-new-annotation" href="#"
+                          data-dataset-file="{{ dataset.file_path }}">
+                          + Create New Annotation</a>
+                      </li>
+                    </ul>
+                  </div>
+                  {% else %}
+                  <a class="btn btn-outline-info btn-sm create-new-annotation"
+                    href="#" data-dataset-file="{{ dataset.file_path }}">+
+                    Create New</a>
+                  {% endif %}{% endif %}
+                  {% endif %}
+                </div>
+                {% else %}
+                <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Fallback (no datasets.tsv) -->
+              {% else %}
+              <td style="padding-left:0;">
+                <div style="padding-left:0.75rem;">
+                  <strong>{{ dataset.name }}</strong>
+                </div>
+              </td>
+              <td>
+                <div class="small text-muted">{{ dataset.description }}</div>
+              </td>
+              <td>
+                {% if dataset.file_path %}
+                <a href="/view/{{ dataset.file_path }}/" target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-primary btn-sm">Explore</a>
+                {% endif %}
+              </td>
+              {% endif %}
+            </tr>
+
+            <!-- Warning message if no datasets match filters -->
+            {% endfor %}
+            {% if datasets|length == 0 %}
+            <tr>
+              <td colspan="10" class="text-center py-5">
+                <div class="empty-state">
+                  <div class="empty-state-icon">⊘</div>
+                  <div class="empty-state-text">No datasets match the selected
+                    filters.</div>
+                  <div class="empty-state-hint">Try broadening your search or
+                    resetting the filters.</div>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+
+  <!-- File listing shown when no dataset metadata .tsv is configured -->
+  <div class="container my-4">
+    <h4>Please click on a dataset to view it in Cellxgene Server.</h4>
+
+    {{ rendered_html|safe }}
+
+    <p>Navigation:</p>
+    <ul>
+      {% if path %}
+      <li><a href="{{ url_for('filecrawl') }}">top level</a></li>
+      {% endif %}
+      <li><a href="{{ url_for('homepage') }}">homepage</a></li>
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Download Modal -->
+  <div class="modal fade" id="downloadModal" tabindex="-1"
+    aria-labelledby="downloadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="downloadModalLabel">Download Dataset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"
+            aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- Dataset info header -->
+          <div class="d-flex justify-content-between align-items-start mb-4
+            pb-3 border-bottom">
+            <div>
+              <div class="text-muted small mb-1">Dataset</div>
+              <div id="dataset-name" class="fw-bold fs-6"></div>
+            </div>
+            <div class="text-end">
+              <div class="text-muted small mb-1">File</div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary"
+                  id="dataset-format">.h5ad</span>
+                <span class="text-muted small" id="dataset-size"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- URL row -->
+          <div class="mb-4">
+            <label class="form-label small fw-semibold">Direct URL</label>
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control font-monospace"
+                id="download-url" readonly />
+              <button class="btn btn-outline-secondary" type="button"
+                id="copy-url-btn">Copy</button>
+            </div>
+          </div>
+
+          <!-- Download method tabs -->
+          <div>
+            <label class="form-label small fw-semibold">How to download</label>
+            <ul class="nav nav-tabs nav-tabs-sm mb-3" id="dlTabs"
+              role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-unix"
+                  data-bs-toggle="tab" data-bs-target="#pane-unix" type="button"
+                  role="tab">Unix</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-python" data-bs-toggle="tab"
+                  data-bs-target="#pane-python" type="button"
+                  role="tab">Python</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-r" data-bs-toggle="tab"
+                  data-bs-target="#pane-r" type="button" role="tab">R</button>
+              </li>
+            </ul>
+            <div class="tab-content" id="dlTabContent">
+
+              <!-- Unix tab: curl and wget as separate blocks -->
+              <div class="tab-pane fade show active" id="pane-unix"
+                role="tabpanel">
+                <div class="dl-code-label">curl</div>
+                <div class="dl-code-wrap">
+                  <button class="dl-copy-btn" title="Copy to clipboard"
+                    aria-label="Copy to clipboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13"
+                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      <path
+                        d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
+                    </svg>
+                  </button>
+                  <pre class="dl-code-block"><code id="code-curl"></code></pre>
+                </div>
+                <div class="dl-code-label mt-2">wget</div>
+                <div class="dl-code-wrap">
+                  <button class="dl-copy-btn" title="Copy to clipboard"
+                    aria-label="Copy to clipboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13"
+                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      <path
+                        d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
+                    </svg>
+                  </button>
+                  <pre class="dl-code-block"><code id="code-wget"></code></pre>
+                </div>
+              </div>
+
+              <!-- Python tab -->
+              <div class="tab-pane fade" id="pane-python" role="tabpanel">
+                <div class="dl-code-wrap">
+                  <button class="dl-copy-btn" title="Copy to clipboard"
+                    aria-label="Copy to clipboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13"
+                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      <path
+                        d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
+                    </svg>
+                  </button>
+                  <pre
+                    class="dl-code-block"><code id="code-python"></code></pre>
+                </div>
+              </div>
+
+              <!-- R tab -->
+              <div class="tab-pane fade" id="pane-r" role="tabpanel">
+                <div class="dl-code-wrap">
+                  <button class="dl-copy-btn" title="Copy to clipboard"
+                    aria-label="Copy to clipboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13"
+                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      <path
+                        d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
+                    </svg>
+                  </button>
+                  <pre class="dl-code-block"><code id="code-r"></code></pre>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm"
+            data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary btn-sm"
+            id="download-btn">Download .h5ad</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to top button -->
+  <button class="back-to-top" id="back-to-top" aria-label="Back to top">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+      viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="2,11 8,5 14,11" />
+    </svg>
+    &nbsp;Top</button>
 </body>
+
 </html>

@@ -1,0 +1,7 @@
+# Manual field overrides for meta-analysis row in datasets.tsv; leave field
+# empty to use value extracted from .h5ad uns
+name: "Merged dermatology datasets (2026)"
+description: ""
+authors: "A. Thiébaut"
+journal: ""
+doi: ""
