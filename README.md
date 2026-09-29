@@ -139,10 +139,10 @@ export GATEWAY_DATA=../gateway_data  # Change this if you put data in a differen
 export CELLXGENE_LOCATION=`which cellxgene`
 ```
 
-3. Now, execute the cellxgene gateway:
+3. Now, execute the gateway:
 
 ```bash
-cellxgene-gateway
+omics-gateway
 ```
 
 ## Updating
