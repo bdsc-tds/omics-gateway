@@ -128,8 +128,8 @@ function initDualRange(minId, maxId, displayId, trackId) {
   if (urlParams.has(maxEl.name)) maxEl.value = urlParams.get(maxEl.name)
 
   function update() {
-    let lo = parseInt(minEl.value)
-    let hi = parseInt(maxEl.value)
+    let lo = parseInt(minEl.value, 10)
+    let hi = parseInt(maxEl.value, 10)
     // Clamp so handles don't cross
     if (lo > hi) {
       if (document.activeElement === minEl) {
@@ -140,8 +140,8 @@ function initDualRange(minId, maxId, displayId, trackId) {
         hi = lo
       }
     }
-    const min = parseInt(minEl.min)
-    const max = parseInt(minEl.max)
+    const min = parseInt(minEl.min, 10)
+    const max = parseInt(minEl.max, 10)
     const pctLo = ((lo - min) / (max - min)) * 100
     const pctHi = ((hi - min) / (max - min)) * 100
     track.style.left = pctLo + '%'
