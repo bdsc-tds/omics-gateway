@@ -4,10 +4,10 @@
 // Format byte count as human-readable string (KB / MB / GB)
 function formatBytes(bytes) {
   if (bytes <= 0) return ''
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
 // Disease/Tissue multi-select state
@@ -68,9 +68,9 @@ function initDropdown(field, selectedSet) {
     e.stopPropagation()
     const isOpen = panel.classList.contains('open')
     // Close all panels
-    document.querySelectorAll('.dropdown-filter-panel.open').forEach((p) =>
+    document.querySelectorAll('.dropdown-filter-panel.open').forEach((p) => {
       p.classList.remove('open')
-    )
+    })
     if (!isOpen) {
       panel.classList.add('open')
       searchInput.focus()
@@ -103,9 +103,9 @@ function initDropdown(field, selectedSet) {
 
 // Close any open dropdown when clicking outside
 document.addEventListener('click', () => {
-  document.querySelectorAll('.dropdown-filter-panel.open').forEach((p) =>
+  document.querySelectorAll('.dropdown-filter-panel.open').forEach((p) => {
     p.classList.remove('open')
-  )
+  })
 })
 
 
@@ -144,9 +144,9 @@ function initDualRange(minId, maxId, displayId, trackId) {
     const max = parseInt(minEl.max, 10)
     const pctLo = ((lo - min) / (max - min)) * 100
     const pctHi = ((hi - min) / (max - min)) * 100
-    track.style.left = pctLo + '%'
-    track.style.right = (100 - pctHi) + '%'
-    display.textContent = lo + ' – ' + hi
+    track.style.left = `${pctLo}%`
+    track.style.right = `${100 - pctHi}%`
+    display.textContent = `${lo} – ${hi}`
   }
 
   minEl.addEventListener('input', update)
@@ -167,12 +167,12 @@ function submitFilters(e) {
 
   // Checkboxes
   ;['assay', 'sex'].forEach((field) => {
-    formData.getAll(field).forEach((v) => params.append(field, v))
+    formData.getAll(field).forEach((v) => { params.append(field, v) })
   })
 
   // Disease / Tissue from JS Sets
-  selectedDiseases.forEach((v) => params.append('disease', v))
-  selectedTissues.forEach((v) => params.append('tissue', v))
+  selectedDiseases.forEach((v) => { params.append('disease', v) })
+  selectedTissues.forEach((v) => { params.append('tissue', v) })
 
   // Search
   const search = formData.get('search')
@@ -189,7 +189,7 @@ function submitFilters(e) {
     if (el.value !== bound) params.append(name, el.value)
   })
 
-  window.location.href = window.location.pathname + '?' + params.toString()
+  window.location.href = `${window.location.pathname}?${params.toString()}`
 }
 
 
@@ -249,7 +249,7 @@ function initTableSort() {
         })
       }
 
-      rows.forEach((tr) => tbody.appendChild(tr))
+      rows.forEach((tr) => { tbody.appendChild(tr) })
     })
   })
 }
@@ -257,7 +257,7 @@ function initTableSort() {
 
 // Inititialise all interactive elements on page load
 
-$(document).ready(function () {
+$(document).ready(() => {
   $('#filter-form').on('submit', submitFilters)
 
   // Restore assay/sex checkbox state from URL params
@@ -281,7 +281,7 @@ $(document).ready(function () {
   initTableSort()
 
   // Reset button: reset all filters by navigating to bare pathname
-  $('#reset-filters-btn').click(function (e) {
+  $('#reset-filters-btn').click((e) => {
     e.preventDefault()
     window.location.href = window.location.pathname
   })
@@ -297,7 +297,7 @@ $(document).ready(function () {
     if (annotationName !== null && annotationName.length > 0) {
       if (/^[0-9a-zA-Z_]+$/.test(annotationName)) {
         window.location.href =
-          '/view/csv/' + datasetFile + '/' + annotationName + '.csv'
+          `/view/csv/${datasetFile}/${annotationName}.csv`
       } else {
         alert(
           'Error: name must match ^[0-9a-zA-Z_]+$\n' +
@@ -313,7 +313,7 @@ $(document).ready(function () {
     const datasetName = $(this).data('dataset-name')
     const datasetFile = $(this).data('dataset-file')
     const sizeBytes = parseInt($(this).data('dataset-size') || '0', 10)
-    const url = window.location.origin + '/download/' + datasetFile
+    const url = `${window.location.origin}/download/${datasetFile}`
 
     $('#dataset-name').text(datasetName)
     $('#download-url').val(url)
@@ -356,7 +356,7 @@ $(document).ready(function () {
   })
 
   // Open download URL in new tab and close modal
-  $('#download-btn').click(function () {
+  $('#download-btn').click(() => {
     const url = $('#download-url').val()
     if (url) {
       window.open(url, '_blank')
@@ -389,13 +389,13 @@ $(document).ready(function () {
 })
 
 // Back to top button (deferred until DOM is ready since script loads in <head>)
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   const backToTopFilecrawl = document.getElementById('back-to-top')
   if (backToTopFilecrawl) {
-    window.addEventListener('scroll', function () {
+    window.addEventListener('scroll', () => {
       backToTopFilecrawl.classList.toggle('visible', window.scrollY > 80)
     })
-    backToTopFilecrawl.addEventListener('click', function () {
+    backToTopFilecrawl.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     })
   }

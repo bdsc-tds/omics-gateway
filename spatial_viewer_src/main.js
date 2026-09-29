@@ -77,7 +77,7 @@ function fitSpatialZoom(config, width, height) {
   const layout = config.layout || [];
   const view = layout.find((v) => v.component === 'spatialBeta');
   const space = config.coordinationSpace || {};
-  const scopes = (view && view.coordinationScopes) || {};
+  const scopes = (view?.coordinationScopes) || {};
   const zooms = space.spatialZoom || {};
   const xs = space.spatialTargetX || {};
   const ys = space.spatialTargetY || {};

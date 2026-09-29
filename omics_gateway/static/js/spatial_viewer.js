@@ -2,7 +2,7 @@
 
 // Bundle offers no callback and renders either viewer or bare #message div
 // on failure, so watch #root to tell which arrived
-(function() {
+(() => {
   var root = document.getElementById('root');
   // Bootstrap resets inflate Vitessce's rows, so chrome's CSS leaves with it.
   // Collected before bundle runs, so only chrome's own links are taken
@@ -13,12 +13,8 @@
     new URLSearchParams(window.location.search).get('config') || '';
 
   // Bundle fetches same config, so this comes from browser cache
-  var config = fetch(configUrl).then(function(response) {
-    return response.json();
-  });
-  var extraTypes = config.then(extraChannelTypes).catch(function() {
-    return [];
-  });
+  var config = fetch(configUrl).then((response) => response.json());
+  var extraTypes = config.then(extraChannelTypes).catch(() => []);
 
   // Extra segmentations' obsType differs from their layer's, so their data is
   // not found; Metric's featureType does resolve
@@ -29,30 +25,28 @@
     var layerTypes = [];
     var channelTypes = [];
     function collect(level, out) {
-      var scopes = (level || {}).obsType || {};
-      var featureTypes = (level || {}).featureType || {};
-      Object.keys(scopes).forEach(function(scope) {
+      var scopes = level?.obsType || {};
+      var featureTypes = level?.featureType || {};
+      Object.keys(scopes).forEach((scope) => {
         if (featureTypes[scope]) return;
         out.push(values[scopes[scope]]);
       });
     }
-    Object.keys(meta).forEach(function(key) {
+    Object.keys(meta).forEach((key) => {
       collect(meta[key].segmentationLayer, layerTypes);
       collect(meta[key].segmentationChannel, channelTypes);
     });
-    return channelTypes.filter(function(type) {
-      return type && layerTypes.indexOf(type) === -1;
-    });
+    return channelTypes.filter((type) => type && layerTypes.indexOf(type) === -1);
   }
 
   var logEl = document.getElementById('spatial-log');
   function log(text) {
     logEl.textContent +=
-      new Date().toTimeString().slice(0, 8) + '  ' + text + '\n';
+      `${new Date().toTimeString().slice(0, 8)}  ${text}\n`;
   }
   log('Loading viewer bundle');
 
-  new MutationObserver(function(records, observer) {
+  new MutationObserver((records, observer) => {
     var message = root.querySelector('#message');
     if (message) {
       log('Failed to load dataset');
@@ -69,15 +63,15 @@
       // Viewer mounted; hand whole page over to it
       log('Starting viewer');
       document.getElementById('chrome').remove();
-      chromeStyles.forEach(function(link) { link.remove(); });
+      chromeStyles.forEach((link) => { link.remove(); });
       observer.disconnect();
       patchSpatialLegends(root);
-      config.then(function(json) {
+      config.then((json) => {
         patchMetricTooltips(json, configUrl);
-      }).catch(function() {});
+      }).catch(() => {});
       orderLayerRows(root);
       limitLassoToCells(root);
-      extraTypes.then(function(types) {
+      extraTypes.then((types) => {
         constrainExtraEncodings(root, types);
       });
     }
@@ -88,7 +82,7 @@
     if (!extraTypes.length) return;
     var openedFor = null;
     // Portalled menu is outside its row, so get its channel from opener
-    root.addEventListener('click', function(event) {
+    root.addEventListener('click', (event) => {
       var button = event.target.closest(
         'button[aria-label="Open segmentation channel options menu"]');
       if (!button) return;
@@ -97,7 +91,7 @@
       openedFor = name ? name.textContent.trim().toLowerCase() : null;
     }, true);
 
-    new MutationObserver(function() {
+    new MutationObserver(() => {
       if (extraTypes.indexOf(openedFor) === -1) return;
       var options = document.querySelectorAll(
         'select[aria-label="Color encoding selector"] '
@@ -122,10 +116,8 @@
   // Vitessce tooltips list only ids and sets: add selected metric from
   // generator's sidecar, fetched on first hover, while Metric layer is on
   function patchMetricTooltips(config, configUrl) {
-    var featureTypes = (config.coordinationSpace || {}).featureType || {};
-    var hasMetrics = Object.keys(featureTypes).some(function(scope) {
-      return featureTypes[scope] === 'metric';
-    });
+    var featureTypes = config.coordinationSpace?.featureType || {};
+    var hasMetrics = Object.keys(featureTypes).some((scope) => featureTypes[scope] === 'metric');
     var valuesUrl = configUrl.replace(/\.vitessce\.json$/, '.metrics.json');
     if (!hasMetrics || valuesUrl === configUrl) return;
     var values = null;
@@ -142,7 +134,7 @@
       for (var i = 0; i < names.length; i++) {
         if (names[i].textContent.trim() !== 'Metric') continue;
         var row = names[i].closest('[class*="layerControllerGrid"]');
-        return !!(row && row.querySelector(
+        return !!(row?.querySelector(
           '[class*="colorIcon"] svg, [class*="colorIcon"][style*="background"]'));
       }
       return false;
@@ -150,10 +142,10 @@
 
     // Metric list checks its selected row's hidden checkbox
     function selectedMetric() {
-      return values.columns.findIndex(function(column) {
+      return values.columns.findIndex((column) => {
         var input = document.querySelector(
-          'input[type="checkbox"][value="' + column + '"]');
-        return input && input.checked;
+          `input[type="checkbox"][value="${column}"]`);
+        return input?.checked;
       });
     }
 
@@ -173,9 +165,7 @@
           continue;
         }
         if (!values) {
-          loaded = loaded || fetch(valuesUrl).then(function(response) {
-            return response.json();
-          }).then(function(json) {
+          loaded = loaded || fetch(valuesUrl).then((response) => response.json()).then((json) => {
             values = json;
             patch();
           });
@@ -183,7 +173,7 @@
         }
         var cellId = th.nextElementSibling.textContent;
         var metric = metricLayerVisible() ? selectedMetric() : -1;
-        var key = cellId + '|' + metric;
+        var key = `${cellId}|${metric}`;
         if (tbody.dataset.metricCell === key) continue;
         tbody.dataset.metricCell = key;
         var old = tbody.querySelector('tr[data-metric-row]');
@@ -212,15 +202,13 @@
     function warn(text) {
       if (warned) return;
       warned = true;
-      console.warn('Lasso override not applied: ' + text);
+      console.warn(`Lasso override not applied: ${text}`);
     }
 
     // Nearest React fiber at or above element
     function fiberOf(element) {
       for (var el = element; el && el !== root; el = el.parentElement) {
-        var key = Object.keys(el).find(function(name) {
-          return name.indexOf('__reactFiber$') === 0;
-        });
+        var key = Object.keys(el).find((name) => name.indexOf('__reactFiber$') === 0);
         if (key) return el[key];
       }
       return null;
@@ -232,7 +220,7 @@
       if (!fiber) warn('no React fiber above canvas');
       for (; fiber; fiber = fiber.return) {
         var node = fiber.stateNode;
-        if (node && node.props && 'segmentationLayerScopes' in node.props) {
+        if (node?.props && 'segmentationLayerScopes' in node.props) {
           return node;
         }
       }
@@ -248,7 +236,7 @@
       spatial.createSelectionLayer = function() {
         var props = this.props;
         var coordination = props.segmentationChannelCoordination;
-        if (!coordination || !coordination[0]) return original.call(this);
+        if (!coordination?.[0]) return original.call(this);
         var trees = this.obsSegmentationsQuadTree;
         // Renamed after upgrade: no channel would join, so keep original
         if (!trees || typeof trees !== 'object') {
@@ -257,18 +245,14 @@
         }
         var channels = coordination[0];
         var layers = (props.segmentationLayerCoordination || [])[0] || {};
-        var anyVisible = Object.keys(channels).some(function(layer) {
-          return (layers[layer] || {}).spatialLayerVisible
-            && Object.keys(channels[layer]).some(function(channel) {
-              return channels[layer][channel].spatialChannelVisible;
-            });
-        });
+        var anyVisible = Object.keys(channels).some((layer) => layers[layer]?.spatialLayerVisible
+            && Object.keys(channels[layer]).some((channel) => channels[layer][channel].spatialChannelVisible));
         // Copies, not store objects: only lasso sees changed visibility
         var values = {};
-        Object.keys(channels).forEach(function(layer) {
+        Object.keys(channels).forEach((layer) => {
           values[layer] = {};
-          Object.keys(channels[layer]).forEach(function(channel) {
-            var hasTree = !!(trees[layer] && trees[layer][channel]);
+          Object.keys(channels[layer]).forEach((channel) => {
+            var hasTree = !!(trees[layer]?.[channel]);
             values[layer][channel] = Object.assign({}, channels[layer][channel],
               { spatialChannelVisible: anyVisible && hasTree });
           });
@@ -317,7 +301,7 @@
       var metricIndex = rows.indexOf(metric);
       rows[cellIndex] = metric;
       rows[metricIndex] = cell;
-      rows.forEach(function(row, index) {
+      rows.forEach((row, index) => {
         // Style changes are not observed, so no feedback loop
         if (row.style.order !== String(index)) row.style.order = index;
       });
@@ -345,7 +329,7 @@
       var bars = root.querySelectorAll('[class*="legend"] rect[width="96"]');
       for (var i = 0; i < bars.length; i++) {
         var title = bars[i].ownerSVGElement.querySelector('text');
-        var colour = layerColour(title && title.textContent);
+        var colour = layerColour(title?.textContent);
         if (!colour) continue;
         bars[i].setAttribute('width', '8');
         bars[i].setAttribute('fill', colour);
@@ -383,11 +367,11 @@
         var length = title.getComputedTextLength();
         if (room <= 0 || length <= room) continue;
         var size = Math.max(7, 9 * room / length);
-        title.style.fontSize = size + 'px';
+        title.style.fontSize = `${size}px`;
         var text = title.textContent;
         while (text.length > 1 && title.getComputedTextLength() > room) {
           text = text.slice(0, -1);
-          title.textContent = text + '\u2026';
+          title.textContent = `${text}\u2026`;
         }
       }
     }
@@ -399,25 +383,17 @@
       for (var i = 0; i < legends.length; i++) {
         var items = Array.prototype.slice.call(legends[i].children);
         // Colour bar tick labels precede titles, so search all texts
-        var texts = items.map(function(item) {
-          return Array.prototype.map.call(
+        var texts = items.map((item) => Array.prototype.map.call(
             item.querySelectorAll('svg text'),
-            function(text) { return text.textContent; });
-        });
-        var metricIndex = texts.findIndex(function(labels) {
-          return labels.indexOf('Metric') !== -1;
-        });
+            (text) => text.textContent));
+        var metricIndex = texts.findIndex((labels) => labels.indexOf('Metric') !== -1);
         if (metricIndex === -1) continue;
         var metric = items.splice(metricIndex, 1)[0];
         texts.splice(metricIndex, 1);
         // Column-reverse: earlier in sorted order is lower on screen
-        var cellIndex = texts.findIndex(function(labels) {
-          return !['Transcript', 'Points', 'Nucleus'].some(function(title) {
-            return labels.indexOf(title) !== -1;
-          });
-        });
+        var cellIndex = texts.findIndex((labels) => !['Transcript', 'Points', 'Nucleus'].some((title) => labels.indexOf(title) !== -1));
         items.splice(cellIndex === -1 ? items.length : cellIndex, 0, metric);
-        items.forEach(function(item, index) {
+        items.forEach((item, index) => {
           if (item.style.order !== String(index)) item.style.order = index;
         });
       }

@@ -1,12 +1,12 @@
 // Script to handle filtering menu toggle
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   // Get references to sidebar, toggle button, and main content area
   const sidebarCol = document.getElementById('sidebarCol')
   const btn = document.getElementById('formToggle')
   const mainContent = document.getElementById('mainContent')
 
-  btn.addEventListener('click', function () {
+  btn.addEventListener('click', () => {
     // Check current visibility state before toggling
     const isHidden = sidebarCol.classList.contains('d-none')
 
