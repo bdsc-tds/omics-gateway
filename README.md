@@ -48,6 +48,7 @@ Optional environment variables:
 * `QC_DATA`: a directory containing per-dataset QC report folders, served at `/qc/<dataset_id>`. Defaults to `analysis_qc`. A relative path is resolved against the working directory
 * `QC_THUMB_CACHE`: a directory for the thumbnails shown in QC reports, which the gateway builds on demand. Defaults to `<QC_DATA>_thumbs`, outside the QC tree so that tree can stay read-only
 * `SPATIAL_METRICS`: Set to `false` or to `0` to open spatial (`.zarr`) datasets without the Metric layer, which colours cells by per-cell measurements such as cell area. Defaults to `true`. `data_prep/generate_spatial_config.py` writes both configs for each store (`<name>.vitessce.json` and `<name>.nometrics.vitessce.json`), and this variable picks which one the dataset browser links to
+* `GATEWAY_BRANDING`: path to the branding file of the deployment (names, logo, favicon and homepage texts). Defaults to `branding/default/branding.yaml`, which shows neutral Omics Gateway branding. See [Branding](#branding)
 * `S3_ENABLE_LISTINGS_CACHE`: Set to `true` or to `1` to cache listings of S3 folders for performance. If the cache becomes stale, set `filecrawl?refresh=true` query parameter to refresh the cache.
 
 If any of the following optional variables are set, [ProxyFix](https://werkzeug.palletsprojects.com/en/1.0.x/middleware/proxy_fix/) will be used.
@@ -56,6 +57,12 @@ If any of the following optional variables are set, [ProxyFix](https://werkzeug.
 * `PROXY_FIX_HOST`: Number of upstream proxies setting X-Forwarded-Host
 * `PROXY_FIX_PORT`: Number of upstream proxies setting X-Forwarded-Port
 * `PROXY_FIX_PREFIX`: Number of upstream proxies setting X-Forwarded-Prefix
+
+### Branding
+
+The page titles, navbar logo and title, favicon, and homepage texts and contact banner come from a branding file rather than from the templates. To brand a deployment, copy `branding/default/` to `branding/<name>/` (git ignores every branding folder except the default one), edit its `branding.yaml`, whose comments describe each setting, and set `GATEWAY_BRANDING` to that file. The gateway checks the file when it starts and refuses to start if a mandatory setting is missing, a setting is unknown or an image cannot be found, naming each problem. Changes to the file take effect when the gateway restarts.
+
+The homepage's dataset and cell counts are computed from the dataset table on every visit, so they follow edits to it without a restart. The number of cell types is set in the branding file.
 
 ## Data layout
 

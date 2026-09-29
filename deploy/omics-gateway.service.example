@@ -24,6 +24,7 @@ StandardError=append:/path/to/omics-gateway/logs/omics-gateway.log
 # start_gunicorn.sh settings are ${VAR:-default}, so override them here, e.g.:
 # Environment=CONDA_ROOT=/opt/miniforge3
 # Environment=GATEWAY_DATA=/mnt/gateway_data
+# Environment=GATEWAY_BRANDING=/path/to/omics-gateway/branding/<name>/branding.yaml
 
 [Install]
 WantedBy=multi-user.target

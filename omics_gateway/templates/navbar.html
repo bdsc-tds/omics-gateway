@@ -2,16 +2,23 @@
 <nav class="navbar navbar-expand-lg">
   <div class="container-fluid">
     <div class="navbar-brand-container">
-      <!-- Image -->
-      <a class="navbar-brand" href="https://skinsciencefoundation.org"
-        target="_blank" rel="noopener noreferrer">
-        <img src="{{ url_for('static', filename='ssf_logo.png') }}"
-          alt="Skin Science Foundation logo" height="50px"
+      <!-- Logo, from branding file; linked only when logo_url is set -->
+      {% if branding.logo_path %}
+      {% set logo %}
+        <img src="{{ url_for('branding_asset', asset='logo') }}"
+          alt="{{ branding.logo_alt or branding.page_title }}" height="50px"
           class="d-inline-block align-text-middle" />
-      </a>
+      {% endset %}
+      {% if branding.logo_url %}
+      <a class="navbar-brand" href="{{ branding.logo_url }}"
+        target="_blank" rel="noopener noreferrer">{{ logo }}</a>
+      {% else %}
+      <span class="navbar-brand">{{ logo }}</span>
+      {% endif %}
+      {% endif %}
       <!-- Title -->
       <a class="navbar-brand" href="{{ url_for('homepage') }}">
-        BioHub
+        {{ branding.page_title }}
       </a>
     </div>
     <!-- Collapsible menu for small screens -->
@@ -29,10 +36,21 @@
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('do_instances') }}">Instances</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link"
-            href="https://cellxgene.cziscience.com/docs/04__Analyze%20Public%20Data/4_1__Hosted%20Tutorials"
-            target="_blank" rel="noopener noreferrer">Tutorials</a>
+        <!-- One tutorial per viewer; each opens in new tab -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button"
+            data-bs-toggle="dropdown" aria-expanded="false">Tutorials</a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item"
+                href="https://cellxgene.cziscience.com/docs/04__Analyze%20Public%20Data/4_1__Hosted%20Tutorials"
+                target="_blank" rel="noopener noreferrer">CellxGene</a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="https://vitessce.io/docs/components/"
+                target="_blank" rel="noopener noreferrer">Vitessce</a>
+            </li>
+          </ul>
         </li>
       </ul>
     </div>

@@ -151,3 +151,7 @@ logs/
 
 # Restored by `npm ci` from tracked package-lock.json
 spatial_viewer_src/node_modules/
+
+# Deployment branding stays local; only default ships
+branding/*
+!branding/default/
