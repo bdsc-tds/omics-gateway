@@ -1,0 +1,30 @@
+// Biome configuration for this repository
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  // Fork's own front-end code only: vendored libraries and built bundle stay out
+  "files": {
+    "includes": [
+      "omics_gateway/static/js/**",
+      "omics_gateway/static/css/**",
+      "omics_gateway/templates/**",
+      "spatial_viewer_src/*.js"
+    ]
+  },
+  // Lint only; formatting stays with editors for now
+  "formatter": {
+    "enabled": false
+  },
+  "assist": {
+    "enabled": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        // Every !important overrides Bootstrap or Vitessce styles on purpose
+        "noImportantStyles": "off"
+      }
+    }
+  }
+}
