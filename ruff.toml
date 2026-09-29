@@ -19,6 +19,8 @@ skip-magic-trailing-comma = true
 preview = true
 
 [lint]
+# Sort imports using isort
+extend-select = ["I"]
 # Ignore bare except
 ignore = ["E722"]
 # Enable linting preview mode
