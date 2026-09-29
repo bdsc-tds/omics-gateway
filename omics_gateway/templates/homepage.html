@@ -18,7 +18,7 @@
   {% include 'header.html' %}
 
   <!-- Page title -->
-  <title>SSF BioHub</title>
+  <title>{{ branding.window_title }}</title>
 
   <!-- Stylesheets -->
   <link rel="stylesheet"
@@ -36,24 +36,25 @@
   {% include 'navbar.html' %}
 
   <main class="main-content">
-    <!-- Info Banner -->
+    <!-- Info Banner, shown only when branding file sets contact email -->
+    {% if branding.contact_email %}
     <div class="info-banner">
       The content is regularly reviewed and updated to ensure accuracy and
       scientific relevance.
       <a
-        href="mailto:office@skinsciencefoundation.org?subject=Dataset%20Submission&body=Hi%2C%20I%20would%20like%20to%20add%20a%20dataset.">Contact
+        href="mailto:{{ branding.contact_email }}?subject=Dataset%20Submission&body=Hi%2C%20I%20would%20like%20to%20add%20a%20dataset.">Contact
         us</a> if you want to add a dataset!
     </div>
+    {% endif %}
 
     <!-- Hero Section -->
     <section class="hero-section">
       <div>
         <h1 class="hero-title">
-          Discover the mechanisms of skin disease
+          {{ branding.homepage_title }}
         </h1>
         <p class="hero-subtitle">
-          Download and visually explore data to understand the causes of skin
-          disease at the cellular level with Omics Gateway
+          {{ branding.homepage_subtitle }}
         </p>
         <div class="cta-buttons">
           <a href="{{ url_for('filecrawl') }}" class="btn-primary">Explore
@@ -64,11 +65,13 @@
       </div>
     </section>
 
-    <!-- Stats Section -->
+    <!-- Stats Section: counts from dataset table, cell types from branding -->
+    {% if cell_stat or dataset_stat or branding.cell_types_stat %}
     <section class="stats-section">
       <div class="stats-container">
+        {% if cell_stat %}
         <div class="stat-card">
-          <div class="stat-number">100K+</div>
+          <div class="stat-number">{{ cell_stat }}</div>
           <div class="stat-label">Cells</div>
           <div class="stat-description">
             Access thousands of cells with comprehensive gene expression
@@ -76,26 +79,32 @@
             for analysis
           </div>
         </div>
+        {% endif %}
 
+        {% if dataset_stat %}
         <div class="stat-card">
-          <div class="stat-number">10+</div>
+          <div class="stat-number">{{ dataset_stat }}</div>
           <div class="stat-label">Datasets</div>
           <div class="stat-description">
             Browse and explore standardized single-cell datasets from various
             studies
           </div>
         </div>
+        {% endif %}
 
+        {% if branding.cell_types_stat %}
         <div class="stat-card">
-          <div class="stat-number">150+</div>
+          <div class="stat-number">{{ branding.cell_types_stat }}</div>
           <div class="stat-label">Cell Types</div>
           <div class="stat-description">
             Investigate diverse cell types with detailed annotations and marker
             gene information
           </div>
         </div>
+        {% endif %}
       </div>
     </section>
+    {% endif %}
   </main>
 </body>
 

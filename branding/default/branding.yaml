@@ -1,0 +1,47 @@
+# Branding file for Omics Gateway
+# Default used when GATEWAY_BRANDING is unset. To brand a deployment, copy this
+# folder elsewhere, edit copy and point GATEWAY_BRANDING to its branding.yaml
+# Parameters marked mandatory are checked when gateway starts: if one is
+# missing, unknown or names absent file, gateway refuses to start and names
+# each parameter at fault. Changes take effect when gateway restarts
+
+# Name appearing in browser tab, after page name
+# This parameter is mandatory
+window_title: "Omics Gateway"
+
+# Title appearing in navigation bar, next to logo
+# This parameter is mandatory
+page_title: "Omics Gateway"
+
+# Path to favicon file that should appear in browser tab
+# Relative paths are resolved against folder holding this file
+# This parameter is mandatory
+favicon_path: "favicon.png"
+
+# Path to logo file that should appear at left of navigation bar
+# Relative paths are resolved against folder holding this file
+# Leave unset to show no logo
+# logo_path: "logo.png"
+
+# URL to open, in new tab, when logo is clicked
+# logo_url: "https://example.org"
+
+# Text describing logo, for screen readers (defaults to page_title)
+# logo_alt: "Example organisation logo"
+
+# Email address for dataset submissions, shown in homepage banner
+# Leave unset to hide banner
+# contact_email: "office@example.org"
+
+# Headline of homepage
+# This parameter is mandatory
+homepage_title: "Explore omics datasets"
+
+# Text under homepage headline
+# This parameter is mandatory
+homepage_subtitle: "Browse, download and visually explore single-cell and spatial datasets"
+
+# Number of cell types shown on homepage, as free text (e.g. "30+")
+# Dataset and cell numbers are computed from dataset table instead
+# Leave unset to hide this card
+# cell_types_stat: "30+"

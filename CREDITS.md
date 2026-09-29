@@ -6,6 +6,7 @@ Third-party assets bundled in this repository.
 
 | File | Source | Licence |
 | --- | --- | --- |
+| `branding/default/favicon.png` | Generated for this project; lettering in [Noto Sans](https://notofonts.github.io/) Bold | Font under SIL Open Font License 1.1 |
 | `omics_gateway/static/cell.jpg` | [Magnific — Résumé fond design low poly](https://www.magnific.com/fr/photos-gratuite/resume-fond-design-low-poly_2115024.htm) | Free |
 
 The homepage background is served at 2000x1500 (downscaled from the 5000x3750 original, which remains in git history). Re-encoding dropped the file's EXIF, IPTC and ICC data; none of it carried creator, credit or copyright fields.

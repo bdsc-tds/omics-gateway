@@ -40,8 +40,6 @@ setup(
             'static/css/*.css',
             'templates/*.html',
             'static/js/*.js',
-            'static/favicon.png',
-            'static/ssf_logo.png',
             'static/cell.jpg',
         ]
     },

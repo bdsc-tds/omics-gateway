@@ -22,10 +22,12 @@ from threading import Lock, Thread
 
 from flask import (
     Flask,
+    abort,
     make_response,
     redirect,
     render_template,
     request,
+    send_file,
     send_from_directory,
     url_for,
 )
@@ -35,6 +37,7 @@ from werkzeug.utils import safe_join
 # Import other functions from package
 from omics_gateway import env, flask_util
 from omics_gateway.backend_cache import BackendCache
+from omics_gateway.branding import ASSET_KEYS, format_stat, load_branding
 from omics_gateway.cache_entry import CacheEntryStatus
 from omics_gateway.cache_exception import CacheException
 from omics_gateway.cache_key import CacheKey
@@ -47,6 +50,9 @@ from omics_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
 from omics_gateway.util import CustomRequestHandler, current_time_stamp
 
 app = Flask(__name__)
+
+# Read once at import, so invalid branding stops gateway before serving
+branding = load_branding(env.branding_file)
 
 item_sources = []
 default_item_source = None
@@ -397,18 +403,67 @@ def view_static(path):
     )
 
 
+@app.context_processor
+def inject_branding():
+    """
+    Function to expose deployment branding to every template.
+
+    Returns:
+    --------
+    context: dict
+      Branding values under 'branding' key.
+    """
+    return {'branding': branding}
+
+
+@app.route('/branding/<asset>')
+def branding_asset(asset):
+    """
+    Serve image named in branding file (favicon or logo).
+
+    Parameters:
+    -----------
+    asset: str
+      Asset name, 'favicon' or 'logo'.
+
+    Returns:
+    --------
+    flask.Response
+      Image file, or 404 for unknown asset or logo left unset.
+    """
+    asset_path = branding.get(ASSET_KEYS.get(asset, ''))
+    if not asset_path:
+        abort(404)
+    return send_file(asset_path)
+
+
 @app.route('/')
 def homepage():
     """
     Render application home page.
+
+    Dataset and cell counts are read from metadata .tsv on every request, so
+    edits show on next reload. Both are omitted when .tsv is absent.
 
     Returns:
     --------
     flask.Response
       Rendered HTML page for homepage.
     """
+    dataset_stat = cell_stat = None
+    if os.path.exists(env.dataset_metadata_tsv):
+        datasets = load_dataset_metadata_tsv(env.dataset_metadata_tsv)[0]
+        # Merged datasets count too: reprocessed, so their cells differ
+        cell_total = sum(int(row.get('cell_count') or 0) for row in datasets)
+        dataset_stat = format_stat(len(datasets))
+        cell_stat = format_stat(cell_total)
 
-    return render_template('homepage.html', extra_scripts=get_extra_scripts())
+    return render_template(
+        'homepage.html',
+        extra_scripts=get_extra_scripts(),
+        dataset_stat=dataset_stat,
+        cell_stat=cell_stat,
+    )
 
 
 @app.route('/filecrawl')

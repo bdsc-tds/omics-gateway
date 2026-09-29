@@ -36,6 +36,14 @@ qc_thumb_cache = os.path.abspath(
     os.environ.get('QC_THUMB_CACHE', f'{qc_data}_thumbs')
 )
 
+# Branding variables; default ships with repository, deployments point to own
+default_branding_file = os.path.join(
+    os.path.dirname(__file__), '..', 'branding', 'default', 'branding.yaml'
+)
+branding_file = os.path.abspath(
+    os.environ.get('GATEWAY_BRANDING', default_branding_file)
+)
+
 # Gateway variables
 gateway_port = int(os.environ.get('GATEWAY_PORT', '5005'))
 external_host = os.environ.get(
@@ -93,6 +101,7 @@ optional_env_vars = {
     'DATASET_METADATA_TSV': dataset_metadata_tsv,
     'QC_DATA': qc_data,
     'QC_THUMB_CACHE': qc_thumb_cache,
+    'GATEWAY_BRANDING': branding_file,
     'PROXY_FIX_FOR': proxy_fix_for,
     'PROXY_FIX_PROTO': proxy_fix_proto,
     'PROXY_FIX_HOST': proxy_fix_host,
