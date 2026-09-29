@@ -180,7 +180,7 @@ def _init_on_first_wsgi_request(wsgi_app):
                     env.validate()
                     if not item_sources or not len(item_sources):
                         raise ValueError(
-                            'No data sources specified for Cellxgene Gateway'
+                            'No data sources specified for Omics Gateway'
                         )
 
                     global default_item_source

@@ -1,5 +1,5 @@
 [Unit]
-Description=CellxGene Gateway
+Description=Omics Gateway
 After=network.target
 
 [Service]

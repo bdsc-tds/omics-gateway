@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# start_gunicorn.sh - Start Cellxgene Gateway with Gunicorn
+# start_gunicorn.sh - Start Omics Gateway with Gunicorn
 #
 # PREREQUISITES:
 # - Gunicorn installed (included with cellxgene 1.3.0, or: pip install gunicorn)
@@ -80,7 +80,7 @@ if ! command -v gunicorn &> /dev/null; then
 fi
 
 # Display configuration
-echo "Starting Cellxgene Gateway with Gunicorn..."
+echo "Starting Omics Gateway with Gunicorn..."
 echo "Configuration:"
 echo "  Cellxgene executable: ${CELLXGENE_LOCATION}"
 echo "  Data source: ${GATEWAY_DATA:-$GATEWAY_BUCKET}"

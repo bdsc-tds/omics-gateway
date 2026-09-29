@@ -1,8 +1,8 @@
-# Cellxgene Gateway
+# Omics Gateway
 
-Cellxgene Gateway allows you to use the Cellxgene Server provided by the Chan Zuckerberg Institute (https://github.com/chanzuckerberg/cellxgene) with multiple datasets. It displays an index of available h5ad (anndata) files. When a user clicks on a file name, it launches a Cellxgene Server instance that loads that particular data file and once it is available  proxies requests to that server.
+Omics Gateway is a web portal for browsing and exploring a collection of omics datasets. It displays an index of the available datasets and opens each one in a suitable viewer. For `.h5ad` (AnnData) files, it launches a [cellxgene](https://github.com/chanzuckerberg/cellxgene) server that loads that particular file and, once it is available, proxies requests to it. Spatial datasets (`.zarr` SpatialData stores) open in a self-hosted [Vitessce](https://vitessce.io) viewer that runs entirely in the browser (see [Rebuilding the spatial viewer](#rebuilding-the-spatial-viewer)).
 
-This repository is the SSF BioHub fork of [Novartis/cellxgene-gateway](https://github.com/Novartis/cellxgene-gateway). It also serves spatial datasets (`.zarr` SpatialData stores), which open in a self-hosted [Vitessce](https://vitessce.io) viewer that runs entirely in the browser (see [Rebuilding the spatial viewer](#rebuilding-the-spatial-viewer)).
+Omics Gateway started as a fork of [Novartis/cellxgene-gateway](https://github.com/Novartis/cellxgene-gateway), by Niket Patel, Yohann Potier and Alok Saldanha (Novartis Institutes for BioMedical Research), and has since been developed independently by CHUV. Both are released under the Apache License 2.0 (see `LICENSE`), and files from the original project keep their copyright headers.
 
 ## Installing
 
@@ -13,8 +13,8 @@ A conda installation, for example [Miniforge](https://github.com/conda-forge/min
 ### Installing from a fresh clone
 
 ```bash
-git clone https://github.com/bdsc-tds/cellxgene-gateway.git
-cd cellxgene-gateway
+git clone https://github.com/bdsc-tds/omics-gateway.git
+cd omics-gateway
 ./deploy/setup.sh
 ```
 
@@ -31,7 +31,7 @@ The gateway is configured through environment variables:
 At least one of the following is required:
 * `GATEWAY_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/gateway_data`
 * `GATEWAY_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-gateway-data-bucket`
-Cellxgene Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
+Omics Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
 
 Optional environment variables:
 * `CELLXGENE_ARGS`: catch-all variable that can be used to pass additional command line args to cellxgene server
@@ -203,7 +203,7 @@ The spatial viewer page also adjusts Vitessce at runtime, through `omics_gateway
 
 ## Getting help
 
-If you run into a problem or have a question, please open an issue on [GitHub](https://github.com/bdsc-tds/cellxgene-gateway/issues), describing what you did, what you expected and what happened instead.
+If you run into a problem or have a question, please open an issue on [GitHub](https://github.com/bdsc-tds/omics-gateway/issues), describing what you did, what you expected and what happened instead.
 
 ## Contributing and Code of Conduct
 

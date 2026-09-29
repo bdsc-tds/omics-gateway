@@ -34,7 +34,7 @@ else
     CONDA_BIN="$CONDA_ROOT/bin/conda"
 fi
 
-echo "Setting up cellxgene-gateway"
+echo "Setting up omics-gateway"
 echo "  Repository: $REPO_DIR"
 echo "  Conda root: $CONDA_ROOT"
 echo "  Conda env:  $CONDA_ENV"

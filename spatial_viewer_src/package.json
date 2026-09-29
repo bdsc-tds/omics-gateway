@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Self-hosted Vitessce bundle for the cellxgene-gateway spatial viewer.",
+  "description": "Self-hosted Vitessce bundle for the omics-gateway spatial viewer.",
   "scripts": {
     "build": "vite build"
   },

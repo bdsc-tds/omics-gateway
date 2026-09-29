@@ -40,12 +40,12 @@ If you are proposing a feature:
 
 ## Get Started!
 
-Ready to contribute? Here's how to set up `cellxgene-gateway` for local development.
+Ready to contribute? Here's how to set up `omics-gateway` for local development.
 
-1. Clone `cellxgene-gateway` locally:
+1. Clone `omics-gateway` locally:
 
     ```console
-    $ git clone https://github.com/bdsc-tds/cellxgene-gateway.git
+    $ git clone https://github.com/bdsc-tds/omics-gateway.git
     ```
 
 2. Create the `omics-gateway` conda environment and install the repository into it (see the [README](README.md#installing-from-a-fresh-clone)):
@@ -74,5 +74,5 @@ Before you submit a pull request, check that it meets these guidelines:
 
 ## Code of Conduct
 
-Please note that the `cellxgene-gateway` project is released with a
+Please note that the `omics-gateway` project is released with a
 [Code of Conduct](CONDUCT.md). By contributing to this project you agree to abide by its terms.
