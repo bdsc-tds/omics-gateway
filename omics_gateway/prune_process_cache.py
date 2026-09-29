@@ -13,7 +13,7 @@ import logging
 import time
 
 # Import other functions from package
-from cellxgene_gateway import env, util
+from omics_gateway import env, util
 
 # Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)

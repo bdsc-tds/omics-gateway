@@ -16,10 +16,10 @@ import flask
 import s3fs
 
 # Import other functions from package
-from cellxgene_gateway import dir_util
-from cellxgene_gateway.items.item import ItemTree, ItemType
-from cellxgene_gateway.items.item_source import ItemSource, LookupResult
-from cellxgene_gateway.items.s3.s3item import S3Item
+from omics_gateway import dir_util
+from omics_gateway.items.item import ItemTree, ItemType
+from omics_gateway.items.item_source import ItemSource, LookupResult
+from omics_gateway.items.s3.s3item import S3Item
 
 
 def truthy(val: str):

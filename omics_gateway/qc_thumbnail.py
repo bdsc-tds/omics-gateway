@@ -5,7 +5,7 @@ import tempfile
 from PIL import Image
 
 # Import other functions from package
-from cellxgene_gateway import env
+from omics_gateway import env
 
 # Grid cards are ~230 px wide. Width targets 2x card for HiDPI; height cap
 # bounds very tall stacked figures

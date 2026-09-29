@@ -25,7 +25,7 @@ setup(
     # mandatory
     name='cellxgene_gateway',
     # mandatory
-    version=get_version('cellxgene_gateway/__init__.py'),
+    version=get_version('omics_gateway/__init__.py'),
     # mandatory
     author='Niket Patel, Yohann Potier, Alok Saldanha',
     author_email='alok.saldanha@novartis.com',
@@ -37,7 +37,7 @@ setup(
     url='http://github.com/Novartis/cellxgene-gateway',
     packages=find_packages(),
     package_data={
-        'cellxgene_gateway': [
+        'omics_gateway': [
             'static/css/*.css',
             'templates/*.html',
             'static/js/*.js',
@@ -48,7 +48,7 @@ setup(
     },
     data_files=[('', ['README.md', 'LICENSE'])],
     entry_points={
-        'console_scripts': ['cellxgene-gateway=cellxgene_gateway.gateway:main']
+        'console_scripts': ['cellxgene-gateway=omics_gateway.gateway:main']
     },
     classifiers=['Topic :: Scientific/Engineering :: Visualization'],
     python_requires='>=3.6',

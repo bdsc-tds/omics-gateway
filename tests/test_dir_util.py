@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 # Import other functions from package
-from cellxgene_gateway.dir_util import (
+from omics_gateway.dir_util import (
     ensure_dir_exists,
     make_annotations,
     make_h5ad,

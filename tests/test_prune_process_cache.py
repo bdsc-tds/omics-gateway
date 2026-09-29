@@ -3,11 +3,11 @@ import unittest
 from unittest.mock import patch, seal
 
 # Import other functions from package
-from cellxgene_gateway.backend_cache import BackendCache
-from cellxgene_gateway.cache_key import CacheKey
-from cellxgene_gateway.items.file.fileitem import FileItem
-from cellxgene_gateway.items.file.fileitem_source import FileItemSource
-from cellxgene_gateway.items.item import ItemType
+from omics_gateway.backend_cache import BackendCache
+from omics_gateway.cache_key import CacheKey
+from omics_gateway.items.file.fileitem import FileItem
+from omics_gateway.items.file.fileitem_source import FileItemSource
+from omics_gateway.items.item import ItemType
 
 # Create CacheKey instance using FileItem for .h5ad file and
 # FileItemSource pointing to local directory
@@ -26,10 +26,10 @@ class TestPruneProcessCache(unittest.TestCase):
     preserved.
     """
 
-    @patch('cellxgene_gateway.util.current_time_stamp', new=lambda: 0)
-    @patch('cellxgene_gateway.env.expire_seconds', new=10)
-    @patch('cellxgene_gateway.cache_entry.CacheEntry')
-    @patch('cellxgene_gateway.cache_entry.CacheEntry')
+    @patch('omics_gateway.util.current_time_stamp', new=lambda: 0)
+    @patch('omics_gateway.env.expire_seconds', new=10)
+    @patch('omics_gateway.cache_entry.CacheEntry')
+    @patch('omics_gateway.cache_entry.CacheEntry')
     def test_GIVEN_one_old_one_new_THEN_prune_old(self, old, new):
         """
         Test pruning logic when cache contains both expired and active entries.
@@ -47,7 +47,7 @@ class TestPruneProcessCache(unittest.TestCase):
         new: Mocked CacheEntry
             Represents recent (non-expired) cache entry.
         """
-        from cellxgene_gateway.prune_process_cache import PruneProcessCache
+        from omics_gateway.prune_process_cache import PruneProcessCache
 
         cache = BackendCache()
         old.timestamp = -100

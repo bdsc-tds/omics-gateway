@@ -178,7 +178,7 @@ ruff format --check .
 
 ### Rebuilding the spatial viewer
 
-Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript application that runs entirely in the visitor's browser: the gateway only serves files. Browsers cannot load npm packages directly, so [Vite](https://vite.dev) builds Vitessce and its dependencies into plain JavaScript files in `cellxgene_gateway/static/vitessce/`, which `cellxgene_gateway/templates/spatial_viewer.html` loads. The build inputs live in `spatial_viewer_src/`:
+Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript application that runs entirely in the visitor's browser: the gateway only serves files. Browsers cannot load npm packages directly, so [Vite](https://vite.dev) builds Vitessce and its dependencies into plain JavaScript files in `omics_gateway/static/vitessce/`, which `omics_gateway/templates/spatial_viewer.html` loads. The build inputs live in `spatial_viewer_src/`:
 
 * `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
 * `vite.config.js`: build settings (output directory, browser shims for Node globals)
@@ -191,7 +191,7 @@ The built files are committed, so deployment needs neither Node nor a build step
 conda env create -f spatial_viewer_src/viewer_build_env.yaml   # once
 cd spatial_viewer_src
 conda run -n viewer-build npm ci          # installs the locked packages into node_modules/ (about 1.8 GB)
-conda run -n viewer-build npm run build   # replaces the contents of ../cellxgene_gateway/static/vitessce/
+conda run -n viewer-build npm run build   # replaces the contents of ../omics_gateway/static/vitessce/
 rm -rf node_modules                       # optional, frees the disk space
 ```
 
@@ -199,7 +199,7 @@ The build is reproducible: rebuilding unchanged sources gives identical files. T
 
 `spatial-viewer.js` keeps a fixed name, so it must be served with revalidation rather than long-term caching; the other built files have content hashes in their names and can be cached indefinitely.
 
-The spatial viewer page also adjusts Vitessce at runtime, through `cellxgene_gateway/static/css/spatial_viewer.css` and `cellxgene_gateway/static/js/spatial_viewer.js` (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
+The spatial viewer page also adjusts Vitessce at runtime, through `omics_gateway/static/css/spatial_viewer.css` and `omics_gateway/static/js/spatial_viewer.js` (legend fixes, layer order, lasso behaviour). Some of these rely on Vitessce internals, so check the viewer in a browser after an upgrade, including a spatial lasso with only the Nucleus layer visible. The lasso fix logs `Lasso override not applied` to the browser console when it cannot find what it patches, but not every breakage is detectable.
 
 ## Getting help
 

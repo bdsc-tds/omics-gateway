@@ -19,9 +19,9 @@ from flask import make_response, render_template, request
 from requests import get, post, put
 
 # Import other functions from package
-from cellxgene_gateway.cache_exception import CacheException
-from cellxgene_gateway.flask_util import querystring
-from cellxgene_gateway.util import current_time_stamp
+from omics_gateway.cache_exception import CacheException
+from omics_gateway.flask_util import querystring
+from omics_gateway.util import current_time_stamp
 
 # Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)

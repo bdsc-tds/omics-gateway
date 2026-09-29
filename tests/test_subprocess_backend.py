@@ -3,12 +3,12 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 # Import other functions from package
-from cellxgene_gateway.cache_entry import CacheEntry
-from cellxgene_gateway.cache_key import CacheKey
-from cellxgene_gateway.cellxgene_exception import CellxgeneException
-from cellxgene_gateway.items.file.fileitem import FileItem
-from cellxgene_gateway.items.file.fileitem_source import FileItemSource
-from cellxgene_gateway.items.item import ItemType
+from omics_gateway.cache_entry import CacheEntry
+from omics_gateway.cache_key import CacheKey
+from omics_gateway.cellxgene_exception import CellxgeneException
+from omics_gateway.items.file.fileitem import FileItem
+from omics_gateway.items.file.fileitem_source import FileItemSource
+from omics_gateway.items.item import ItemType
 
 
 class TestSubprocessBackend(unittest.TestCase):
@@ -42,7 +42,7 @@ class TestSubprocessBackend(unittest.TestCase):
             FileItemSource('/tmp', 'local'),
         )
         entry = CacheEntry.for_key(key, 8000)
-        from cellxgene_gateway.subprocess_backend import SubprocessBackend
+        from omics_gateway.subprocess_backend import SubprocessBackend
 
         backend = SubprocessBackend()
         cellxgene_loc = '/some/cellxgene'
@@ -92,10 +92,10 @@ class TestSubprocessBackend(unittest.TestCase):
             ),
         )
         entry = CacheEntry.for_key(key, 8000)
-        import cellxgene_gateway.subprocess_backend
+        import omics_gateway.subprocess_backend
 
-        with patch('cellxgene_gateway.env.enable_annotations', new=True):
-            backend = cellxgene_gateway.subprocess_backend.SubprocessBackend()
+        with patch('omics_gateway.env.enable_annotations', new=True):
+            backend = omics_gateway.subprocess_backend.SubprocessBackend()
             cellxgene_loc = '/some/cellxgene'
 
             backend.launch(cellxgene_loc, [], entry)

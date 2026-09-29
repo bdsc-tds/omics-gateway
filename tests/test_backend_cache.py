@@ -4,9 +4,9 @@ from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 # Import other functions from package
-from cellxgene_gateway.backend_cache import BackendCache, is_port_in_use
-from cellxgene_gateway.cache_entry import CacheEntryStatus
-from cellxgene_gateway.cache_exception import CacheException
+from omics_gateway.backend_cache import BackendCache, is_port_in_use
+from omics_gateway.cache_entry import CacheEntryStatus
+from omics_gateway.cache_exception import CacheException
 
 
 class TestIsPortInUse(unittest.TestCase):

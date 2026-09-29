@@ -6,8 +6,8 @@ import unittest
 from unittest import mock
 
 # Import other functions from package
-from cellxgene_gateway import dataset_metadata_loader as dml
-from cellxgene_gateway import env, flask_util, gateway
+from omics_gateway import dataset_metadata_loader as dml
+from omics_gateway import env, flask_util, gateway
 
 
 # Function to build os.environ replacement with keys removed and added
@@ -147,7 +147,7 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         gateway.item_sources.clear()
         # Patched at its source module: gateway imports it inside function
         with mock.patch(
-            'cellxgene_gateway.items.file.fileitem_source.FileItemSource'
+            'omics_gateway.items.file.fileitem_source.FileItemSource'
         ) as source:
             gateway.initialise_data_sources()
 

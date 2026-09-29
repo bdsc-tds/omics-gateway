@@ -55,7 +55,7 @@ else
 fi
 
 # 2. Install repo into conda env: env file cannot express editable install,
-# so env would otherwise resolve `cellxgene_gateway` to PyPI release
+# so env would otherwise lack gateway package
 echo "[2/5] Installing (editable) repo into conda env..."
 "$CONDA_ENV_BIN/pip" install --quiet --no-deps --editable "$REPO_DIR"
 
@@ -97,7 +97,7 @@ if [ ! -x "$CONDA_ENV_BIN/gunicorn" ]; then
     echo "Error: gunicorn not found at $CONDA_ENV_BIN/gunicorn"
     exit 1
 fi
-"$CONDA_ENV_BIN/python" -c "import cellxgene_gateway; print('      cellxgene_gateway', cellxgene_gateway.__version__, 'from', cellxgene_gateway.__file__)"
+"$CONDA_ENV_BIN/python" -c "import omics_gateway; print('      omics_gateway', omics_gateway.__version__, 'from', omics_gateway.__file__)"
 
 echo ""
 echo "Setup complete."

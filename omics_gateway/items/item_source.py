@@ -12,7 +12,7 @@
 from abc import ABC, abstractmethod
 
 # Import other functions from package
-from cellxgene_gateway.items.item import Item
+from omics_gateway.items.item import Item
 
 
 class LookupResult:

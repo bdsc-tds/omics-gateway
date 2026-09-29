@@ -32,18 +32,18 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import safe_join
 
 # Import other functions from package
-from cellxgene_gateway import env, flask_util
-from cellxgene_gateway.backend_cache import BackendCache
-from cellxgene_gateway.cache_entry import CacheEntryStatus
-from cellxgene_gateway.cache_exception import CacheException
-from cellxgene_gateway.cache_key import CacheKey
-from cellxgene_gateway.cellxgene_exception import CellxgeneException
-from cellxgene_gateway.dataset_metadata_loader import load_dataset_metadata_tsv
-from cellxgene_gateway.extra_scripts import get_extra_scripts
-from cellxgene_gateway.filecrawl import render_item_source
-from cellxgene_gateway.prune_process_cache import PruneProcessCache
-from cellxgene_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
-from cellxgene_gateway.util import CustomRequestHandler, current_time_stamp
+from omics_gateway import env, flask_util
+from omics_gateway.backend_cache import BackendCache
+from omics_gateway.cache_entry import CacheEntryStatus
+from omics_gateway.cache_exception import CacheException
+from omics_gateway.cache_key import CacheKey
+from omics_gateway.cellxgene_exception import CellxgeneException
+from omics_gateway.dataset_metadata_loader import load_dataset_metadata_tsv
+from omics_gateway.extra_scripts import get_extra_scripts
+from omics_gateway.filecrawl import render_item_source
+from omics_gateway.prune_process_cache import PruneProcessCache
+from omics_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
+from omics_gateway.util import CustomRequestHandler, current_time_stamp
 
 app = Flask(__name__)
 
@@ -162,10 +162,10 @@ def _init_on_first_wsgi_request(wsgi_app):
         global data_sources_initialized
         if not data_sources_initialized:
             with data_sources_init_lock:
-                if not app.extensions.get('cellxgene_gateway', {}).get(
+                if not app.extensions.get('omics_gateway', {}).get(
                     'launchtime'
                 ):
-                    app.extensions.setdefault('cellxgene_gateway', {})[
+                    app.extensions.setdefault('omics_gateway', {})[
                         'launchtime'
                     ] = current_time_stamp()
 
@@ -226,7 +226,7 @@ def initialise_data_sources():
     cellxgene_bucket = env.cellxgene_bucket
 
     if cellxgene_bucket is not None:
-        from cellxgene_gateway.items.s3.s3item_source import S3ItemSource
+        from omics_gateway.items.s3.s3item_source import S3ItemSource
 
         s3_source = S3ItemSource(cellxgene_bucket, name='s3')
         item_sources.append(s3_source)
@@ -234,7 +234,7 @@ def initialise_data_sources():
         logger.info('Initialized S3 data source')
         logger.debug(f'S3 bucket: {cellxgene_bucket}')
     if cellxgene_data is not None:
-        from cellxgene_gateway.items.file.fileitem_source import FileItemSource
+        from omics_gateway.items.file.fileitem_source import FileItemSource
 
         file_source = FileItemSource(cellxgene_data, name='local')
         item_sources.append(file_source)
@@ -787,9 +787,7 @@ def do_instances_json():
         }
 
     return json.dumps({
-        'launchtime': app.extensions.get('cellxgene_gateway', {}).get(
-            'launchtime'
-        ),
+        'launchtime': app.extensions.get('omics_gateway', {}).get('launchtime'),
         'entry_list': [map_entry(entry) for entry in cache.entry_list],
     })
 
@@ -1608,7 +1606,7 @@ def launch():
     None
     """
 
-    app.extensions.setdefault('cellxgene_gateway', {})['launchtime'] = (
+    app.extensions.setdefault('omics_gateway', {})['launchtime'] = (
         current_time_stamp()
     )
     app.run(
@@ -1619,7 +1617,7 @@ def launch():
     )
 
 
-app.extensions.setdefault('cellxgene_gateway', {})['launchtime'] = None
+app.extensions.setdefault('omics_gateway', {})['launchtime'] = None
 
 
 def main():

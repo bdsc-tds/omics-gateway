@@ -13,7 +13,7 @@ from json import loads
 from json.decoder import JSONDecodeError
 
 # Import other functions from package
-from cellxgene_gateway import env
+from omics_gateway import env
 
 
 def get_extra_scripts():

@@ -13,12 +13,12 @@ import logging
 import subprocess
 from http import HTTPStatus
 
-from cellxgene_gateway import env
+from omics_gateway import env
 
 # Import other functions from package
-from cellxgene_gateway.cache_entry import CacheEntryStatus
-from cellxgene_gateway.cellxgene_exception import CellxgeneException
-from cellxgene_gateway.dir_util import make_annotations
+from omics_gateway.cache_entry import CacheEntryStatus
+from omics_gateway.cellxgene_exception import CellxgeneException
+from omics_gateway.dir_util import make_annotations
 
 # Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)

@@ -13,8 +13,8 @@ import html
 import urllib.parse
 
 # Import other functions from package
-from cellxgene_gateway import env, flask_util
-from cellxgene_gateway.cache_key import CacheKey
+from omics_gateway import env, flask_util
+from omics_gateway.cache_key import CacheKey
 
 
 def render_annotations(item, item_source):

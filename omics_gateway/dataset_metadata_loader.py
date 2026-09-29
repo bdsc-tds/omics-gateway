@@ -3,7 +3,7 @@ import csv
 import logging
 import os
 
-from cellxgene_gateway import env
+from omics_gateway import env
 
 # Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)

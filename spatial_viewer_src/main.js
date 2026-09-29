@@ -2,7 +2,7 @@
  * Entry point for self-hosted Vitessce spatial viewer.
  *
  * Vite bundles this file (with React, Vitessce and their dependencies) into
- * static assets under `cellxgene_gateway/static/vitessce/`, which
+ * static assets under `omics_gateway/static/vitessce/`, which
  * `templates/spatial_viewer.html` loads. Self-hosting replaced CDN-loaded
  * Vitessce, so deployed gateway serves viewer code itself and needs no
  * outbound internet access.

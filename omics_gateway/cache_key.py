@@ -8,9 +8,9 @@
 # the specific language governing permissions and limitations under the License.
 
 # Import other functions from package
-from cellxgene_gateway import flask_util
-from cellxgene_gateway.items.item import Item
-from cellxgene_gateway.items.item_source import ItemSource, LookupResult
+from omics_gateway import flask_util
+from omics_gateway.items.item import Item
+from omics_gateway.items.item_source import ItemSource, LookupResult
 
 
 class CacheKey:

@@ -12,10 +12,10 @@
 import os
 
 # Import other functions from package
-from cellxgene_gateway import dir_util
-from cellxgene_gateway.items.file.fileitem import FileItem
-from cellxgene_gateway.items.item import ItemTree, ItemType
-from cellxgene_gateway.items.item_source import ItemSource, LookupResult
+from omics_gateway import dir_util
+from omics_gateway.items.file.fileitem import FileItem
+from omics_gateway.items.item import ItemTree, ItemType
+from omics_gateway.items.item_source import ItemSource, LookupResult
 
 
 class FileItemSource(ItemSource):

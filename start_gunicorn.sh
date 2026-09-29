@@ -102,7 +102,7 @@ cd "$SCRIPT_DIR"
 
 # Optional: GUNICORN_MAX_REQUESTS restarts worker after N requests (memory
 # leaks), GUNICORN_MAX_REQUESTS_JITTER randomises that count
-exec gunicorn cellxgene_gateway.gateway:app \
+exec gunicorn omics_gateway.gateway:app \
     --workers "$WORKERS" \
     --worker-class "$WORKER_CLASS" \
     --threads "$THREADS" \

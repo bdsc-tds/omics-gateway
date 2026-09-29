@@ -135,9 +135,7 @@ def validate():
     """
         )
     else:
-        logging.getLogger('cellxgene_gateway').info(
-            f'Got required env: {env_vars}'
-        )
-        logging.getLogger('cellxgene_gateway').info(
+        logging.getLogger('omics_gateway').info(f'Got required env: {env_vars}')
+        logging.getLogger('omics_gateway').info(
             f'Got optional env: {optional_env_vars}'
         )

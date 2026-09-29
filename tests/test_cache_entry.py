@@ -2,13 +2,13 @@
 import unittest
 
 # Import other functions from package
-from cellxgene_gateway import flask_util
-from cellxgene_gateway.cache_entry import CacheEntry, CacheEntryStatus
-from cellxgene_gateway.cache_key import CacheKey
-from cellxgene_gateway.gateway import app
-from cellxgene_gateway.items.file.fileitem import FileItem
-from cellxgene_gateway.items.file.fileitem_source import FileItemSource
-from cellxgene_gateway.items.item import ItemType
+from omics_gateway import flask_util
+from omics_gateway.cache_entry import CacheEntry, CacheEntryStatus
+from omics_gateway.cache_key import CacheKey
+from omics_gateway.gateway import app
+from omics_gateway.items.file.fileitem import FileItem
+from omics_gateway.items.file.fileitem_source import FileItemSource
+from omics_gateway.items.item import ItemType
 
 # Create CacheKey instance using FileItem for .h5ad file and
 # FileItemSource pointing to local directory

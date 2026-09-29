@@ -79,8 +79,8 @@ def main():
     if args.cache:
         os.environ['QC_THUMB_CACHE'] = os.path.abspath(args.cache)
 
-    from cellxgene_gateway import env
-    from cellxgene_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
+    from omics_gateway import env
+    from omics_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
 
     if not os.path.isdir(env.qc_data):
         sys.exit(f'QC directory not found: {env.qc_data}')

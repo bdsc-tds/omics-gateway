@@ -8,16 +8,13 @@
 # the specific language governing permissions and limitations under the License.
 
 
-# Import utility modules
-import os
-
 # Import other functions from package
-from cellxgene_gateway.items.item import Item
+from omics_gateway.items.item import Item
 
 
-class FileItem(Item):
+class S3Item(Item):
     """
-    Class to represent file-based dataset or annotation item with path and
+    Class to represent S3-based dataset or annotation item with path and
     optional extension.
 
     Inherits:
@@ -25,17 +22,14 @@ class FileItem(Item):
     Item: Abstract base class defining core interface for data items.
     """
 
-    def __init__(self, subpath: str, ext: str = '', *args, **kwargs):
+    def __init__(self, s3key: str, *args, **kwargs):
         """
-        Initialise FileItem. Item superclass expects 'name' and 'type'.
+        Initialise S3Item. Item superclass expects 'name' and 'type'.
 
         Parameters:
         -----------
-        subpath: str
-          Relative path to file within data source.
-
-        ext: str, optional
-          File extension (e.g., '.h5ad' or '.csv').
+        s3key: str
+            Full key (path) of object in S3 bucket.
 
         *args, **kwargs :
           Additional arguments passed to Item superclass.
@@ -50,19 +44,17 @@ class FileItem(Item):
         """
 
         super().__init__(*args, **kwargs)
-        self.subpath = subpath
-        self.ext = ext
+        self.s3key = s3key
 
     @property
     def descriptor(self) -> str:
         """
-        Build relative file path for this item, combining subpath, name, and
-        extension.
+        Return unique descriptor for item.
 
         Returns:
         --------
         str
-          Item relative path.
+          S3 key for object.
         """
 
-        return os.path.join(self.subpath, self.name + self.ext).strip('/')
+        return self.s3key

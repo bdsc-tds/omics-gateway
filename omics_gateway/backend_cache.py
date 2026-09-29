@@ -15,11 +15,11 @@ from http import HTTPStatus
 from threading import Thread
 
 # Import other functions from package
-from cellxgene_gateway import env
-from cellxgene_gateway.cache_entry import CacheEntry, CacheEntryStatus
-from cellxgene_gateway.cache_exception import CacheException
-from cellxgene_gateway.cache_key import CacheKey
-from cellxgene_gateway.subprocess_backend import SubprocessBackend
+from omics_gateway import env
+from omics_gateway.cache_entry import CacheEntry, CacheEntryStatus
+from omics_gateway.cache_exception import CacheException
+from omics_gateway.cache_key import CacheKey
+from omics_gateway.subprocess_backend import SubprocessBackend
 
 # Instantiate process backend
 process_backend = SubprocessBackend()
