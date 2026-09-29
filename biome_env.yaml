@@ -1,0 +1,9 @@
+# Biome for linting front-end code (JS, CSS, templates), configured in
+# biome.jsonc; keep version in step with CI
+#
+#   conda env create -f biome_env.yaml
+name: biome
+channels:
+  - conda-forge
+dependencies:
+  - biome=2.5.14
