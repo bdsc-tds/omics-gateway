@@ -1,11 +1,11 @@
-# Lint and test every pull request and every push to master
+# Lint and test every pull request and every push to main
 
 name: Checks
 
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [main]
   # Allow manual runs on any branch from Actions tab
   workflow_dispatch:
 
