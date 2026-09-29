@@ -8,7 +8,7 @@ This repository is the SSF BioHub fork of [Novartis/cellxgene-gateway](https://g
 
 ### Prerequisites
 
-A conda installation, for example [Miniforge](https://github.com/conda-forge/miniforge). `deploy/setup.sh` creates the `cellxgateway` environment with everything else the gateway needs.
+A conda installation, for example [Miniforge](https://github.com/conda-forge/miniforge). `deploy/setup.sh` creates the `omics-gateway` environment with everything else the gateway needs.
 
 ### Installing from a fresh clone
 
@@ -18,7 +18,7 @@ cd cellxgene-gateway
 ./deploy/setup.sh
 ```
 
-`deploy/setup.sh` creates the `cellxgateway` conda env from `deploy/cellxgateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
+`deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
 Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
 
@@ -100,7 +100,7 @@ A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generat
 `/qc/<dataset_id>` shows one tab per step folder, in folder-name order. Inside a step, folders named `1_raw`, `2_filtered`, `filtered`, `3_doublets`, `results` or `training` become headed sections; a step without them is shown as one section. Figures (`.jpg`, `.jpeg`, `.png` or `.svg`) under `per_sample/`, `per_dataset/` or `3_doublets/` are grouped by the part of their file name before `_QC_` or `_doublet_`; all other figures are shown together. The gateway builds thumbnails into `QC_THUMB_CACHE` the first time a report is opened; `data_prep/build_qc_thumbnails.py` builds them all in advance, so run it after each QC sync:
 
 ```bash
-conda run -n cellxgateway python data_prep/build_qc_thumbnails.py --qc-data analysis_qc
+conda run -n omics-gateway python data_prep/build_qc_thumbnails.py --qc-data analysis_qc
 ```
 
 ## Running the gateway
@@ -113,7 +113,7 @@ Use the gunicorn start script:
 ( ./start_gunicorn.sh )
 ```
 
-Configuration is inlined at the top of `start_gunicorn.sh`. Paths derive from the conda env (`CONDA_ENV`, default `cellxgateway`) and the repo location, so the script is host-independent. Every setting is written as `${VAR:-default}`, so any of them can still be overridden from the environment:
+Configuration is inlined at the top of `start_gunicorn.sh`. Paths derive from the conda env (`CONDA_ENV`, default `omics-gateway`) and the repo location, so the script is host-independent. Every setting is written as `${VAR:-default}`, so any of them can still be overridden from the environment:
 
 ```bash
 CELLXGENE_DATA=/path/to/data ( ./start_gunicorn.sh )
@@ -121,7 +121,7 @@ CELLXGENE_DATA=/path/to/data ( ./start_gunicorn.sh )
 
 In production the script runs under a systemd service, which can override settings with `Environment=` directives.
 
-nginx and TLS are host-specific and are not covered here. For systemd, adapt `deploy/cellxgateway.service.example` by editing the paths and `User=` for the host.
+nginx and TLS are host-specific and are not covered here. For systemd, adapt `deploy/omics-gateway.service.example` by editing the paths and `User=` for the host.
 
 ### Ad hoc, for development
 
@@ -132,7 +132,7 @@ mkdir ../cellxgene_data
 wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../cellxgene_data/pbmc3k.h5ad
 ```
 
-2. In the activated environment (`conda activate cellxgateway`), set the required environment variables (see [Configuring](#configuring)):
+2. In the activated environment (`conda activate omics-gateway`), set the required environment variables (see [Configuring](#configuring)):
 
 ```bash
 export CELLXGENE_DATA=../cellxgene_data  # Change this if you put data in a different place
@@ -155,21 +155,21 @@ git pull
 git stash pop  # Reapply stashed changes if needed
 ```
 
-Then restart the gateway, for example with `sudo systemctl restart cellxgateway` under systemd. The repository is installed in editable mode, so the restart picks up code changes. `deploy/setup.sh` leaves an existing environment alone, so if `deploy/cellxgateway_env.yaml` changed, remove the environment with `conda env remove -n cellxgateway` and re-run `./deploy/setup.sh`.
+Then restart the gateway, for example with `sudo systemctl restart omics-gateway` under systemd. The repository is installed in editable mode, so the restart picks up code changes. `deploy/setup.sh` leaves an existing environment alone, so if `deploy/omics-gateway_env.yaml` changed, remove the environment with `conda env remove -n omics-gateway` and re-run `./deploy/setup.sh`.
 
 ## Development
 
-GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `main`, in an environment built from `deploy/cellxgateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `main`.
+GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `main`, in an environment built from `deploy/omics-gateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `main`.
 
 ### Running tests
 
 ```bash
-conda run -n cellxgateway python -m unittest discover tests
+conda run -n omics-gateway python -m unittest discover tests
 ```
 
 ### Linting
 
-Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.toml`. Ruff is not part of the `cellxgateway` environment, so run it from any environment that has it:
+Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.toml`. Ruff is not part of the `omics-gateway` environment, so run it from any environment that has it:
 
 ```bash
 ruff check .

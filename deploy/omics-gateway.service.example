@@ -7,10 +7,10 @@ Type=simple
 # Host-specific: account owning clone.
 User=CHANGEME_USER
 # Host-specific: repository root.
-WorkingDirectory=/path/to/cellxgene-gateway
+WorkingDirectory=/path/to/omics-gateway
 
 # Start command
-ExecStart=/path/to/cellxgene-gateway/start_gunicorn.sh
+ExecStart=/path/to/omics-gateway/start_gunicorn.sh
 
 # Restart conditions
 Restart=on-failure
@@ -18,8 +18,8 @@ RestartSec=10
 
 # Logging
 # deploy/setup.sh creates logs/; append: fails if directory is missing.
-StandardOutput=append:/path/to/cellxgene-gateway/logs/cellxgateway.log
-StandardError=append:/path/to/cellxgene-gateway/logs/cellxgateway.log
+StandardOutput=append:/path/to/omics-gateway/logs/omics-gateway.log
+StandardError=append:/path/to/omics-gateway/logs/omics-gateway.log
 
 # start_gunicorn.sh settings are ${VAR:-default}, so override them here, e.g.:
 # Environment=CONDA_ROOT=/opt/miniforge3

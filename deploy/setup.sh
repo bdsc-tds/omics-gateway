@@ -11,10 +11,10 @@
 #
 # Config follows same ${VAR:-default} convention as start_gunicorn.sh, so both
 # scripts agree on which environment they mean:
-#   CONDA_ROOT (default $HOME/miniforge3), CONDA_ENV (default cellxgateway)
+#   CONDA_ROOT (default $HOME/miniforge3), CONDA_ENV (default omics-gateway)
 #
 # Deliberately out of scope: nginx, systemd and TLS are host-specific and need
-# root. See cellxgateway.service.example alongside this script, and README.
+# root. See omics-gateway.service.example alongside this script, and README.
 
 set -euo pipefail
 
@@ -22,10 +22,10 @@ DEPLOY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_DIR="$( cd "$DEPLOY_DIR/.." && pwd )"
 
 CONDA_ROOT=${CONDA_ROOT:-$HOME/miniforge3}
-CONDA_ENV=${CONDA_ENV:-cellxgateway}
+CONDA_ENV=${CONDA_ENV:-omics-gateway}
 CONDA_ENV_DIR="$CONDA_ROOT/envs/$CONDA_ENV"
 CONDA_ENV_BIN="$CONDA_ENV_DIR/bin"
-ENV_FILE="$DEPLOY_DIR/cellxgateway_env.yaml"
+ENV_FILE="$DEPLOY_DIR/omics-gateway_env.yaml"
 
 # Prefer mamba when present, if not default to conda
 if [ -x "$CONDA_ROOT/bin/mamba" ]; then
@@ -108,4 +108,4 @@ fi
 echo ""
 echo "Start gateway with:"
 echo "  ./start_gunicorn.sh"
-echo "or install a systemd unit based on deploy/cellxgateway.service.example."
+echo "or install a systemd unit based on deploy/omics-gateway.service.example."

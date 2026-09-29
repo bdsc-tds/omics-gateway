@@ -48,7 +48,7 @@ Ready to contribute? Here's how to set up `cellxgene-gateway` for local developm
     $ git clone https://github.com/bdsc-tds/cellxgene-gateway.git
     ```
 
-2. Create the `cellxgateway` conda environment and install the repository into it (see the [README](README.md#installing-from-a-fresh-clone)):
+2. Create the `omics-gateway` conda environment and install the repository into it (see the [README](README.md#installing-from-a-fresh-clone)):
 
     ```console
     $ ./deploy/setup.sh
@@ -70,7 +70,7 @@ Before you submit a pull request, check that it meets these guidelines:
 
 1. The pull request should include additional tests if appropriate
 2. If the pull request adds functionality, the docs should be updated
-3. The pull request should work in the `cellxgateway` environment defined by `deploy/cellxgateway_env.yaml`
+3. The pull request should work in the `omics-gateway` environment defined by `deploy/omics-gateway_env.yaml`
 
 ## Code of Conduct
 

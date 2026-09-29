@@ -4,14 +4,14 @@ These scripts turn our team's pipeline outputs into the layout the gateway reads
 
 | Script | Environment | Produces |
 | --- | --- | --- |
-| `generate_datasets_tsv.py` | `cellxgateway` | `datasets.tsv`, from the metadata of `.h5ad` files and `.zarr` stores |
+| `generate_datasets_tsv.py` | `omics-gateway` | `datasets.tsv`, from the metadata of `.h5ad` files and `.zarr` stores |
 | `convert_xenium.py` | `spatial` | a SpatialData `.zarr` store, from Xenium Ranger output |
 | `write_store_metadata.py` | `spatial` | dataset metadata inside a `.zarr` store, from a YAML file |
 | `generate_spatial_config.py` | `spatial` | the viewer configs for a store |
-| `downscale_qc_figures.py` | `cellxgateway` | a lower-resolution copy of the QC figures |
-| `build_qc_thumbnails.py` | `cellxgateway` | the QC report thumbnails |
+| `downscale_qc_figures.py` | `omics-gateway` | a lower-resolution copy of the QC figures |
+| `build_qc_thumbnails.py` | `omics-gateway` | the QC report thumbnails |
 
-The `spatial` environment is created with `conda env create -f data_prep/spatial_env.yaml`. Keep its packages out of `cellxgateway`, the environment the gateway runs in.
+The `spatial` environment is created with `conda env create -f data_prep/spatial_env.yaml`. Keep its packages out of `omics-gateway`, the environment the gateway runs in.
 
 ## Dataset table
 
@@ -30,7 +30,7 @@ The `spatial` environment is created with `conda env create -f data_prep/spatial
 It removes `healthy` from `disease` and NA values from `tissue` and `sex`, and sorts multi-value fields with NA values last. Rows come in this order: `.h5ad` files, the merged meta-analysis file if given (with fields overridden from a YAML file), then the stores. A store without `dataset_name_short` in its metadata is skipped, so reference or scratch stores under `data/` stay out of the browser. Only the metadata keys and table sizes are read, not the tables themselves, which keeps memory use small even for the 349,000-cell meta-analysis.
 
 ```bash
-conda run -n cellxgateway python data_prep/generate_datasets_tsv.py \
+conda run -n omics-gateway python data_prep/generate_datasets_tsv.py \
     --data-dir data \
     --output datasets.tsv \
     --merged-file data/meta_analysis_all_final_label_transfer_swapped.h5ad \
@@ -99,7 +99,7 @@ article_authors: A. Thiebaut
 The expected folder layout is described in the main README. Our pipeline exports figures at 600 dpi, far more than a screen can show, so `downscale_qc_figures.py` writes a copy resampled to 150 dpi into a separate tree, leaving the originals untouched:
 
 ```bash
-conda run -n cellxgateway python data_prep/downscale_qc_figures.py \
+conda run -n omics-gateway python data_prep/downscale_qc_figures.py \
     --qc-data analysis_qc \
     --output analysis_qc_150dpi \
     --dpi 150
@@ -108,7 +108,7 @@ conda run -n cellxgateway python data_prep/downscale_qc_figures.py \
 Check the result, swap the two trees by hand, then rebuild the thumbnails:
 
 ```bash
-conda run -n cellxgateway python data_prep/build_qc_thumbnails.py \
+conda run -n omics-gateway python data_prep/build_qc_thumbnails.py \
     --qc-data analysis_qc
 ```
 

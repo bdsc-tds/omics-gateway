@@ -1,4 +1,4 @@
-name: cellxgateway
+name: omics-gateway
 channels:
   - conda-forge
 dependencies:

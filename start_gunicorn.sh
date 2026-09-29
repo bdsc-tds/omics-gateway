@@ -4,7 +4,7 @@
 #
 # PREREQUISITES:
 # - Gunicorn installed (included with cellxgene 1.3.0, or: pip install gunicorn)
-# - Conda env named by CONDA_ENV (default: cellxgateway)
+# - Conda env named by CONDA_ENV (default: omics-gateway)
 #
 # USAGE:
 # ./start_gunicorn.sh
@@ -23,7 +23,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Server config; paths derive from conda env and repo, so host-independent
 # Conda variables
 CONDA_ROOT=${CONDA_ROOT:-$HOME/miniforge3}
-CONDA_ENV=${CONDA_ENV:-cellxgateway}
+CONDA_ENV=${CONDA_ENV:-omics-gateway}
 CONDA_ENV_BIN="$CONDA_ROOT/envs/$CONDA_ENV/bin"
 
 # Cellxgene variables
