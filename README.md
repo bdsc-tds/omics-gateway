@@ -159,6 +159,8 @@ Then restart the gateway, for example with `sudo systemctl restart cellxgateway`
 
 ## Development
 
+GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `master`, in an environment built from `deploy/cellxgateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `master`.
+
 ### Running tests
 
 ```bash
