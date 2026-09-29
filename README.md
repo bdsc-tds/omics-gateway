@@ -29,8 +29,8 @@ The gateway is configured through environment variables:
 * `CELLXGENE_LOCATION`: the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
 
 At least one of the following is required:
-* `CELLXGENE_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/cellxgene_data`
-* `CELLXGENE_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-cellxgene-data-bucket`
+* `GATEWAY_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/gateway_data`
+* `GATEWAY_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-gateway-data-bucket`
 Cellxgene Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
 
 Optional environment variables:
@@ -59,7 +59,7 @@ If any of the following optional variables are set, [ProxyFix](https://werkzeug.
 
 ## Data layout
 
-The gateway reads datasets from three places, none of them tracked in git: the data directory (`CELLXGENE_DATA`, `data/` with `start_gunicorn.sh`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
+The gateway reads datasets from three places, none of them tracked in git: the data directory (`GATEWAY_DATA`, `data/` with `start_gunicorn.sh`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
 
 ```
 data/
@@ -116,7 +116,7 @@ Use the gunicorn start script:
 Configuration is inlined at the top of `start_gunicorn.sh`. Paths derive from the conda env (`CONDA_ENV`, default `omics-gateway`) and the repo location, so the script is host-independent. Every setting is written as `${VAR:-default}`, so any of them can still be overridden from the environment:
 
 ```bash
-CELLXGENE_DATA=/path/to/data ( ./start_gunicorn.sh )
+GATEWAY_DATA=/path/to/data ( ./start_gunicorn.sh )
 ```
 
 In production the script runs under a systemd service, which can override settings with `Environment=` directives.
@@ -128,14 +128,14 @@ nginx and TLS are host-specific and are not covered here. For systemd, adapt `de
 1. Prepare a folder with .h5ad files, for example
 
 ```bash
-mkdir ../cellxgene_data
-wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../cellxgene_data/pbmc3k.h5ad
+mkdir ../gateway_data
+wget https://raw.githubusercontent.com/chanzuckerberg/cellxgene/master/example-dataset/pbmc3k.h5ad -O ../gateway_data/pbmc3k.h5ad
 ```
 
 2. In the activated environment (`conda activate omics-gateway`), set the required environment variables (see [Configuring](#configuring)):
 
 ```bash
-export CELLXGENE_DATA=../cellxgene_data  # Change this if you put data in a different place
+export GATEWAY_DATA=../gateway_data  # Change this if you put data in a different place
 export CELLXGENE_LOCATION=`which cellxgene`
 ```
 

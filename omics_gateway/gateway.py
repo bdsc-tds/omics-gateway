@@ -206,7 +206,7 @@ def initialise_data_sources():
     """
     Initialise data sources from environment variables.
 
-    Reads CELLXGENE_DATA and CELLXGENE_BUCKET to set up local file and S3
+    Reads GATEWAY_DATA and GATEWAY_BUCKET to set up local file and S3
     item sources. Called lazily on first WSGI request so Gunicorn workers can
     import module without triggering side effects at import time.
 
@@ -217,32 +217,32 @@ def initialise_data_sources():
     Raises:
     -------
     Exception
-      If neither CELLXGENE_DATA nor CELLXGENE_BUCKET is set.
+      If neither GATEWAY_DATA nor GATEWAY_BUCKET is set.
     """
 
     global default_item_source
 
-    cellxgene_data = env.cellxgene_data
-    cellxgene_bucket = env.cellxgene_bucket
+    gateway_data = env.gateway_data
+    gateway_bucket = env.gateway_bucket
 
-    if cellxgene_bucket is not None:
+    if gateway_bucket is not None:
         from omics_gateway.items.s3.s3item_source import S3ItemSource
 
-        s3_source = S3ItemSource(cellxgene_bucket, name='s3')
+        s3_source = S3ItemSource(gateway_bucket, name='s3')
         item_sources.append(s3_source)
         default_item_source = s3_source
         logger.info('Initialized S3 data source')
-        logger.debug(f'S3 bucket: {cellxgene_bucket}')
-    if cellxgene_data is not None:
+        logger.debug(f'S3 bucket: {gateway_bucket}')
+    if gateway_data is not None:
         from omics_gateway.items.file.fileitem_source import FileItemSource
 
-        file_source = FileItemSource(cellxgene_data, name='local')
+        file_source = FileItemSource(gateway_data, name='local')
         item_sources.append(file_source)
         default_item_source = file_source
         logger.info('Initialized local file data source')
-        logger.debug(f'Data directory: {cellxgene_data}')
+        logger.debug(f'Data directory: {gateway_data}')
     if len(item_sources) == 0:
-        raise ValueError('Please specify CELLXGENE_DATA or CELLXGENE_BUCKET')
+        raise ValueError('Please specify GATEWAY_DATA or GATEWAY_BUCKET')
     flask_util.include_source_in_url = len(item_sources) > 1
 
 
@@ -429,7 +429,7 @@ def filecrawl(path=None):
       Rendered HTML page showing datasets or file structure.
     """
     # Try to load dataset metadata from TSV file if present
-    data_dir = env.cellxgene_data
+    data_dir = env.gateway_data
     tsv_path = env.dataset_metadata_tsv
 
     if os.path.exists(tsv_path):
@@ -1445,7 +1445,7 @@ def download_file(filename):
 
     # Data directory; unset with only bucket configured is valid (nothing on
     # disk to download then)
-    data_dir = env.cellxgene_data
+    data_dir = env.gateway_data
     if data_dir is None:
         raise CacheException(
             f"Dataset file '{filename}' was not found on the server.",
@@ -1464,7 +1464,7 @@ def download_file(filename):
             filename=filename,
         )
 
-    # env.cellxgene_data is already absolute: Flask resolves relative directory
+    # env.gateway_data is already absolute: Flask resolves relative directory
     # against app.root_path (package dir), not configured data dir
     return send_from_directory(
         data_dir,
@@ -1498,7 +1498,7 @@ def spatial_data(subpath):
         raise CacheException('Invalid spatial path.', 400)
 
     # Unset with only bucket configured is valid setup, no spatial data on disk
-    data_dir = env.cellxgene_data
+    data_dir = env.gateway_data
     if data_dir is None:
         raise CacheException(
             f"Spatial file '{subpath}' was not found on server.",
@@ -1507,7 +1507,7 @@ def spatial_data(subpath):
             filename=subpath,
         )
 
-    # env.cellxgene_data is already absolute: Flask resolves relative directory
+    # env.gateway_data is already absolute: Flask resolves relative directory
     # against app.root_path (package dir), not configured data dir
     return send_from_directory(data_dir, subpath)
 
@@ -1555,7 +1555,7 @@ def spatial_viewer():
     subpath = config_url[len(prefix) :]
 
     # Unset with only bucket configured is valid setup, no spatial data on disk
-    data_dir = env.cellxgene_data
+    data_dir = env.gateway_data
     # safe_join returns None on traversal, same guard send_from_directory uses
     full_path = None if data_dir is None else safe_join(data_dir, subpath)
     if full_path is None or not os.path.isfile(full_path):

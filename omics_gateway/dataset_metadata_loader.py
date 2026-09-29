@@ -78,8 +78,8 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
       Path to dataset metadata .tsv file.
 
     data_dir: str or None
-      Directory containing dataset files. If None, env.cellxgene_data is used,
-      falling back to '' when CELLXGENE_DATA is unset.
+      Directory containing dataset files. If None, env.gateway_data is used,
+      falling back to '' when GATEWAY_DATA is unset.
 
     Returns:
     --------
@@ -114,7 +114,7 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
     # Coerced to '' rather than left None: path joins below sit in try catching
     # TypeError, so None would silently give empty dataset list
     if data_dir is None:
-        data_dir = env.cellxgene_data or ''
+        data_dir = env.gateway_data or ''
 
     def _parse_multi(value):
         """Split semicolon-separated field into individual stripped values."""

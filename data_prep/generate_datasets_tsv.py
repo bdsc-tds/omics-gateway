@@ -490,11 +490,11 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
     rows = []
 
     # Tell missing from empty directory: os.walk yields nothing for either, so
-    # typo or unset CELLXGENE_DATA would pass as directory without .h5ad files
+    # typo or unset GATEWAY_DATA would pass as directory without .h5ad files
     if not os.path.isdir(data_dir):
         raise FileNotFoundError(
             f'Data directory {os.path.abspath(data_dir)} does not exist. '
-            'Pass --data-dir or set CELLXGENE_DATA.'
+            'Pass --data-dir or set GATEWAY_DATA.'
         )
 
     file_paths, zarr_paths = find_dataset_files(data_dir)
@@ -565,8 +565,8 @@ def main():
     )
     parser.add_argument(
         '--data-dir',
-        default=os.environ.get('CELLXGENE_DATA', 'data'),
-        help='Directory containing .h5ad files (default: $CELLXGENE_DATA or data)',
+        default=os.environ.get('GATEWAY_DATA', 'data'),
+        help='Directory containing .h5ad files (default: $GATEWAY_DATA or data)',
     )
     parser.add_argument(
         '--output',

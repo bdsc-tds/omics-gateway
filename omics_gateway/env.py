@@ -16,10 +16,10 @@ import os
 cellxgene_location = os.environ.get('CELLXGENE_LOCATION')
 # None when unset, so 'no data directory configured' differs from
 # 'configured as working directory'; absolutised only when set (see QC)
-cellxgene_data = os.environ.get('CELLXGENE_DATA')
-if cellxgene_data:
-    cellxgene_data = os.path.abspath(cellxgene_data)
-cellxgene_bucket = os.environ.get('CELLXGENE_BUCKET')
+gateway_data = os.environ.get('GATEWAY_DATA')
+if gateway_data:
+    gateway_data = os.path.abspath(gateway_data)
+gateway_bucket = os.environ.get('GATEWAY_BUCKET')
 cellxgene_args = os.environ.get('CELLXGENE_ARGS', None)
 env_vars = {'CELLXGENE_LOCATION': cellxgene_location}
 
@@ -87,8 +87,8 @@ optional_env_vars = {
     'GATEWAY_ENABLE_BACKED_MODE': enable_backed_mode,
     'GATEWAY_LOG_LEVEL': log_level,
     'CELLXGENE_ARGS': cellxgene_args,
-    'CELLXGENE_DATA': cellxgene_data,
-    'CELLXGENE_BUCKET': cellxgene_bucket,
+    'GATEWAY_DATA': gateway_data,
+    'GATEWAY_BUCKET': gateway_bucket,
     'DATASET_METADATA_TSV': dataset_metadata_tsv,
     'QC_DATA': qc_data,
     'QC_THUMB_CACHE': qc_thumb_cache,
@@ -131,7 +131,7 @@ def validate():
     An example is:
 
         export CELLXGENE_LOCATION=~/anaconda/envs/cellxgene-dev/bin/cellxgene
-        export CELLXGENE_DATA=../cellxgene_data
+        export GATEWAY_DATA=../gateway_data
     """
         )
     else:
