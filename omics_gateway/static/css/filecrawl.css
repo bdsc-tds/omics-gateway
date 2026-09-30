@@ -79,6 +79,14 @@ events */
 }
 
 
+/* Filter group style class */
+
+/* Unlike div, fieldset keeps last checkbox's bottom margin */
+#filter-form fieldset > .form-check:last-child {
+  margin-bottom: 0;
+}
+
+
 /* Dual range slider customisation: overlapping inputs with filled track between
 handles */
 
