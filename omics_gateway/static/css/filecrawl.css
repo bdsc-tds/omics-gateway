@@ -16,10 +16,6 @@ to content beneath*/
   pointer-events: none;  /* Let clicks pass through invisible column area */
 }
 
-#sidebarCol.d-none {
-  display: none !important;
-}
-
 
 /* Sidebar card style class: scrollable panel with shadow, re-enable pointer
 events */

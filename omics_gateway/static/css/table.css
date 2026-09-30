@@ -16,11 +16,6 @@
   font-size: 0.8rem;
 }
 
-/* Table first column style class */
-.table-col1 {
-  padding-left: 0.75rem !important;
-}
-
 /* Error table first column style class */
 .error-table-col1 th {
   width: 10rem;
