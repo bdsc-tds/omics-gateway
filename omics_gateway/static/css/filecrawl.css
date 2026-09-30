@@ -358,6 +358,8 @@ handles */
 
 /* Primary background style class */
 .bg-primary {
+  /* biome-ignore lint/complexity/noImportantStyles: Bootstrap's own rule is
+  !important */
   background-color: #0066cc !important;
   font-weight: 500;
 }

@@ -24,10 +24,6 @@
       "a11y": {
         // <ul role="tablist"> is Bootstrap's documented tabs pattern
         "noNoninteractiveElementToInteractiveRole": "off"
-      },
-      "complexity": {
-        // Every !important overrides Bootstrap or Vitessce styles on purpose
-        "noImportantStyles": "off"
       }
     }
   }

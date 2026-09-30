@@ -47,6 +47,8 @@ div:has(> [class*="layerControllerGrid"]) {
 
 /* Dot plot's fixed-width columns overflow panel with 39 sets: scroll instead */
 [class*="vegaContainer"] {
+  /* biome-ignore lint/complexity/noImportantStyles: Vitessce injects
+  same-specificity rule later */
   overflow: auto !important;
 }
 
