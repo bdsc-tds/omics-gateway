@@ -46,7 +46,7 @@
   }
   log('Loading viewer bundle');
 
-  new MutationObserver((records, observer) => {
+  new MutationObserver((_records, observer) => {
     const message = root.querySelector('#message');
     if (message) {
       log('Failed to load dataset');
