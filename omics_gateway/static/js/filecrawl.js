@@ -365,8 +365,8 @@ $(document).ready(() => {
   })
 
   // Copy-code button inside each code block
-  $('#downloadModal').on('click', '.dl-copy-btn', function () {
-    const btn = this
+  $('#downloadModal').on('click', '.dl-copy-btn', (e) => {
+    const btn = e.currentTarget
     const code = $(btn).siblings('pre').find('code').text()
     const done = () => {
       $(btn).addClass('dl-copy-btn--ok')
