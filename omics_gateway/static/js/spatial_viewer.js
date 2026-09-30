@@ -6,8 +6,9 @@
   const root = document.getElementById('root');
   // Bootstrap resets inflate Vitessce's rows, so chrome's CSS leaves with it.
   // Collected before bundle runs, so only chrome's own links are taken
-  const chromeStyles = Array.prototype.slice.call(document.querySelectorAll(
-    'head link[rel="stylesheet"]:not([data-keep])'));
+  const chromeStyles = Array.prototype.slice.call(
+    document.querySelectorAll('head link[rel="stylesheet"]:not([data-keep])'),
+  );
 
   const configUrl =
     new URLSearchParams(window.location.search).get('config') || '';
@@ -36,13 +37,14 @@
       collect(meta[key].segmentationLayer, layerTypes);
       collect(meta[key].segmentationChannel, channelTypes);
     });
-    return channelTypes.filter((type) => type && layerTypes.indexOf(type) === -1);
+    return channelTypes.filter(
+      (type) => type && layerTypes.indexOf(type) === -1,
+    );
   }
 
   const logEl = document.getElementById('spatial-log');
   function log(text) {
-    logEl.textContent +=
-      `${new Date().toTimeString().slice(0, 8)}  ${text}\n`;
+    logEl.textContent += `${new Date().toTimeString().slice(0, 8)}  ${text}\n`;
   }
   log('Loading viewer bundle');
 
@@ -63,12 +65,16 @@
       // Viewer mounted; hand whole page over to it
       log('Starting viewer');
       document.getElementById('chrome').remove();
-      chromeStyles.forEach((link) => { link.remove(); });
+      chromeStyles.forEach((link) => {
+        link.remove();
+      });
       observer.disconnect();
       patchSpatialLegends(root);
-      config.then((json) => {
-        patchMetricTooltips(json, configUrl);
-      }).catch(() => {});
+      config
+        .then((json) => {
+          patchMetricTooltips(json, configUrl);
+        })
+        .catch(() => {});
       orderLayerRows(root);
       limitLassoToCells(root);
       extraTypes.then((types) => {
@@ -82,20 +88,27 @@
     if (!extraTypes.length) return;
     let openedFor = null;
     // Portalled menu is outside its row, so get its channel from opener
-    root.addEventListener('click', (event) => {
-      const button = event.target.closest(
-        'button[aria-label="Open segmentation channel options menu"]');
-      if (!button) return;
-      const name = button.closest('[class*="layerControllerGrid"]')
-        .querySelector('[class*="imageLayerName"]');
-      openedFor = name ? name.textContent.trim().toLowerCase() : null;
-    }, true);
+    root.addEventListener(
+      'click',
+      (event) => {
+        const button = event.target.closest(
+          'button[aria-label="Open segmentation channel options menu"]',
+        );
+        if (!button) return;
+        const name = button
+          .closest('[class*="layerControllerGrid"]')
+          .querySelector('[class*="imageLayerName"]');
+        openedFor = name ? name.textContent.trim().toLowerCase() : null;
+      },
+      true,
+    );
 
     new MutationObserver(() => {
       if (extraTypes.indexOf(openedFor) === -1) return;
       const options = document.querySelectorAll(
-        'select[aria-label="Color encoding selector"] '
-        + 'option:not([value="spatialChannelColor"])');
+        'select[aria-label="Color encoding selector"] ' +
+          'option:not([value="spatialChannelColor"])',
+      );
       for (let i = 0; i < options.length; i++) {
         // Disable as well as hide: hidden alone may leave it selectable
         options[i].hidden = true;
@@ -104,7 +117,8 @@
       // Colormap rows apply only to feature values, so they go too; inline
       // style, as row's class overrides [hidden]
       const labels = document.querySelectorAll(
-        '[class*="imageLayerMenuLabel"]');
+        '[class*="imageLayerMenuLabel"]',
+      );
       for (let j = 0; j < labels.length; j++) {
         if (labels[j].textContent.trim().indexOf('Colormap') !== 0) continue;
         const item = labels[j].closest('li') || labels[j].parentElement;
@@ -117,7 +131,9 @@
   // generator's sidecar, fetched on first hover, while Metric layer is on
   function patchMetricTooltips(config, configUrl) {
     const featureTypes = config.coordinationSpace?.featureType || {};
-    const hasMetrics = Object.keys(featureTypes).some((scope) => featureTypes[scope] === 'metric');
+    const hasMetrics = Object.keys(featureTypes).some(
+      (scope) => featureTypes[scope] === 'metric',
+    );
     const valuesUrl = configUrl.replace(/\.vitessce\.json$/, '.metrics.json');
     if (!hasMetrics || valuesUrl === configUrl) return;
     let values = null;
@@ -134,8 +150,9 @@
       for (let i = 0; i < names.length; i++) {
         if (names[i].textContent.trim() !== 'Metric') continue;
         const row = names[i].closest('[class*="layerControllerGrid"]');
-        return !!(row?.querySelector(
-          '[class*="colorIcon"] svg, [class*="colorIcon"][style*="background"]'));
+        return !!row?.querySelector(
+          '[class*="colorIcon"] svg, [class*="colorIcon"][style*="background"]',
+        );
       }
       return false;
     }
@@ -144,7 +161,8 @@
     function selectedMetric() {
       return values.columns.findIndex((column) => {
         const input = document.querySelector(
-          `input[type="checkbox"][value="${column}"]`);
+          `input[type="checkbox"][value="${column}"]`,
+        );
         return input?.checked;
       });
     }
@@ -165,10 +183,14 @@
           continue;
         }
         if (!values) {
-          loaded = loaded || fetch(valuesUrl).then((response) => response.json()).then((json) => {
-            values = json;
-            patch();
-          });
+          loaded =
+            loaded ||
+            fetch(valuesUrl)
+              .then((response) => response.json())
+              .then((json) => {
+                values = json;
+                patch();
+              });
           continue;
         }
         const cellId = th.nextElementSibling.textContent;
@@ -190,8 +212,11 @@
         tbody.append(row);
       }
     }
-    new MutationObserver(patch).observe(
-      document.body, { childList: true, subtree: true, characterData: true });
+    new MutationObserver(patch).observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
   }
 
   // Lasso takes every visible segmentation channel, adding empty selections
@@ -208,7 +233,9 @@
     // Nearest React fiber at or above element
     function fiberOf(element) {
       for (let el = element; el && el !== root; el = el.parentElement) {
-        const key = Object.keys(el).find((name) => name.indexOf('__reactFiber$') === 0);
+        const key = Object.keys(el).find(
+          (name) => name.indexOf('__reactFiber$') === 0,
+        );
         if (key) return el[key];
       }
       return null;
@@ -233,7 +260,7 @@
         warn('createSelectionLayer not found');
         return;
       }
-      spatial.createSelectionLayer = function() {
+      spatial.createSelectionLayer = function () {
         const props = this.props;
         const coordination = props.segmentationChannelCoordination;
         if (!coordination?.[0]) return original.call(this);
@@ -245,21 +272,34 @@
         }
         const channels = coordination[0];
         const layers = (props.segmentationLayerCoordination || [])[0] || {};
-        const anyVisible = Object.keys(channels).some((layer) => layers[layer]?.spatialLayerVisible
-            && Object.keys(channels[layer]).some((channel) => channels[layer][channel].spatialChannelVisible));
+        const anyVisible = Object.keys(channels).some(
+          (layer) =>
+            layers[layer]?.spatialLayerVisible &&
+            Object.keys(channels[layer]).some(
+              (channel) => channels[layer][channel].spatialChannelVisible,
+            ),
+        );
         // Copies, not store objects: only lasso sees changed visibility
         const values = {};
         Object.keys(channels).forEach((layer) => {
           values[layer] = {};
           Object.keys(channels[layer]).forEach((channel) => {
-            const hasTree = !!(trees[layer]?.[channel]);
-            values[layer][channel] = Object.assign({}, channels[layer][channel],
-              { spatialChannelVisible: anyVisible && hasTree });
+            const hasTree = !!trees[layer]?.[channel];
+            values[layer][channel] = Object.assign(
+              {},
+              channels[layer][channel],
+              { spatialChannelVisible: anyVisible && hasTree },
+            );
           });
         });
         // Real instance underneath supplies state and quadtrees
-        const view = Object.create(this, { props: { value: Object.assign({},
-          props, { segmentationChannelCoordination: [values, coordination[1]] }) } });
+        const view = Object.create(this, {
+          props: {
+            value: Object.assign({}, props, {
+              segmentationChannelCoordination: [values, coordination[1]],
+            }),
+          },
+        });
         return original.call(view);
       };
     }
@@ -278,8 +318,10 @@
     }
     scan();
     // Canvas mounts once data loads, and again if view remounts
-    new MutationObserver(scan).observe(
-      root, { childList: true, subtree: true });
+    new MutationObserver(scan).observe(root, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   // Metric draws below cells so they keep hover, but row stays listed
@@ -307,8 +349,10 @@
       });
     }
     reorder();
-    new MutationObserver(reorder).observe(
-      root, { childList: true, subtree: true });
+    new MutationObserver(reorder).observe(root, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   // Bundle uses "Points", leaves fixed-colour swatches grey, and redraws on
@@ -357,7 +401,8 @@
     // reach: shrink to fit, then truncate
     function fitLiftedTitles() {
       const titles = root.querySelectorAll(
-        '[class*="legend"] svg[height="36"] text[y="18"]');
+        '[class*="legend"] svg[height="36"] text[y="18"]',
+      );
       for (let i = 0; i < titles.length; i++) {
         const title = titles[i];
         const label = title.parentNode.querySelector('text[y="0"]');
@@ -366,7 +411,7 @@
         const room = Number(title.getAttribute('x')) - box.x - box.width - 6;
         const length = title.getComputedTextLength();
         if (room <= 0 || length <= room) continue;
-        const size = Math.max(7, 9 * room / length);
+        const size = Math.max(7, (9 * room) / length);
         title.style.fontSize = `${size}px`;
         let text = title.textContent;
         while (text.length > 1 && title.getComputedTextLength() > room) {
@@ -383,15 +428,25 @@
       for (let i = 0; i < legends.length; i++) {
         const items = Array.prototype.slice.call(legends[i].children);
         // Colour bar tick labels precede titles, so search all texts
-        const texts = items.map((item) => Array.prototype.map.call(
+        const texts = items.map((item) =>
+          Array.prototype.map.call(
             item.querySelectorAll('svg text'),
-            (text) => text.textContent));
-        const metricIndex = texts.findIndex((labels) => labels.indexOf('Metric') !== -1);
+            (text) => text.textContent,
+          ),
+        );
+        const metricIndex = texts.findIndex(
+          (labels) => labels.indexOf('Metric') !== -1,
+        );
         if (metricIndex === -1) continue;
         const metric = items.splice(metricIndex, 1)[0];
         texts.splice(metricIndex, 1);
         // Column-reverse: earlier in sorted order is lower on screen
-        const cellIndex = texts.findIndex((labels) => !['Transcript', 'Points', 'Nucleus'].some((title) => labels.indexOf(title) !== -1));
+        const cellIndex = texts.findIndex(
+          (labels) =>
+            !['Transcript', 'Points', 'Nucleus'].some(
+              (title) => labels.indexOf(title) !== -1,
+            ),
+        );
         items.splice(cellIndex === -1 ? items.length : cellIndex, 0, metric);
         items.forEach((item, index) => {
           if (item.style.order !== String(index)) item.style.order = index;
@@ -406,7 +461,9 @@
       orderLegends();
     }
     patch();
-    new MutationObserver(patch).observe(
-      root, { childList: true, subtree: true });
+    new MutationObserver(patch).observe(root, {
+      childList: true,
+      subtree: true,
+    });
   }
 })();

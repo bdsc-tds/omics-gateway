@@ -10,9 +10,27 @@
       "spatial_viewer_src/*.js"
     ]
   },
-  // Lint only; formatting stays with editors for now
+  // Style closest to existing code: 2 spaces, single quotes, semicolons
   "formatter": {
-    "enabled": false
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always"
+    }
+  },
+  "css": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
+  // Templates stay hand-formatted
+  "html": {
+    "formatter": {
+      "enabled": false
+    }
   },
   "assist": {
     "enabled": false

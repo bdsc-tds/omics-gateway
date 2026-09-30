@@ -18,14 +18,15 @@
   const hash = window.location.hash;
   if (hash?.startsWith('#tab-')) {
     const stepId = hash.slice('#tab-'.length); // e.g. "1_preprocessing"
-    const btn = document.querySelector(`#qcTabs [data-bs-target="#pane-${stepId}"]`);
+    const btn = document.querySelector(
+      `#qcTabs [data-bs-target="#pane-${stepId}"]`,
+    );
     if (btn) {
       bootstrap.Tab.getOrCreateInstance(btn).show();
       // Prevent browser from jumping to anchor
       window.scrollTo(0, 0);
     }
   }
-
 
   const lightbox = document.getElementById('qc-lightbox');
   const lbImg = document.getElementById('qc-lb-img');

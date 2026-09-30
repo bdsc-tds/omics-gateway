@@ -13,9 +13,8 @@ to content beneath*/
   width: var(--sidebar-w);
   height: 100vh;
   z-index: 200;
-  pointer-events: none;  /* Let clicks pass through invisible column area */
+  pointer-events: none; /* Let clicks pass through invisible column area */
 }
-
 
 /* Sidebar card style class: scrollable panel with shadow, re-enable pointer
 events */
@@ -26,12 +25,11 @@ events */
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   padding: 0.75rem;
   padding-top: 0.6rem;
-  pointer-events: all;  /* Re-enable clicks on sidebar itself */
+  pointer-events: all; /* Re-enable clicks on sidebar itself */
   max-height: calc(100vh - 120px);
   overflow-y: auto;
   margin: 104px 0.75rem 0 0.75rem;
 }
-
 
 /* Main content wrapper style class */
 
@@ -45,7 +43,6 @@ events */
 .main-content-wrapper.full-width {
   margin-left: 0;
 }
-
 
 /* Sidebar toggle button style class */
 
@@ -74,14 +71,12 @@ events */
   color: #ffffff;
 }
 
-
 /* Filter group style class */
 
 /* Unlike div, fieldset keeps last checkbox's bottom margin */
 #filter-form fieldset > .form-check:last-child {
   margin-bottom: 0;
 }
-
 
 /* Dual range slider customisation: overlapping inputs with filled track between
 handles */
@@ -164,7 +159,6 @@ handles */
   z-index: 1;
   pointer-events: none;
 }
-
 
 /* Disease / Tissue dropdown filter customisation */
 
@@ -252,7 +246,6 @@ handles */
   font-weight: 500;
 }
 
-
 /* Selected tags customisation */
 
 /* Selected tags container style class */
@@ -293,7 +286,6 @@ handles */
   color: #ffffff;
 }
 
-
 /* Action buttons customisation */
 
 /* Action button vertical stack style class */
@@ -318,7 +310,6 @@ handles */
   padding-left: 0.3rem;
   padding-right: 0.3rem;
 }
-
 
 /* Table cells customisation */
 
@@ -363,7 +354,6 @@ handles */
   background-color: #0066cc !important;
   font-weight: 500;
 }
-
 
 /* Buttons customisation */
 
@@ -412,7 +402,6 @@ handles */
   margin-right: 5px;
 }
 
-
 /* Filter stats bar customisation */
 
 /* Filter stats bar style class */
@@ -429,7 +418,6 @@ handles */
 .filter-stats-sep {
   color: #ced4da;
 }
-
 
 /* Empty state customisation */
 
@@ -458,7 +446,6 @@ handles */
   opacity: 0.75;
 }
 
-
 /* Sortable column headers customisation */
 
 /* Sortable header style class */
@@ -480,17 +467,16 @@ th[data-sort]::after {
 }
 
 /* Sortable header ascending indicator style class */
-th[data-sort][data-sort-dir="asc"]::after {
+th[data-sort][data-sort-dir='asc']::after {
   content: ' ▲';
   color: #0066cc;
 }
 
 /* Sortable header descending indicator style class */
-th[data-sort][data-sort-dir="desc"]::after {
+th[data-sort][data-sort-dir='desc']::after {
   content: ' ▼';
   color: #0066cc;
 }
-
 
 /* Download modal customisation */
 
@@ -522,7 +508,10 @@ th[data-sort][data-sort-dir="desc"]::after {
   color: #6c757d;
   line-height: 1;
   opacity: 0;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    background 0.15s;
   z-index: 1;
 }
 
