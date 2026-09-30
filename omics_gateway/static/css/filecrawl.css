@@ -509,11 +509,6 @@ th[data-sort][data-sort-dir="desc"]::after {
   position: relative;
 }
 
-/* Download code wrapper style class during hovering */
-.dl-code-wrap:hover .dl-copy-btn {
-  opacity: 1;
-}
-
 /* Download copy button style class */
 .dl-copy-btn {
   position: absolute;
@@ -529,6 +524,11 @@ th[data-sort][data-sort-dir="desc"]::after {
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
   z-index: 1;
+}
+
+/* Download code wrapper style class during hovering */
+.dl-code-wrap:hover .dl-copy-btn {
+  opacity: 1;
 }
 
 /* Copy button style class during hovering */
