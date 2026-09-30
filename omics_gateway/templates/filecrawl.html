@@ -384,16 +384,18 @@
                         <hr class="dropdown-divider" />
                       </li>
                       <li>
-                        <a class="dropdown-item create-new-annotation" href="#"
+                        <button type="button"
+                          class="dropdown-item create-new-annotation"
                           data-dataset-file="{{ dataset.file_path }}">
-                          + Create New Annotation</a>
+                          + Create New Annotation</button>
                       </li>
                     </ul>
                   </div>
                   {% else %}
-                  <a class="btn btn-outline-info btn-sm create-new-annotation"
-                    href="#" data-dataset-file="{{ dataset.file_path }}">+
-                    Create New</a>
+                  <button type="button"
+                    class="btn btn-outline-info btn-sm create-new-annotation"
+                    data-dataset-file="{{ dataset.file_path }}">+
+                    Create New</button>
                   {% endif %}{% endif %}
                   {% endif %}
                 </div>
