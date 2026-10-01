@@ -166,7 +166,7 @@ Then restart the gateway, for example with `sudo systemctl restart omics-gateway
 
 ## Development
 
-GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `main`, in an environment built from `deploy/omics-gateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `main`.
+GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting below on every pull request and every push to `main`; the tests run in an environment built from `deploy/omics-gateway_env.yaml`. It can also be started by hand on any branch from the repository's Actions tab, once the workflow is on `main`.
 
 ### Running tests
 
@@ -181,6 +181,14 @@ Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.to
 ```bash
 ruff check .
 ruff format --check .
+```
+
+Front-end code is checked with [Biome](https://biomejs.dev/) 2.5.14, configured in `biome.jsonc`. It lints and formats the JavaScript and CSS (the gateway's own, and the spatial viewer's source in `spatial_viewer_src/`), and lints the templates, which stay formatted by hand. Create its environment once, then run it from the repository root:
+
+```bash
+conda env create -f biome_env.yaml
+conda run -n biome biome ci               # lint and check formatting, as CI does
+conda run -n biome biome format --write   # apply formatting
 ```
 
 ### Rebuilding the spatial viewer

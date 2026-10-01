@@ -32,7 +32,6 @@
 
   <!-- Miscellaneous -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="{{ url_for('static', filename='js/annotation.js') }}"></script>
   <script src="{{ url_for('static', filename='js/filecrawl.js') }}"></script>
   <script src="{{ url_for('static', filename='js/toggle_filter.js') }}"></script>
 </head>
@@ -50,7 +49,7 @@
 
         <!-- Search form filter -->
         <div class="mb-3">
-          <label><strong>Search</strong></label>
+          <label for="search-input"><strong>Search</strong></label>
           <input type="text" class="form-control form-control-sm" name="search"
             id="search-input" placeholder="Search datasets..."
             value="{{ request.args.get('search', '') }}" />
@@ -58,8 +57,9 @@
 
         <!-- Assay checkboxes -->
         {% if assays is defined %}
-        <div class="mb-3">
-          <label><strong>Assay</strong></label>
+        <fieldset class="mb-3" aria-labelledby="assay-label">
+          <span class="d-inline-block"
+            id="assay-label"><strong>Assay</strong></span>
           {% for assay in assays %}
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="assay"
@@ -68,11 +68,12 @@
               assay }}</label>
           </div>
           {% endfor %}
-        </div>
+        </fieldset>
 
         <!-- Disease dropdown -->
-        <div class="mb-3">
-          <label><strong>Disease</strong></label>
+        <fieldset class="mb-3" aria-labelledby="disease-label">
+          <span class="d-inline-block"
+            id="disease-label"><strong>Disease</strong></span>
           <div class="dropdown-filter" id="disease-dropdown">
             <button type="button" class="dropdown-filter-btn" id="disease-btn">
               Select diseases ▾
@@ -90,11 +91,12 @@
           </div>
           <!-- Selected disease tags appear here -->
           <div class="selected-tags" id="disease-tags"></div>
-        </div>
+        </fieldset>
 
         <!-- Tissue dropdown -->
-        <div class="mb-3">
-          <label><strong>Tissue</strong></label>
+        <fieldset class="mb-3" aria-labelledby="tissue-label">
+          <span class="d-inline-block"
+            id="tissue-label"><strong>Tissue</strong></span>
           <div class="dropdown-filter" id="tissue-dropdown">
             <button type="button" class="dropdown-filter-btn" id="tissue-btn">
               Select tissues ▾
@@ -111,12 +113,13 @@
             </div>
           </div>
           <div class="selected-tags" id="tissue-tags"></div>
-        </div>
+        </fieldset>
 
         <!-- Sex checkboxes on single horizontal row -->
         {% if sexes is defined %}
-        <div class="mb-3">
-          <label><strong>Sex</strong></label>
+        <fieldset class="mb-3" aria-labelledby="sex-label">
+          <span class="d-inline-block"
+            id="sex-label"><strong>Sex</strong></span>
           <div class="d-flex flex-wrap gap-3">
             {% for sex in sexes %}
             <div class="form-check mb-0">
@@ -127,73 +130,79 @@
             </div>
             {% endfor %}
           </div>
-        </div>
+        </fieldset>
         {% endif %}
 
         <!-- Cells dual-range slider -->
         {% if cell_count_range is defined and cell_count_range[0] !=
         cell_count_range[1] %}
-        <div class="mb-3">
-          <label><strong>Cells</strong>
+        <fieldset class="mb-3" aria-labelledby="cc-label">
+          <span class="d-inline-block" id="cc-label"><strong>Cells</strong>
             <span class="range-display" id="cc-display">
               {{ cell_count_range[0] }} – {{ cell_count_range[1] }}
             </span>
-          </label>
+          </span>
           <div class="dual-range-wrap">
             <input type="range" class="dual-range" id="cc-min"
+              aria-label="Minimum cells"
               name="cell_count_min" min="{{ cell_count_range[0] }}"
               max="{{ cell_count_range[1] }}" value="{{ cell_count_range[0] }}"
               step="1" />
             <input type="range" class="dual-range" id="cc-max"
+              aria-label="Maximum cells"
               name="cell_count_max" min="{{ cell_count_range[0] }}"
               max="{{ cell_count_range[1] }}" value="{{ cell_count_range[1] }}"
               step="1" />
             <div class="dual-range-track" id="cc-track"></div>
           </div>
-        </div>
+        </fieldset>
         {% endif %}
 
         <!-- Genes dual-range slider -->
         {% if gene_count_range is defined and gene_count_range[0] !=
         gene_count_range[1] %}
-        <div class="mb-3">
-          <label><strong>Genes</strong>
+        <fieldset class="mb-3" aria-labelledby="gc-label">
+          <span class="d-inline-block" id="gc-label"><strong>Genes</strong>
             <span class="range-display" id="gc-display">
               {{ gene_count_range[0] }} – {{ gene_count_range[1] }}
             </span>
-          </label>
+          </span>
           <div class="dual-range-wrap">
             <input type="range" class="dual-range" id="gc-min"
+              aria-label="Minimum genes"
               name="gene_count_min" min="{{ gene_count_range[0] }}"
               max="{{ gene_count_range[1] }}" value="{{ gene_count_range[0] }}"
               step="1" />
             <input type="range" class="dual-range" id="gc-max"
+              aria-label="Maximum genes"
               name="gene_count_max" min="{{ gene_count_range[0] }}"
               max="{{ gene_count_range[1] }}" value="{{ gene_count_range[1] }}"
               step="1" />
             <div class="dual-range-track" id="gc-track"></div>
           </div>
-        </div>
+        </fieldset>
         {% endif %}
 
         <!-- Year dual-range slider -->
         {% if year_range is defined and year_range[0] != year_range[1] %}
-        <div class="mb-3">
-          <label><strong>Date</strong>
+        <fieldset class="mb-3" aria-labelledby="year-label">
+          <span class="d-inline-block" id="year-label"><strong>Date</strong>
             <span class="range-display" id="year-display">
               {{ year_range[0] }} – {{ year_range[1] }}
             </span>
-          </label>
+          </span>
           <div class="dual-range-wrap">
-            <input type="range" class="dual-range" id="year-min" name="year_min"
+            <input type="range" class="dual-range" id="year-min"
+              aria-label="Minimum year" name="year_min"
               min="{{ year_range[0] }}" max="{{ year_range[1] }}"
               value="{{ year_range[0] }}" step="1" />
-            <input type="range" class="dual-range" id="year-max" name="year_max"
+            <input type="range" class="dual-range" id="year-max"
+              aria-label="Maximum year" name="year_max"
               min="{{ year_range[0] }}" max="{{ year_range[1] }}"
               value="{{ year_range[1] }}" step="1" />
             <div class="dual-range-track" id="year-track"></div>
           </div>
-        </div>
+        </fieldset>
         {% endif %}
 
         {% endif %}{# end if assays is defined #}
@@ -216,7 +225,7 @@
     <div class="p-3">
       <!-- Toggle button -->
       <div class="d-flex align-items-center" style="margin-bottom: 0.75rem;">
-        <button id="formToggle">◀</button>
+        <button type="button" id="formToggle">◀</button>
         <h2 class="mb-0">Browse Datasets</h2>
       </div>
 
@@ -385,16 +394,18 @@
                         <hr class="dropdown-divider" />
                       </li>
                       <li>
-                        <a class="dropdown-item create-new-annotation" href="#"
+                        <button type="button"
+                          class="dropdown-item create-new-annotation"
                           data-dataset-file="{{ dataset.file_path }}">
-                          + Create New Annotation</a>
+                          + Create New Annotation</button>
                       </li>
                     </ul>
                   </div>
                   {% else %}
-                  <a class="btn btn-outline-info btn-sm create-new-annotation"
-                    href="#" data-dataset-file="{{ dataset.file_path }}">+
-                    Create New</a>
+                  <button type="button"
+                    class="btn btn-outline-info btn-sm create-new-annotation"
+                    data-dataset-file="{{ dataset.file_path }}">+
+                    Create New</button>
                   {% endif %}{% endif %}
                   {% endif %}
                 </div>
@@ -462,7 +473,7 @@
   {% endif %}
 
   <!-- Download Modal -->
-  <div class="modal fade" id="downloadModal" tabindex="-1"
+  <div class="modal fade" id="downloadModal" tabindex="-1" role="dialog"
     aria-labelledby="downloadModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -494,7 +505,8 @@
 
           <!-- URL row -->
           <div class="mb-4">
-            <label class="form-label small fw-semibold">Direct URL</label>
+            <label class="form-label small fw-semibold"
+              for="download-url">Direct URL</label>
             <div class="input-group input-group-sm">
               <input type="text" class="form-control font-monospace"
                 id="download-url" readonly />
@@ -505,9 +517,10 @@
 
           <!-- Download method tabs -->
           <div>
-            <label class="form-label small fw-semibold">How to download</label>
+            <span class="form-label small fw-semibold d-inline-block"
+              id="dl-method-label">How to download</span>
             <ul class="nav nav-tabs nav-tabs-sm mb-3" id="dlTabs"
-              role="tablist">
+              role="tablist" aria-labelledby="dl-method-label">
               <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="tab-unix"
                   data-bs-toggle="tab" data-bs-target="#pane-unix" type="button"
@@ -530,10 +543,11 @@
                 role="tabpanel">
                 <div class="dl-code-label">curl</div>
                 <div class="dl-code-wrap">
-                  <button class="dl-copy-btn" title="Copy to clipboard"
-                    aria-label="Copy to clipboard">
+                  <button type="button" class="dl-copy-btn"
+                    title="Copy to clipboard" aria-label="Copy to clipboard">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13"
-                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      height="13" viewBox="0 0 16 16" fill="currentColor"
+                      aria-hidden="true">
                       <path
                         d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
                     </svg>
@@ -542,10 +556,11 @@
                 </div>
                 <div class="dl-code-label mt-2">wget</div>
                 <div class="dl-code-wrap">
-                  <button class="dl-copy-btn" title="Copy to clipboard"
-                    aria-label="Copy to clipboard">
+                  <button type="button" class="dl-copy-btn"
+                    title="Copy to clipboard" aria-label="Copy to clipboard">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13"
-                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      height="13" viewBox="0 0 16 16" fill="currentColor"
+                      aria-hidden="true">
                       <path
                         d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
                     </svg>
@@ -557,10 +572,11 @@
               <!-- Python tab -->
               <div class="tab-pane fade" id="pane-python" role="tabpanel">
                 <div class="dl-code-wrap">
-                  <button class="dl-copy-btn" title="Copy to clipboard"
-                    aria-label="Copy to clipboard">
+                  <button type="button" class="dl-copy-btn"
+                    title="Copy to clipboard" aria-label="Copy to clipboard">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13"
-                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      height="13" viewBox="0 0 16 16" fill="currentColor"
+                      aria-hidden="true">
                       <path
                         d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
                     </svg>
@@ -573,10 +589,11 @@
               <!-- R tab -->
               <div class="tab-pane fade" id="pane-r" role="tabpanel">
                 <div class="dl-code-wrap">
-                  <button class="dl-copy-btn" title="Copy to clipboard"
-                    aria-label="Copy to clipboard">
+                  <button type="button" class="dl-copy-btn"
+                    title="Copy to clipboard" aria-label="Copy to clipboard">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13"
-                      height="13" viewBox="0 0 16 16" fill="currentColor">
+                      height="13" viewBox="0 0 16 16" fill="currentColor"
+                      aria-hidden="true">
                       <path
                         d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z" />
                     </svg>
@@ -602,10 +619,12 @@
   </div>
 
   <!-- Back to top button -->
-  <button class="back-to-top" id="back-to-top" aria-label="Back to top">
+  <button type="button" class="back-to-top" id="back-to-top"
+    aria-label="Back to top">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
       viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
-      stroke-linecap="round" stroke-linejoin="round">
+      stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true">
       <polyline points="2,11 8,5 14,11" />
     </svg>
     &nbsp;Top</button>

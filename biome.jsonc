@@ -1,0 +1,48 @@
+// Biome configuration for this repository
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  // Fork's own front-end code only: vendored libraries and built bundle stay out
+  "files": {
+    "includes": [
+      "omics_gateway/static/js/**",
+      "omics_gateway/static/css/**",
+      "omics_gateway/templates/**",
+      "spatial_viewer_src/*.js"
+    ]
+  },
+  // Style closest to existing code: 2 spaces, single quotes, semicolons
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always"
+    }
+  },
+  "css": {
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
+  // Templates stay hand-formatted
+  "html": {
+    "formatter": {
+      "enabled": false
+    }
+  },
+  "assist": {
+    "enabled": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "a11y": {
+        // <ul role="tablist"> is Bootstrap's documented tabs pattern
+        "noNoninteractiveElementToInteractiveRole": "off"
+      }
+    }
+  }
+}

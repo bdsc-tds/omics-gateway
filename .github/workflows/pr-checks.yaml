@@ -25,6 +25,23 @@ jobs:
           version: '0.16.0'
           args: 'format --diff'
 
+  biome:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        # Login shell activates micromamba env
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v7
+      # Same pinned Biome as local env
+      - uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: biome_env.yaml
+          cache-environment: true
+      # Lint and formatting check in one command
+      - name: Lint and check formatting
+        run: biome ci
+
   tests:
     runs-on: ubuntu-latest
     defaults:
