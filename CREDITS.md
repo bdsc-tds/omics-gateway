@@ -13,12 +13,14 @@ The homepage background is served at 2000x1500 (downscaled from the 5000x3750 or
 
 ## Front-end libraries
 
-Vendored under `omics_gateway/static/vendor/` so no third-party CDN is contacted at runtime. Versions are in the filenames.
+Vendored under `omics_gateway/static/vendor/` so no third-party CDN is contacted at runtime. Versions are in the file or folder names.
 
 | Library | Version | Licence |
 | --- | --- | --- |
 | Bootstrap (CSS + JS) | 5.3.3 | MIT |
 | jQuery | 3.7.1 | MIT |
 | Popper | 2.9.2 | MIT |
+| [parquet-wasm](https://github.com/kylebarron/parquet-wasm), Vitessce's custom build `2c23652` | 0.7.1 | MIT or Apache-2.0 |
+| Vitessce's Ensembl-to-gene-symbol table (`genes_filtered.json`, from `data-1.vitessce.io`) | 2025-06-16 | Not stated |
 
 `omics_gateway/static/vitessce/` holds a built bundle of [Vitessce](https://vitessce.io) 4.0.1 (MIT), produced from `spatial_viewer_src/`.
