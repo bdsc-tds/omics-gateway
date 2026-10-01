@@ -41,6 +41,12 @@ const PATCHES = [
     find: 'Vir = "https://data-1.vitessce.io/genes_filtered.json"',
     replace: 'Vir = gatewayGeneMappingUrl()',
   },
+  {
+    // Dot plot height grows with genes (f: dot plot data)
+    name: 'dot plot height',
+    find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',
+    replace: 'Z = n ? gatewayDotPlotHeight(Dl(A - E - b - 50, 10, 1 / 0), f) :',
+  },
 ];
 
 // Function to apply PATCHES to Vitessce's prebuilt bundle
@@ -62,7 +68,8 @@ function patchVitessce() {
         applied.add(patch.name);
       }
       if (patched === code) return null;
-      const names = 'gatewayGeneMappingUrl, gatewayParquetWasmUrl';
+      const names =
+        'gatewayDotPlotHeight, gatewayGeneMappingUrl, gatewayParquetWasmUrl';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },
