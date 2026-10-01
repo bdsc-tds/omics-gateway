@@ -310,9 +310,11 @@
 
               <!-- Assay -->
               <td>
-                {% if dataset.assay %}
-                <span class="badge bg-primary">{{ dataset.assay }}</span>
-                {% endif %}
+                {# One badge per assay; class selects its colour in filecrawl.css #}
+                {% for assay in (dataset.assay or "").split(";") if assay.strip() %}
+                <span class="badge assay-badge assay-{{ assay.strip()|lower|replace(' ', '-') }}">{{
+                  assay.strip() }}</span>
+                {% endfor %}
               </td>
 
               <!-- Authors (truncated) -->
