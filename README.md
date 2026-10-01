@@ -20,6 +20,8 @@ cd omics-gateway
 
 `deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
+Only editable installs are supported: the gateway serves its templates, static files and default branding straight from the repository, so a regular `pip install .` would give a package that cannot start.
+
 Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
 
 ## Configuring

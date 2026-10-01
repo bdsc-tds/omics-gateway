@@ -35,14 +35,6 @@ setup(
     keywords='visualization, genomics',
     url='https://github.com/bdsc-tds/omics-gateway',
     packages=find_packages(),
-    package_data={
-        'omics_gateway': [
-            'static/css/*.css',
-            'templates/*.html',
-            'static/js/*.js',
-            'static/cell.jpg',
-        ]
-    },
     data_files=[('', ['README.md', 'LICENSE'])],
     entry_points={
         'console_scripts': ['omics-gateway=omics_gateway.gateway:main']
