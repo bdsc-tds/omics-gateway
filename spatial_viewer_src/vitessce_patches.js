@@ -11,7 +11,14 @@
  * Dot plot: Vitessce keeps transposed plot's height fixed (panel minus label
  * margins) while circle size stays constant, so each added gene squeezed rows
  * until circles overlapped; height now grows by DOT_PLOT_ROW_HEIGHT per gene.
+ *
+ * Auto-fill: segmentation channels are filled when they switch to gene
+ * colouring and unfilled when they switch away. Acting on transitions only
+ * leaves Filled ticked or unticked by hand until next switch, and respects
+ * initial config.
  */
+
+import { useEffect, useRef } from 'react';
 
 // Relative to built chunk in static/vitessce/; variables, not literals, so
 // Vite leaves them for runtime instead of bundling them as assets
@@ -38,4 +45,31 @@ const DOT_PLOT_ROW_HEIGHT = 20;
 export function gatewayDotPlotHeight(defaultHeight, rows) {
   const genes = new Set(rows.map((row) => row.keyFeature)).size;
   return Math.max(defaultHeight, genes * DOT_PLOT_ROW_HEIGHT);
+}
+
+// Gene colouring needs filled polygons to be readable; outlines suit sets
+function isGeneColoured(values) {
+  return (
+    values?.obsColorEncoding === 'geneSelection' &&
+    values.featureSelection?.length > 0
+  );
+}
+
+// Hook filling channels on gene colouring, from spatial view's
+// [values, setters] by layer and channel scope
+export function useGatewayAutoFill(channelCoordination) {
+  const [values, setters] = channelCoordination;
+  const previous = useRef({});
+  useEffect(() => {
+    for (const layer of Object.keys(values || {})) {
+      for (const channel of Object.keys(values[layer] || {})) {
+        const key = `${layer}/${channel}`;
+        const now = isGeneColoured(values[layer][channel]);
+        const before = previous.current[key];
+        previous.current[key] = now;
+        if (before === undefined || before === now) continue;
+        setters?.[layer]?.[channel]?.setSpatialSegmentationFilled?.(now);
+      }
+    }
+  });
 }

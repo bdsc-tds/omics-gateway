@@ -47,6 +47,14 @@ const PATCHES = [
     find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',
     replace: 'Z = n ? gatewayDotPlotHeight(Dl(A - E - b - 50, 10, 1 / 0), f) :',
   },
+  {
+    // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
+    name: 'auto-fill',
+    find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',
+    replace:
+      'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), ' +
+      'gatewayAutoFillDone = useGatewayAutoFill(Xe), He = pl([',
+  },
 ];
 
 // Function to apply PATCHES to Vitessce's prebuilt bundle
@@ -69,7 +77,8 @@ function patchVitessce() {
       }
       if (patched === code) return null;
       const names =
-        'gatewayDotPlotHeight, gatewayGeneMappingUrl, gatewayParquetWasmUrl';
+        'useGatewayAutoFill, gatewayDotPlotHeight, gatewayGeneMappingUrl, ' +
+        'gatewayParquetWasmUrl';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },
