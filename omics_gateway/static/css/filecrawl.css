@@ -44,6 +44,31 @@ events */
   margin-left: 0;
 }
 
+/* Below 1200px pushed content leaves table too narrow: sidebar stacks above
+it instead, hidden until toggled open (toggle_filter.js) */
+@media (max-width: 1199.98px) {
+  .main-content-wrapper {
+    margin-left: 0;
+  }
+
+  #sidebarCol {
+    display: none;
+    position: static;
+    width: auto;
+    height: auto;
+    pointer-events: auto;
+  }
+
+  #sidebarCol.sidebar-open {
+    display: block;
+  }
+
+  .sidebar {
+    max-height: none;
+    margin: 1rem 1rem 0;
+  }
+}
+
 /* Narrowest width keeping every column legible; scrolls sideways below it */
 .table-responsive > .table {
   min-width: 720px;
