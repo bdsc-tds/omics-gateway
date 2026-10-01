@@ -44,6 +44,36 @@ events */
   margin-left: 0;
 }
 
+/* Below 1200px pushed content leaves table too narrow: sidebar stacks above
+it instead, hidden until toggled open (toggle_filter.js) */
+@media (max-width: 1199.98px) {
+  .main-content-wrapper {
+    margin-left: 0;
+  }
+
+  #sidebarCol {
+    display: none;
+    position: static;
+    width: auto;
+    height: auto;
+    pointer-events: auto;
+  }
+
+  #sidebarCol.sidebar-open {
+    display: block;
+  }
+
+  .sidebar {
+    max-height: none;
+    margin: 1rem 1rem 0;
+  }
+}
+
+/* Narrowest width keeping every column legible; scrolls sideways below it */
+.table-responsive > .table {
+  min-width: 720px;
+}
+
 /* Sidebar toggle button style class */
 
 /* Square icon button with blue border */
@@ -347,12 +377,30 @@ handles */
   font-size: 0.75em;
 }
 
-/* Primary background style class */
-.bg-primary {
-  /* biome-ignore lint/complexity/noImportantStyles: Bootstrap's own rule is
-  !important */
-  background-color: #0066cc !important;
+/* Assay badges: one colour per assay, blue-grey for unlisted ones */
+.assay-badge {
+  background-color: #546e7a;
   font-weight: 500;
+}
+
+.assay-scrna-seq {
+  background-color: #0066cc;
+}
+
+.assay-xenium {
+  background-color: #00796b;
+}
+
+.assay-visium {
+  background-color: #6a1b9a;
+}
+
+.assay-visium-hd {
+  background-color: #ad1457;
+}
+
+.assay-rna-seq {
+  background-color: #a35200;
 }
 
 /* Buttons customisation */

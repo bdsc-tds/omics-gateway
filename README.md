@@ -20,6 +20,8 @@ cd omics-gateway
 
 `deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
+Only editable installs are supported: the gateway serves its templates, static files and default branding straight from the repository, so a regular `pip install .` would give a package that cannot start.
+
 Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
 
 ## Configuring
@@ -196,11 +198,12 @@ conda run -n biome biome format --write   # apply formatting
 Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript application that runs entirely in the visitor's browser: the gateway only serves files. Browsers cannot load npm packages directly, so [Vite](https://vite.dev) builds Vitessce and its dependencies into plain JavaScript files in `omics_gateway/static/vitessce/`, which `omics_gateway/templates/spatial_viewer.html` loads. The build inputs live in `spatial_viewer_src/`:
 
 * `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
-* `vite.config.js`: build settings (output directory, browser shims for Node globals)
+* `vite.config.js`: build settings (output directory, browser shims for Node globals) and the build-time patches to Vitessce (see below)
+* `vitessce_patches.js`: the code those patches call
 * `package.json` and `package-lock.json`: the npm packages, pinned to exact versions
 * `viewer_build_env.yaml`: the conda environment providing Node
 
-The built files are committed, so deployment needs neither Node nor a build step, and no CDN is contacted at runtime. Rebuild only after upgrading Vitessce or editing `main.js` or `vite.config.js`:
+The built files are committed, so deployment needs neither Node nor a build step, and no CDN is contacted at runtime. Rebuild only after upgrading Vitessce or editing `main.js`, `vite.config.js` or `vitessce_patches.js`:
 
 ```bash
 conda env create -f spatial_viewer_src/viewer_build_env.yaml   # once
@@ -211,6 +214,15 @@ rm -rf node_modules                       # optional, frees the disk space
 ```
 
 The build is reproducible: rebuilding unchanged sources gives identical files. To upgrade Vitessce, run `conda run -n viewer-build npm install --save-exact vitessce@<version>` in `spatial_viewer_src/`, which updates `package.json` and `package-lock.json`, then build as above, update the version in `CREDITS.md`, and commit the sources and the built files together.
+
+The build patches Vitessce's prebuilt code as it reads it. Each patch in `vite.config.js` replaces one exact snippet with a call into `vitessce_patches.js`:
+
+* **parquet-wasm**: Vitessce loads its Parquet reader, a custom build of [parquet-wasm](https://github.com/kylebarron/parquet-wasm), from `cdn.vitessce.io`; the patch loads the copy vendored in `omics_gateway/static/vendor/parquet-wasm-<build>/` instead.
+* **gene mapping**: Vitessce fetches a table mapping Ensembl gene IDs to gene symbols from `data-1.vitessce.io`; the patch loads the copy vendored in `omics_gateway/static/vendor/vitessce-data-<date>/` instead.
+* **dot plot height**: the dot plot grows taller with each selected gene, so its circles no longer overlap.
+* **auto-fill**: cells are filled when they switch to gene colouring and back to outlines when they switch away; ticking *Filled* by hand still works in between.
+
+The snippets contain names that Vitessce's own build minified, so they change between versions. The build stops with `Vitessce patch '<name>' matches <n> times` or `Vitessce patches not applied: <names>` when a snippet no longer matches exactly once. After an upgrade, find the new snippets by searching `node_modules/vitessce/dist/` for the readable strings around them (the two `vitessce.io` addresses, the dot plot's `shift_dot_select`, the spatial view's `LEGEND_VISIBLE`). If the parquet-wasm address has changed, download the new build's `esm/parquet_wasm.js`, `esm/parquet_wasm_bg.wasm`, `LICENSE_MIT` and `LICENSE_APACHE` into a new vendor folder named after it, and update the path in `vitessce_patches.js` and `CREDITS.md`.
 
 `spatial-viewer.js` keeps a fixed name, so it must be served with revalidation rather than long-term caching; the other built files have content hashes in their names and can be cached indefinitely.
 

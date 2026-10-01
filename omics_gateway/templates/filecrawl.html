@@ -252,25 +252,32 @@
           <thead class="table-light">
             <tr>
               {% if assays is defined %}
-              <th style="width:30%;" data-sort="disease" data-sort-type="text">
+              <th style="width:46%;" data-sort="disease" data-sort-type="text">
                 Disease</th>
-              <th style="width:21%;" data-sort="description"
+              <th style="width:54%;" data-sort="description"
                 data-sort-type="text">Description</th>
-              <th style="width:5%;" data-sort="cells" data-sort-type="number">
+              <th style="width:clamp(3.4rem, 5.5vw, 4.25rem);"
+                data-sort="cells" data-sort-type="number">
                 Cells</th>
-              <th style="width:5%;" data-sort="genes" data-sort-type="number">
+              <th style="width:clamp(3rem, 5vw, 4rem);"
+                data-sort="genes" data-sort-type="number">
                 Genes</th>
-              <th style="width:6%;" data-sort="assay" data-sort-type="text">
+              <th style="width:clamp(3.9rem, 6.25vw, 5rem);"
+                data-sort="assay" data-sort-type="text">
                 Assay</th>
-              <th style="width:9%;" data-sort="authors" data-sort-type="text">
+              <th style="width:clamp(4.5rem, 7vw, 8rem);"
+                data-sort="authors" data-sort-type="text">
                 Authors</th>
-              <th style="width:4%;" data-sort="year" data-sort-type="number">
+              <th style="width:clamp(2.5rem, 4.1vw, 3.25rem);"
+                data-sort="year" data-sort-type="number">
                 Year</th>
-              <th style="width:8%;" data-sort="journal" data-sort-type="text">
+              <th style="width:clamp(4.5rem, 7vw, 8rem);"
+                data-sort="journal" data-sort-type="text">
                 Journal</th>
-              <th style="width:4%;" data-sort="doi" data-sort-type="text">DOI
+              <th style="width:clamp(2.25rem, 3.75vw, 3rem);"
+                data-sort="doi" data-sort-type="text">DOI
               </th>
-              <th style="width:8%;">Actions</th>
+              <th style="width:clamp(5rem, 8.75vw, 7rem);">Actions</th>
               {% else %}
               <th style="width:25%; padding-left:0.75rem;">Dataset</th>
               <th style="width:25%">Description</th>
@@ -310,9 +317,11 @@
 
               <!-- Assay -->
               <td>
-                {% if dataset.assay %}
-                <span class="badge bg-primary">{{ dataset.assay }}</span>
-                {% endif %}
+                {# One badge per assay; class selects its colour in filecrawl.css #}
+                {% for assay in (dataset.assay or "").split(";") if assay.strip() %}
+                <span class="badge assay-badge assay-{{ assay.strip()|lower|replace(' ', '-') }}">{{
+                  assay.strip() }}</span>
+                {% endfor %}
               </td>
 
               <!-- Authors (truncated) -->
@@ -359,7 +368,7 @@
                   corrupt stem containing one #}
                   <a href="/spatial-viewer?config={{ dataset.spatial_config|urlencode }}"
                     target="_blank" rel="noopener noreferrer"
-                    class="btn btn-primary btn-sm">Explore (Spatial)</a>
+                    class="btn btn-primary btn-sm">Explore</a>
                   {% else %}
                   <a href="/view/{{ dataset.file_path }}/" target="_blank"
                     rel="noopener noreferrer"

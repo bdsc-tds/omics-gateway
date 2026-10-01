@@ -3,7 +3,7 @@
 # start_gunicorn.sh - Start Omics Gateway with Gunicorn
 #
 # PREREQUISITES:
-# - Gunicorn installed (included with cellxgene 1.3.0, or: pip install gunicorn)
+# - Gunicorn, pinned in deploy/omics-gateway_env.yaml (see deploy/setup.sh)
 # - Conda env named by CONDA_ENV (default: omics-gateway)
 #
 # USAGE:
