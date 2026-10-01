@@ -44,6 +44,11 @@ events */
   margin-left: 0;
 }
 
+/* Narrowest width keeping every column legible; scrolls sideways below it */
+.table-responsive > .table {
+  min-width: 720px;
+}
+
 /* Sidebar toggle button style class */
 
 /* Square icon button with blue border */
