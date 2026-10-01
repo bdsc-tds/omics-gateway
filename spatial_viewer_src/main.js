@@ -45,16 +45,23 @@ function absolutizeUrls(obj) {
   }
 }
 
-// Served stores are zarr v3, but zarrita probes v2 metadata first on each new
-// store; answer those probes locally so they cost no request or console 404.
-const V2_METADATA = /^\/spatial-data\/.*\/\.(zattrs|zarray|zgroup)$/;
+// Answer probes known to 404 locally, sparing request and console 404: zarr v2
+// metadata (stores are v3), points as single file, shapes as part directory
+const KNOWN_404 = [
+  /^\/spatial-data\/.*\/\.(zattrs|zarray|zgroup)$/,
+  /^\/spatial-data\/.*\/points\/[^/]+\/points\.parquet$/,
+  /^\/spatial-data\/.*\/shapes\/[^/]+\/shapes\.parquet\/part\.\d+\.parquet$/,
+];
 const nativeFetch = window.fetch.bind(window);
 window.fetch = (input, init) => {
   const url = new URL(
     input instanceof Request ? input.url : input,
     window.location.origin,
   );
-  if (url.origin === window.location.origin && V2_METADATA.test(url.pathname)) {
+  if (
+    url.origin === window.location.origin &&
+    KNOWN_404.some((pattern) => pattern.test(url.pathname))
+  ) {
     return Promise.resolve(new Response(null, { status: 404 }));
   }
   return nativeFetch(input, init);

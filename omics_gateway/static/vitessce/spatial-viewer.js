@@ -18565,10 +18565,14 @@ function g(e) {
 		t === "url" && typeof n == "string" && n.startsWith("/") ? e[t] = window.location.origin + n : g(n);
 	}
 }
-var _ = /^\/spatial-data\/.*\/\.(zattrs|zarray|zgroup)$/, v = window.fetch.bind(window);
+var _ = [
+	/^\/spatial-data\/.*\/\.(zattrs|zarray|zgroup)$/,
+	/^\/spatial-data\/.*\/points\/[^/]+\/points\.parquet$/,
+	/^\/spatial-data\/.*\/shapes\/[^/]+\/shapes\.parquet\/part\.\d+\.parquet$/
+], v = window.fetch.bind(window);
 window.fetch = (e, t) => {
 	let n = new URL(e instanceof Request ? e.url : e, window.location.origin);
-	return n.origin === window.location.origin && _.test(n.pathname) ? Promise.resolve(new Response(null, { status: 404 })) : v(e, t);
+	return n.origin === window.location.origin && _.some((e) => e.test(n.pathname)) ? Promise.resolve(new Response(null, { status: 404 })) : v(e, t);
 };
 var y = 10, b = 5, ee = 12, te = [12, 44], ne = [800, 450], re = .95;
 function ie(e, t, n) {
