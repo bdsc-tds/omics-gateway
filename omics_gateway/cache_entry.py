@@ -231,7 +231,7 @@ class CacheEntry:
             for child in children:
                 child.terminate()
             psutil.wait_procs(children, callback=on_terminate)
-            # the parent process may automatically die once its children have --
+            # Parent may exit with its children, hence NoSuchProcess
             try:
                 p.terminate()
                 psutil.wait_procs([p], callback=on_terminate)
@@ -328,7 +328,7 @@ class CacheEntry:
         headers = {}
         copy_headers = [
             'accept',
-            # "accept-encoding" - removed: let requests library handle compression/decompression
+            # "accept-encoding" left out, so requests handles compression itself
             'accept-language',
             'cache-control',
             'connection',

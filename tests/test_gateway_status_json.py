@@ -12,14 +12,14 @@ class TestGatewayStatusJson(unittest.TestCase):
         Test that `do_instances_json` reports app launchtime and each cache
         entry with dataset, annotation file, status and timestamps.
         """
-        # Create a minimal fake key with required attributes
+        # Minimal fake key with required attributes
         h5ad_item = SimpleNamespace(descriptor='somedir/dataset.h5ad')
         key = SimpleNamespace(
             h5ad_item=h5ad_item,
             annotation_descriptor='somedir/dataset_annotations/foo.csv',
         )
 
-        # Create a CacheEntry with known launchtime/timestamp/status
+        # CacheEntry with known launchtime, timestamp and status
         entry = CacheEntry(
             None,
             key,
@@ -33,7 +33,7 @@ class TestGatewayStatusJson(unittest.TestCase):
             None,
         )
 
-        # Install into the gateway cache and set app launchtime
+        # Install into gateway cache and set app launchtime
         cache.entry_list = [entry]
         app.extensions.setdefault('omics_gateway', {})['launchtime'] = (
             'LAUNCH_TIME'
@@ -42,7 +42,7 @@ class TestGatewayStatusJson(unittest.TestCase):
         rv = do_instances_json()
 
         data = json.loads(rv)
-        # top-level launchtime comes from app.extensions
+        # Top-level launchtime comes from app.extensions
         self.assertEqual('LAUNCH_TIME', data['launchtime'])
 
         self.assertIn('entry_list', data)
