@@ -1,4 +1,4 @@
-import { v as e } from "./index-CDVgyDq2-Pif-GON1.js";
+import { v as e } from "./index-CDVgyDq2-BxI8MzUQ.js";
 //#region node_modules/vitessce/dist/webimage-BilIOhkt.js
 var t = class extends e {
 	constructor() {

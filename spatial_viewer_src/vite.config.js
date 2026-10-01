@@ -10,15 +10,74 @@
  * Buffer and process, absent in browsers, so vite-plugin-node-polyfills
  * supplies browser shims for them.
  *
+ * patchVitessce() edits Vitessce's prebuilt bundle as it is read: each patch
+ * replaces one exact snippet with call into vitessce_patches.js. Snippets
+ * hold minified names specific to this Vitessce version, so build fails
+ * unless each matches exactly once; after upgrade, find new snippets in
+ * node_modules/vitessce/dist/ (README, "Rebuilding the spatial viewer").
+ *
  * Run `npm run build` in `viewer-build` conda env (Node pinned in
  * viewer_build_env.yaml).
  */
 
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
+const PATCH_MODULE = fileURLToPath(
+  new URL('./vitessce_patches.js', import.meta.url),
+);
+
+const PATCHES = [
+  {
+    // Vendored copy instead of cdn.vitessce.io
+    name: 'parquet-wasm',
+    find: '"https://cdn.vitessce.io/parquet-wasm@2c23652/esm/parquet_wasm.js"',
+    replace: '/* @vite-ignore */ gatewayParquetWasmUrl()',
+  },
+  {
+    // Vendored copy instead of data-1.vitessce.io
+    name: 'gene mapping',
+    find: 'Vir = "https://data-1.vitessce.io/genes_filtered.json"',
+    replace: 'Vir = gatewayGeneMappingUrl()',
+  },
+];
+
+// Function to apply PATCHES to Vitessce's prebuilt bundle
+function patchVitessce() {
+  const applied = new Set();
+  return {
+    name: 'patch-vitessce',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.includes('/node_modules/vitessce/dist/')) return null;
+      let patched = code;
+      for (const patch of PATCHES) {
+        const count = patched.split(patch.find).length - 1;
+        if (count === 0) continue;
+        if (count > 1) {
+          this.error(`Vitessce patch '${patch.name}' matches ${count} times`);
+        }
+        patched = patched.replace(patch.find, () => patch.replace);
+        applied.add(patch.name);
+      }
+      if (patched === code) return null;
+      const names = 'gatewayGeneMappingUrl, gatewayParquetWasmUrl';
+      const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
+      return { code: header + patched, map: null };
+    },
+    buildEnd() {
+      const missing = PATCHES.filter((patch) => !applied.has(patch.name));
+      if (missing.length) {
+        const list = missing.map((patch) => patch.name).join(', ');
+        this.error(`Vitessce patches not applied: ${list}`);
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [nodePolyfills()],
+  plugins: [patchVitessce(), nodePolyfills()],
   build: {
     outDir: '../omics_gateway/static/vitessce',
     emptyOutDir: true,

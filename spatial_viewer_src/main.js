@@ -4,8 +4,8 @@
  * Vite bundles this file (with React, Vitessce and their dependencies) into
  * static assets under `omics_gateway/static/vitessce/`, which
  * `templates/spatial_viewer.html` loads. Self-hosting replaced CDN-loaded
- * Vitessce, so deployed gateway serves viewer code itself and needs no
- * outbound internet access.
+ * Vitessce, and vite.config.js points its parquet-wasm import at vendored
+ * copy, so neither gateway nor visitors' browsers contact any CDN.
  *
  * Reads Vitessce view-config URL from page's `?config=` query parameter,
  * fetches it, and mounts viewer into `#root`.
