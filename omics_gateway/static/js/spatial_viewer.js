@@ -468,8 +468,8 @@
     });
   }
 
-  // Download PNG button in each deck.gl view's toolbar: canvas as on screen
-  // plus its legends
+  // Download PNG button on deck.gl views (toolbar: canvas as on screen plus
+  // its legends) and Vega plots (title bar: whole plot SVG)
   function addExportButtons(root, configUrl) {
     const stem = (configUrl.split('/').pop() || 'view').replace(
       /(\.nometrics)?\.vitessce\.json$/,
@@ -494,22 +494,24 @@
       return null;
     }
 
-    // Smallest ancestor holding canvas and something matching selector
-    function ancestorWith(canvas, selector) {
-      for (let el = canvas.parentElement; el && el !== root; ) {
+    // Smallest ancestor holding element and something matching selector
+    function ancestorWith(element, selector) {
+      for (let el = element.parentElement; el && el !== root; ) {
         if (el.querySelector(selector)) return el;
         el = el.parentElement;
       }
       return null;
     }
 
-    // File name part from panel title: "Scatterplot (UMAP)" gives umap
+    // File name part from panel title: "Scatterplot (UMAP)" gives umap,
+    // "Dot Plot" dot_plot; violin's title names its gene, so it is replaced
+    const FILE_NAMES = { 'Expression by Cell Set': 'violin_plot' };
     function slugOf(panel) {
       const title =
         panel?.querySelector('[class*="titleLeft"]')?.textContent.trim() || '';
       const embedding = /^Scatterplot \(([^)]+)\)/.exec(title);
       const base = embedding ? embedding[1] : title.replace(/\s*\(.*$/, '');
-      const slug = base
+      const slug = (FILE_NAMES[base] || base)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '');
@@ -522,6 +524,7 @@
       if (view.panel?.querySelector('[class*="loadingIndicatorBackdrop"]')) {
         return false;
       }
+      if (!view.node) return !!plotSvg(view.el);
       const deck = view.node.props.deckRef?.current?.deck;
       const layers = deck?.layerManager?.getLayers?.();
       if (!layers?.length) return false;
@@ -537,6 +540,20 @@
         }
       }
       return '#000';
+    }
+
+    // Largest SVG in Vega container is plot itself
+    function plotSvg(container) {
+      let best = null;
+      let bestArea = 0;
+      container.querySelectorAll('svg').forEach((svg) => {
+        const r = svg.getBoundingClientRect();
+        if (r.width * r.height > bestArea) {
+          best = svg;
+          bestArea = r.width * r.height;
+        }
+      });
+      return best;
     }
 
     // Computed styles inlined into SVG clones, as stylesheets do not follow
@@ -729,8 +746,23 @@
       return out;
     }
 
+    // Whole plot, scrolled-off parts included; legends are part of its SVG
+    async function vegaImage(view) {
+      const svg = plotSvg(view.el);
+      const box = svg.getBoundingClientRect();
+      const image = await svgImage(svg, 0, EXPORT_SCALE);
+      const out = document.createElement('canvas');
+      out.width = Math.ceil(box.width * EXPORT_SCALE);
+      out.height = Math.ceil(box.height * EXPORT_SCALE);
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = backgroundOf(view.el);
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(image, 0, 0, image.width, image.height);
+      return out;
+    }
+
     async function exportView(view) {
-      const out = await deckImage(view);
+      const out = await (view.node ? deckImage(view) : vegaImage(view));
       const blob = await new Promise((resolve) => {
         out.toBlob(resolve, 'image/png');
       });
@@ -749,8 +781,8 @@
       '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
       '<path fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/>' +
       '</svg>';
-    // Tool button after recenter. Recenter is plain; pointer tool would
-    // carry its active state
+    // Deck views: tool button, after recenter. Recenter is plain; pointer
+    // tool would carry its active state
     function toolButton(view) {
       const toolbar = view.panel?.querySelector(
         '[class*="tool"]:has(> button[title])',
@@ -769,8 +801,24 @@
       return button;
     }
 
+    // Vega plots: icon button first in title bar, styled as its neighbours
+    function titleButton(view) {
+      const bar = view.panel?.querySelector('[class*="titleButtons"]');
+      if (!bar || bar.querySelector('.gateway-export')) return null;
+      const model = bar.querySelector('button');
+      const button = document.createElement('button');
+      button.className = model ? model.className : '';
+      button.innerHTML = ICON;
+      const icon = model?.querySelector('svg');
+      if (icon) {
+        button.firstChild.setAttribute('class', icon.getAttribute('class'));
+      }
+      bar.insertBefore(button, bar.firstChild);
+      return button;
+    }
+
     function addButton(view) {
-      const button = toolButton(view);
+      const button = view.node ? toolButton(view) : titleButton(view);
       if (!button) return;
       button.type = 'button';
       button.classList.add('gateway-export');
@@ -792,7 +840,7 @@
       view.button = button;
     }
 
-    // Views keyed by deck canvas
+    // Views keyed by deck canvas or Vega container; node only for deck
     function track(el, node) {
       if (!views.has(el)) {
         const panel = ancestorWith(el, '[class*="titleLeft"]');
@@ -807,9 +855,12 @@
         const node = views.get(canvases[i])?.node || viewOf(canvases[i]);
         if (node) track(canvases[i], node);
       }
+      root.querySelectorAll('[class*="vegaContainer"]').forEach((el) => {
+        track(el, null);
+      });
     }
     scan();
-    // Toolbars mount with data and again if their view remounts
+    // Toolbars and plots mount with data and again if their view remounts
     new MutationObserver(scan).observe(root, {
       childList: true,
       subtree: true,
