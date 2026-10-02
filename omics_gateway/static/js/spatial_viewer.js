@@ -77,6 +77,7 @@
         .catch(() => {});
       orderLayerRows(root);
       limitLassoToCells(root);
+      addExportButtons(root, configUrl);
       extraTypes.then((types) => {
         constrainExtraEncodings(root, types);
       });
@@ -465,5 +466,363 @@
       childList: true,
       subtree: true,
     });
+  }
+
+  // Download PNG button in each deck.gl view's toolbar: canvas as on screen
+  // plus its legends
+  function addExportButtons(root, configUrl) {
+    const stem = (configUrl.split('/').pop() || 'view').replace(
+      /(\.nometrics)?\.vitessce\.json$/,
+      '',
+    );
+    // Exported pixels per CSS pixel of panel
+    const EXPORT_SCALE = 4;
+    const views = new Map();
+    let warned = false;
+    function warn(text) {
+      if (warned) return;
+      warned = true;
+      console.warn(`Image export: ${text}`);
+    }
+
+    // View component above deck.gl canvas, holding deckRef
+    function viewOf(canvas) {
+      for (let fiber = fiberOf(canvas); fiber; fiber = fiber.return) {
+        const node = fiber.stateNode;
+        if (node?.props && 'deckRef' in node.props) return node;
+      }
+      return null;
+    }
+
+    // Smallest ancestor holding canvas and something matching selector
+    function ancestorWith(canvas, selector) {
+      for (let el = canvas.parentElement; el && el !== root; ) {
+        if (el.querySelector(selector)) return el;
+        el = el.parentElement;
+      }
+      return null;
+    }
+
+    // File name part from panel title: "Scatterplot (UMAP)" gives umap
+    function slugOf(panel) {
+      const title =
+        panel?.querySelector('[class*="titleLeft"]')?.textContent.trim() || '';
+      const embedding = /^Scatterplot \(([^)]+)\)/.exec(title);
+      const base = embedding ? embedding[1] : title.replace(/\s*\(.*$/, '');
+      const slug = base
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      return slug || 'view';
+    }
+
+    // Disabled while view loads data or any layer awaits tiles; layers'
+    // isLoaded alone reads true before data arrives
+    function ready(view) {
+      if (view.panel?.querySelector('[class*="loadingIndicatorBackdrop"]')) {
+        return false;
+      }
+      const deck = view.node.props.deckRef?.current?.deck;
+      const layers = deck?.layerManager?.getLayers?.();
+      if (!layers?.length) return false;
+      return layers.every((layer) => layer.isLoaded);
+    }
+
+    // First non-transparent background at or above element
+    function backgroundOf(element) {
+      for (let el = element; el; el = el.parentElement) {
+        const colour = getComputedStyle(el).backgroundColor;
+        if (colour && !/^rgba\(.*, 0\)$|^transparent$/.test(colour)) {
+          return colour;
+        }
+      }
+      return '#000';
+    }
+
+    // Computed styles inlined into SVG clones, as stylesheets do not follow
+    // them; margin keeps legend titles drawn above their box
+    const STYLE_PROPS = [
+      'fill',
+      'fill-opacity',
+      'stroke',
+      'stroke-width',
+      'stroke-opacity',
+      'opacity',
+      'font-family',
+      'font-size',
+      'font-weight',
+      'font-style',
+      'text-anchor',
+      'dominant-baseline',
+      'visibility',
+      'display',
+      'transform',
+    ];
+    const MARGIN = 20;
+    // SVG as image, rasterised at scale through its own size, not stretched
+    function svgImage(svg, margin, scale) {
+      const clone = svg.cloneNode(true);
+      const from = [svg].concat(Array.from(svg.querySelectorAll('*')));
+      const to = [clone].concat(Array.from(clone.querySelectorAll('*')));
+      from.forEach((el, i) => {
+        const style = getComputedStyle(el);
+        const rules = STYLE_PROPS.filter(
+          (name) =>
+            name !== 'transform' || style.getPropertyValue(name) !== 'none',
+        ).map((name) => {
+          // Computed url() is absolute, pointing outside clone: keep #id only
+          const value = style
+            .getPropertyValue(name)
+            .replace(/url\("?[^#")]*(#[^")]+)"?\)/g, 'url($1)');
+          return `${name}:${value}`;
+        });
+        to[i].setAttribute('style', rules.join(';'));
+      });
+      // Nested images draw blank inside SVG image; drawn separately instead
+      clone.querySelectorAll('image').forEach((el) => {
+        el.remove();
+      });
+      const box = svg.getBoundingClientRect();
+      const width = box.width + 2 * margin;
+      const height = box.height + 2 * margin;
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('width', width * scale);
+      clone.setAttribute('height', height * scale);
+      clone.setAttribute('viewBox', `${-margin} ${-margin} ${width} ${height}`);
+      const text = new XMLSerializer().serializeToString(clone);
+      return loadImage(
+        `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`,
+      );
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () =>
+          reject(new Error(`cannot load ${src.slice(0, 40)}`));
+        image.src = src;
+      });
+    }
+
+    // Draws deck once, synchronously, so caller can copy buffer before it
+    // is cleared. React's redraw() defers when viewports changed
+    function drawNow(deck, reason) {
+      if (typeof deck._drawLayers === 'function') {
+        deck._drawLayers(reason);
+      } else {
+        warn('_drawLayers not found, image may be blank');
+        deck.redraw(reason);
+      }
+    }
+
+    async function deckImage(view) {
+      const canvas = view.el;
+      const deck = view.node.props.deckRef?.current?.deck;
+      const box = canvas.getBoundingClientRect();
+      // Buffer resized to EXPORT_SCALE x panel for one draw, then restored.
+      // Image tiles follow zoom, not pixels, so microscopy only upscales
+      const loop = deck.animationLoop;
+      const resizable =
+        typeof loop?._resizeCanvasDrawingBuffer === 'function' &&
+        typeof loop._resizeViewport === 'function';
+      const original = loop?.useDevicePixels;
+      function resize(ratio) {
+        loop.useDevicePixels = ratio;
+        loop._resizeCanvasDrawingBuffer();
+        loop._resizeViewport();
+      }
+      if (resizable) {
+        resize(EXPORT_SCALE);
+      } else {
+        warn('pixel ratio not adjustable, exporting at screen resolution');
+      }
+      const out = document.createElement('canvas');
+      const ctx = out.getContext('2d');
+      let scale;
+      try {
+        // Actual ratio: luma clamps to GPU's maximum buffer size
+        scale = canvas.width / box.width;
+        out.width = canvas.width;
+        out.height = canvas.height;
+        ctx.fillStyle = backgroundOf(canvas);
+        ctx.fillRect(0, 0, out.width, out.height);
+        drawNow(deck, 'gateway-export');
+        ctx.drawImage(canvas, 0, 0);
+      } finally {
+        // Resizing clears canvas, so redraw at screen size straight away
+        if (resizable) {
+          resize(original);
+          drawNow(deck, 'gateway-restore');
+        }
+      }
+
+      // Legend frames over canvas. Colour bars are SVG <image>, or HTML
+      // <img> over grey tracks when range is adjustable
+      const frames = [];
+      view.panel.querySelectorAll('[class*="legend"] svg').forEach((svg) => {
+        const r = svg.getBoundingClientRect();
+        if (!r.width || r.right <= box.left || r.left >= box.right) return;
+        const el = svg.closest('[class*="legend"]');
+        if (frames.some((frame) => frame.el === el)) return;
+        frames.push({ el });
+      });
+      // Positions read before awaiting, as legends redraw on selection
+      frames.forEach((frame) => {
+        const el = frame.el;
+        frame.rect = el.getBoundingClientRect();
+        frame.colour = getComputedStyle(el).backgroundColor;
+        frame.tracks = Array.prototype.map.call(
+          el.querySelectorAll('[class*="grayTrack"]'),
+          (track) => ({
+            colour: getComputedStyle(track).backgroundColor,
+            rect: track.getBoundingClientRect(),
+          }),
+        );
+        frame.bars = Array.prototype.map.call(
+          el.querySelectorAll('svg image, img'),
+          (bar) => ({
+            href: bar.getAttribute('href') || bar.src,
+            rect: bar.getBoundingClientRect(),
+          }),
+        );
+        frame.svgs = Array.prototype.map.call(
+          el.querySelectorAll('svg'),
+          (svg) => ({ svg, rect: svg.getBoundingClientRect() }),
+        );
+      });
+      function place(rect, margin) {
+        return [
+          (rect.left - box.left - margin) * scale,
+          (rect.top - box.top - margin) * scale,
+          (rect.width + 2 * margin) * scale,
+          (rect.height + 2 * margin) * scale,
+        ];
+      }
+      await Promise.all(
+        frames.map((frame) =>
+          Promise.all([
+            Promise.all(frame.bars.map((bar) => loadImage(bar.href))),
+            Promise.all(
+              frame.svgs.map((item) => svgImage(item.svg, MARGIN, scale)),
+            ),
+          ]).then(([bars, svgs]) => {
+            frame.barImages = bars;
+            frame.svgImages = svgs;
+          }),
+        ),
+      );
+      frames.forEach((frame) => {
+        ctx.fillStyle = frame.colour;
+        ctx.fillRect(...place(frame.rect, 0));
+        frame.tracks.forEach((track) => {
+          ctx.fillStyle = track.colour;
+          ctx.fillRect(...place(track.rect, 0));
+        });
+        frame.barImages.forEach((image, i) => {
+          ctx.drawImage(image, ...place(frame.bars[i].rect, 0));
+        });
+        frame.svgImages.forEach((image, i) => {
+          ctx.drawImage(image, ...place(frame.svgs[i].rect, MARGIN));
+        });
+      });
+      return out;
+    }
+
+    async function exportView(view) {
+      const out = await deckImage(view);
+      const blob = await new Promise((resolve) => {
+        out.toBlob(resolve, 'image/png');
+      });
+      if (!blob) throw new Error('canvas could not be encoded');
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${stem}_${view.slug}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+    }
+
+    // Material "file download" icon, as Vitessce's tool icons
+    const ICON =
+      '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
+      '<path fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/>' +
+      '</svg>';
+    // Tool button after recenter. Recenter is plain; pointer tool would
+    // carry its active state
+    function toolButton(view) {
+      const toolbar = view.panel?.querySelector(
+        '[class*="tool"]:has(> button[title])',
+      );
+      if (!toolbar || toolbar.querySelector('.gateway-export')) return null;
+      const model =
+        toolbar.querySelector('button[title="click to recenter"]') ||
+        toolbar.querySelector('button[title]');
+      const button = document.createElement('button');
+      button.className = model.className
+        .split(' ')
+        .filter((name) => name.indexOf('toolActive') === -1)
+        .join(' ');
+      button.innerHTML = ICON;
+      toolbar.appendChild(button);
+      return button;
+    }
+
+    function addButton(view) {
+      const button = toolButton(view);
+      if (!button) return;
+      button.type = 'button';
+      button.classList.add('gateway-export');
+      button.title = 'Download PNG';
+      button.setAttribute('aria-label', 'Download view as PNG');
+      button.disabled = !ready(view);
+      button.addEventListener('click', () => {
+        view.busy = true;
+        button.disabled = true;
+        exportView(view)
+          .catch((error) => {
+            console.error('Image export failed', error);
+          })
+          .finally(() => {
+            view.busy = false;
+            button.disabled = !ready(view);
+          });
+      });
+      view.button = button;
+    }
+
+    // Views keyed by deck canvas
+    function track(el, node) {
+      if (!views.has(el)) {
+        const panel = ancestorWith(el, '[class*="titleLeft"]');
+        views.set(el, { el, node, panel, slug: slugOf(panel) });
+      }
+      addButton(views.get(el));
+    }
+
+    function scan() {
+      const canvases = root.getElementsByTagName('canvas');
+      for (let i = 0; i < canvases.length; i++) {
+        const node = views.get(canvases[i])?.node || viewOf(canvases[i]);
+        if (node) track(canvases[i], node);
+      }
+    }
+    scan();
+    // Toolbars mount with data and again if their view remounts
+    new MutationObserver(scan).observe(root, {
+      childList: true,
+      subtree: true,
+    });
+    // Panning loads new tiles, so readiness is polled rather than set once
+    setInterval(() => {
+      views.forEach((view, el) => {
+        if (!el.isConnected) {
+          views.delete(el);
+        } else if (view.button && !view.busy) {
+          view.button.disabled = !ready(view);
+        }
+      });
+    }, 500);
   }
 })();
