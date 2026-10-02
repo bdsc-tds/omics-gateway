@@ -219,6 +219,17 @@
     });
   }
 
+  // Nearest React fiber at or above element
+  function fiberOf(element) {
+    for (let el = element; el && el !== root; el = el.parentElement) {
+      const key = Object.keys(el).find(
+        (name) => name.indexOf('__reactFiber$') === 0,
+      );
+      if (key) return el[key];
+    }
+    return null;
+  }
+
   // Lasso takes every visible segmentation channel, adding empty selections
   // for those without quadtree; keep only Cell's while any layer is visible
   function limitLassoToCells(root) {
@@ -228,17 +239,6 @@
       if (warned) return;
       warned = true;
       console.warn(`Lasso override not applied: ${text}`);
-    }
-
-    // Nearest React fiber at or above element
-    function fiberOf(element) {
-      for (let el = element; el && el !== root; el = el.parentElement) {
-        const key = Object.keys(el).find(
-          (name) => name.indexOf('__reactFiber$') === 0,
-        );
-        if (key) return el[key];
-      }
-      return null;
     }
 
     // Class component above deck.gl canvas; UMAP's lacks segmentation props
