@@ -62,3 +62,9 @@ div:has(> [class*='layerControllerGrid']) {
 [class*='legend'] svg[height='20'] text[y='18'] {
   display: none;
 }
+
+/* Export button waits for its view to load; Vitessce styles no disabled state */
+.gateway-export:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
