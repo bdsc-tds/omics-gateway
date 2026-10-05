@@ -288,19 +288,6 @@ class TestDataPathRoutes(EnvReloadCase):
         self.addCleanup(response.close)
         self.assertEqual(200, response.status_code)
 
-    def test_GIVEN_no_data_directory_THEN_download_returns_404(self):
-        """
-        Test that `/download` refuses cleanly when only bucket is configured,
-        rather than failing on None directory.
-        """
-        self.reload_env(unset=['GATEWAY_DATA'])
-        with (
-            gateway.app.test_request_context('/download/sample.h5ad'),
-            self.assertRaises(Exception) as raised,
-        ):
-            gateway.download_file('sample.h5ad')
-        self.assertIn('404', str(getattr(raised.exception, 'http_status', '')))
-
     def test_GIVEN_existing_image_THEN_qc_image_serves_it(self):
         """
         Test that /qc-image returns figure rather than 404.

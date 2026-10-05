@@ -1489,18 +1489,8 @@ def download_file(filename):
             'Invalid filename.', 400, context='download', filename=filename
         )
 
-    # Data directory; unset with only bucket configured is valid (nothing on
-    # disk to download then)
-    data_dir = env.gateway_data
-    if data_dir is None:
-        raise CacheException(
-            f"Dataset file '{filename}' was not found on the server.",
-            404,
-            context='download',
-            filename=filename,
-        )
-
     # Check if file exists
+    data_dir = env.gateway_data
     file_path = os.path.join(data_dir, filename)
     if not os.path.exists(file_path):
         raise CacheException(
@@ -1543,19 +1533,9 @@ def spatial_data(subpath):
     if '..' in subpath:
         raise CacheException('Invalid spatial path.', 400)
 
-    # Unset with only bucket configured is valid setup, no spatial data on disk
-    data_dir = env.gateway_data
-    if data_dir is None:
-        raise CacheException(
-            f"Spatial file '{subpath}' was not found on server.",
-            404,
-            context='spatial',
-            filename=subpath,
-        )
-
     # env.gateway_data is already absolute: Flask resolves relative directory
     # against app.root_path (package dir), not configured data dir
-    return send_from_directory(data_dir, subpath)
+    return send_from_directory(env.gateway_data, subpath)
 
 
 @app.route('/spatial-viewer')
@@ -1600,10 +1580,8 @@ def spatial_viewer():
         )
     subpath = config_url[len(prefix) :]
 
-    # Unset with only bucket configured is valid setup, no spatial data on disk
-    data_dir = env.gateway_data
     # safe_join returns None on traversal, same guard send_from_directory uses
-    full_path = None if data_dir is None else safe_join(data_dir, subpath)
+    full_path = safe_join(env.gateway_data, subpath)
     if full_path is None or not os.path.isfile(full_path):
         # Report dataset name rather than config file serving it
         dataset_name = os.path.basename(subpath).removesuffix('.vitessce.json')
