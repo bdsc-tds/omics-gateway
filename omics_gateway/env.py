@@ -20,7 +20,6 @@ cellxgene_location = os.environ.get('CELLXGENE_LOCATION')
 gateway_data = os.environ.get('GATEWAY_DATA')
 if gateway_data:
     gateway_data = os.path.abspath(gateway_data)
-gateway_bucket = os.environ.get('GATEWAY_BUCKET')
 cellxgene_args = os.environ.get('CELLXGENE_ARGS', None)
 env_vars = {'CELLXGENE_LOCATION': cellxgene_location}
 
@@ -97,7 +96,6 @@ optional_env_vars = {
     'GATEWAY_LOG_LEVEL': log_level,
     'CELLXGENE_ARGS': cellxgene_args,
     'GATEWAY_DATA': gateway_data,
-    'GATEWAY_BUCKET': gateway_bucket,
     'DATASET_METADATA_TSV': dataset_metadata_tsv,
     'QC_DATA': qc_data,
     'QC_THUMB_CACHE': qc_thumb_cache,

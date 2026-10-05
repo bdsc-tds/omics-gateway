@@ -83,7 +83,7 @@ fi
 echo "Starting Omics Gateway with Gunicorn..."
 echo "Configuration:"
 echo "  Cellxgene executable: ${CELLXGENE_LOCATION}"
-echo "  Data source: ${GATEWAY_DATA:-$GATEWAY_BUCKET}"
+echo "  Data source: ${GATEWAY_DATA}"
 echo "  QC data: ${QC_DATA}"
 echo "  Branding: ${GATEWAY_BRANDING:-default}"
 echo "  Binding to: $BIND"

@@ -7,7 +7,7 @@ from unittest import mock
 
 # Import other functions from package
 from omics_gateway import dataset_metadata_loader as dml
-from omics_gateway import env, flask_util, gateway
+from omics_gateway import env, gateway
 
 
 # Function to build os.environ replacement with keys removed and added
@@ -133,18 +133,9 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         base_path: str
           Value passed as FileItemSource's base_path.
         """
-        # initialise_data_sources mutates three globals; restore all of them or
-        # unrelated tests inherit item sources set up here
-        saved_sources = list(gateway.item_sources)
-        saved_default = gateway.default_item_source
-        saved_in_url = flask_util.include_source_in_url
-        self.addCleanup(
-            setattr, flask_util, 'include_source_in_url', saved_in_url
-        )
-        self.addCleanup(setattr, gateway, 'default_item_source', saved_default)
-        self.addCleanup(gateway.item_sources.extend, saved_sources)
-        self.addCleanup(gateway.item_sources.clear)
-        gateway.item_sources.clear()
+        # initialise_data_sources sets module-level source; restore it or
+        # unrelated tests inherit source set up here
+        self.addCleanup(setattr, gateway, 'item_source', gateway.item_source)
         # Patched at its source module: gateway imports it inside function
         with mock.patch(
             'omics_gateway.items.file.fileitem_source.FileItemSource'
@@ -172,13 +163,13 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         self.reload_env(GATEWAY_DATA='relative_data')
         self.assertEqual(os.path.abspath('relative_data'), env.gateway_data)
 
-    def test_GIVEN_unset_and_no_bucket_THEN_gateway_raises(self):
+    def test_GIVEN_unset_THEN_gateway_raises(self):
         """
-        Test that gateway refuses to start with neither data directory nor
-        bucket. Its None default is what makes this check reachable, so any
-        unification must keep 'unset' distinguishable from 'set'.
+        Test that gateway refuses to start without data directory. Its None
+        default is what makes this check reachable, so any unification must
+        keep 'unset' distinguishable from 'set'.
         """
-        self.reload_env(unset=['GATEWAY_DATA', 'GATEWAY_BUCKET'])
+        self.reload_env(unset=['GATEWAY_DATA'])
         with self.assertRaises(ValueError) as raised:
             self._effective_gateway_base_path()
         self.assertIn('GATEWAY_DATA', str(raised.exception))
@@ -287,19 +278,6 @@ class TestDataPathRoutes(EnvReloadCase):
             response = gateway.download_file('sample.h5ad')
         self.addCleanup(response.close)
         self.assertEqual(200, response.status_code)
-
-    def test_GIVEN_no_data_directory_THEN_download_returns_404(self):
-        """
-        Test that `/download` refuses cleanly when only bucket is configured,
-        rather than failing on None directory.
-        """
-        self.reload_env(unset=['GATEWAY_DATA'])
-        with (
-            gateway.app.test_request_context('/download/sample.h5ad'),
-            self.assertRaises(Exception) as raised,
-        ):
-            gateway.download_file('sample.h5ad')
-        self.assertIn('404', str(getattr(raised.exception, 'http_status', '')))
 
     def test_GIVEN_existing_image_THEN_qc_image_serves_it(self):
         """

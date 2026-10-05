@@ -4,7 +4,6 @@ from collections import defaultdict
 from unittest.mock import patch
 
 # Import other functions from package
-from omics_gateway import flask_util
 from omics_gateway.filecrawl import (
     render_item,
     render_item_source,
@@ -72,15 +71,6 @@ class TestRenderEntry(unittest.TestCase):
         self.app_context = app.test_request_context()
         self.app_context.push()
         self.addCleanup(self.app_context.pop)
-        # These expectations include /source/... prefix, which url() only emits
-        # when more than one item source is configured
-        self.addCleanup(
-            setattr,
-            flask_util,
-            'include_source_in_url',
-            flask_util.include_source_in_url,
-        )
-        flask_util.include_source_in_url = True
 
     def test_GIVEN_path_both_slash_THEN_view_has_single_slash(self):
         """
@@ -144,15 +134,6 @@ class TestRenderAnnotation(unittest.TestCase):
         self.app_context = app.test_request_context()
         self.app_context.push()
         self.addCleanup(self.app_context.pop)
-        # These expectations include /source/... prefix, which url() only emits
-        # when more than one item source is configured
-        self.addCleanup(
-            setattr,
-            flask_util,
-            'include_source_in_url',
-            flask_util.include_source_in_url,
-        )
-        flask_util.include_source_in_url = True
 
     @patch('omics_gateway.env.enable_annotations', new=True)
     def test_GIVEN_no_annotation_THEN_new_alone(self):
@@ -163,7 +144,7 @@ class TestRenderAnnotation(unittest.TestCase):
         entry = make_entry(annotations=None)
         rendered = render_item(entry, source)
         self.assertIn(
-            "> | annotations: <a class='new' href='/source/Files:/tmp/view/somepath/entry_annotations'>new</a></li>",
+            "> | annotations: <a class='new' href='/view/somepath/entry_annotations'>new</a></li>",
             rendered,
         )
 
@@ -183,8 +164,8 @@ class TestRenderAnnotation(unittest.TestCase):
         entry = make_entry(annotations=[annotation])
         rendered = render_item(entry, source)
         self.assertIn(
-            "> | annotations: <a class='new' href='/source/Files:/tmp/view/somepath/entry_annotations'>new</a>,"
-            " <a href='/source/Files:/tmp/view/somepath/entry_annotations/hot&cold.csv/'>hot&amp;cold</a></li>",
+            "> | annotations: <a class='new' href='/view/somepath/entry_annotations'>new</a>,"
+            " <a href='/view/somepath/entry_annotations/hot&cold.csv/'>hot&amp;cold</a></li>",
             rendered,
         )
 
@@ -215,7 +196,7 @@ class TestRenderItemSource(unittest.TestCase):
         rendered = render_item_source(item_source, 'some_filter')
         self.assertEqual(
             rendered,
-            "<h6><a href='/filecrawl?source=FakeSource'>FakeSource</a>:some_filter</h6><li><a href='/filecrawl/rootdir?source=FakeSource'>rootdir</a><ul></ul></li>",
+            "<h6><a href='/filecrawl'>FakeSource</a>:some_filter</h6><li><a href='/filecrawl/rootdir'>rootdir</a><ul></ul></li>",
         )
 
 
@@ -242,15 +223,6 @@ class TestRenderItemTree(unittest.TestCase):
         self.app_context.push()
         # Popped explicitly: leaked context masks missing ones elsewhere
         self.addCleanup(self.app_context.pop)
-        # These expectations include /source/... prefix, which url() only emits
-        # when more than one item source is configure
-        self.addCleanup(
-            setattr,
-            flask_util,
-            'include_source_in_url',
-            flask_util.include_source_in_url,
-        )
-        flask_util.include_source_in_url = True
 
     @patch('omics_gateway.items.file.fileitem_source.FileItemSource')
     def test_GIVEN_deep_nested_dirs_THEN_includes_dirs_in_output(
@@ -276,8 +248,8 @@ class TestRenderItemTree(unittest.TestCase):
         rendered = render_item_tree(item_tree, item_source)
         self.assertEqual(
             rendered,
-            "<li><a href='/filecrawl/foo/bar/baz?source=FakeSource'>baz</a><ul>"
-            "<li> <a href='/source/FakeSource/view/foo/bar/baz/file.h5ad/'>file.h5ad</a>"
+            "<li><a href='/filecrawl/foo/bar/baz'>baz</a><ul>"
+            "<li> <a href='/view/foo/bar/baz/file.h5ad/'>file.h5ad</a>"
             ' </li></ul></li>',
         )
 
@@ -313,6 +285,5 @@ class TestRenderItemTree(unittest.TestCase):
         item_tree = item_source.list_items('foo')
         rendered = render_item_tree(item_tree, item_source)
         self.assertEqual(
-            rendered,
-            "<li><a href='/filecrawl/foo?source=local'>foo</a><ul></ul></li>",
+            rendered, "<li><a href='/filecrawl/foo'>foo</a><ul></ul></li>"
         )

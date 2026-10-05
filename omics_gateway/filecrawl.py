@@ -11,7 +11,6 @@
 
 # Import utility modules
 import html
-import urllib.parse
 
 # Import other functions from package
 from omics_gateway import env, flask_util
@@ -38,9 +37,7 @@ def render_annotations(item, item_source):
     """
     if not env.enable_annotations:
         return ''
-    url = flask_util.view_url(
-        item_source.get_annotations_subpath(item), item_source.name
-    )
+    url = flask_util.view_url(item_source.get_annotations_subpath(item))
     new_annotation = [f"<a class='new' href='{url}'>new</a>"]
 
     annotations = (
@@ -107,7 +104,7 @@ def render_item_tree(item_tree, item_source):
     html = '<ul>' + items + branches + '</ul>'
     if item_tree.descriptor:
         descriptor = item_tree.descriptor.lstrip('/')
-        url = f'/filecrawl/{descriptor}?source={item_source.name}'
+        url = f'/filecrawl/{descriptor}'
         name = descriptor.rsplit('/', 1)[-1]
         return f"<li><a href='{url}'>{name}</a>{html}</li>"
     else:
@@ -133,5 +130,7 @@ def render_item_source(item_source, filter=None):
     """
     item_tree = item_source.list_items(filter)
     filterpart = '' if filter is None else ':' + filter
-    heading = f"<h6><a href='/filecrawl?source={urllib.parse.quote_plus(item_source.name)}'>{item_source.name}</a>{filterpart}</h6>"
+    heading = (
+        f"<h6><a href='/filecrawl'>{item_source.name}</a>{filterpart}</h6>"
+    )
     return heading + render_item_tree(item_tree, item_source)
