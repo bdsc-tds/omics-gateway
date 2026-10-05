@@ -58,5 +58,13 @@ jobs:
       # --no-deps as in deploy/setup.sh: env file pins every dependency
       - name: Install gateway
         run: pip install --no-deps --editable .
+      # CI only: deployed env stays free of test tooling
+      - name: Install coverage
+        run: pip install coverage==7.16.2
       - name: Run tests
-        run: python -m unittest discover tests
+        run: coverage run -m unittest discover tests
+      # Per-file table in log and on run's summary page, no external service
+      - name: Report coverage
+        run: |
+          coverage report
+          coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
