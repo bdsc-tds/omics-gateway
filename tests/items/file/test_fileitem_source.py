@@ -1,15 +1,10 @@
 # Import utility modules
+import os
 import tempfile
 import unittest
-from unittest.mock import patch
 
 # Import other functions from package
 from omics_gateway.items.file.fileitem_source import FileItemSource
-
-
-# Replace `path.join` with stub that concatenates paths using "/"
-def stub_join(path):
-    path.join = lambda x, y: x + '/' + y
 
 
 class TestFileItemSource(unittest.TestCase):
@@ -20,44 +15,38 @@ class TestFileItemSource(unittest.TestCase):
     `FileItem` instances based on local filesystem paths.
     """
 
-    @patch('os.path')
-    @patch('os.listdir')
-    def test_list_items_GIVEN_no_subpath_THEN_checks_dir(self, listdir, path):
+    def test_list_items_GIVEN_real_folder_THEN_returns_h5ad_tree(self):
         """
-        Test that `list_items` checks base directory when no subpath is
-        provided.
-
-        Parameters:
-        -----------
-        listdir: unittest.mock.Mock
-            Mocked `os.listdir` function.
-        path: unittest.mock.Mock
-            Mocked `os.path` module for intercepting filesystem checks.
+        Test that `list_items` builds tree of `.h5ad` files from real folder,
+        dropping other files and folders without data, scoping scan to filter,
+        and raising for missing folder.
         """
 
-        stub_join(path)
-        source = FileItemSource('/tmp/unittest', 'local')
-        source.list_items()
-        path.exists.assert_called_once_with('/tmp/unittest/')
+        with tempfile.TemporaryDirectory() as base:
+            for path in ('a.h5ad', 'notes.txt', 'study/b.h5ad'):
+                full_path = os.path.join(base, path)
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                open(full_path, 'w').close()
+            os.mkdir(os.path.join(base, 'empty'))
+            source = FileItemSource(base, 'local')
 
-    @patch('os.path')
-    @patch('os.listdir')
-    def test_list_items_GIVEN_subpath_THEN_checks_subpath(self, listdir, path):
-        """
-        Test that `list_items` checks specified subpath when provided.
+            tree = source.list_items()
+            self.assertEqual(['a.h5ad'], [item.name for item in tree.items])
+            self.assertEqual(
+                ['study'], [branch.descriptor for branch in tree.branches]
+            )
+            self.assertEqual(
+                ['study/b.h5ad'],
+                [item.descriptor for item in tree.branches[0].items],
+            )
 
-        Parameters:
-        -----------
-        listdir: unittest.mock.Mock
-            Mocked `os.listdir` function.
-        path: unittest.mock.Mock
-            Mocked `os.path` module for intercepting filesystem checks.
-        """
+            filtered = source.list_items('study')
+            self.assertEqual(
+                ['study/b.h5ad'], [item.descriptor for item in filtered.items]
+            )
 
-        stub_join(path)
-        source = FileItemSource('/tmp/unittest', 'local')
-        source.list_items('foo')
-        path.exists.assert_called_once_with('/tmp/unittest/foo')
+            with self.assertRaises(FileNotFoundError):
+                source.list_items('missing')
 
     def test_make_fileitem_from_path_GIVEN_annotation_file_THEN_name_lacks_csv(
         self,

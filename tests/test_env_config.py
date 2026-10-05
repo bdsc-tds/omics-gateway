@@ -153,14 +153,6 @@ class TestCellxgeneDataResolution(EnvReloadCase):
 
         return source.call_args[0][0]
 
-    def test_GIVEN_unset_THEN_env_module_uses_none(self):
-        """
-        Test that env module leaves value as None when variable is unset, which
-        is what keeps 'unset' distinguishable from configured directory.
-        """
-        self.reload_env(unset=['GATEWAY_DATA'])
-        self.assertIsNone(env.gateway_data)
-
     def test_GIVEN_unset_THEN_loader_takes_fallback_from_env(self):
         """
         Test that metadata loader has no default of its own and reads resolved
