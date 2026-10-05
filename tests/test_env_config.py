@@ -6,8 +6,12 @@ import unittest
 from unittest import mock
 
 # Import other functions from package
+from werkzeug.exceptions import HTTPException
+
 from omics_gateway import dataset_metadata_loader as dml
 from omics_gateway import env, gateway
+from omics_gateway.cache_entry import CacheEntryStatus
+from omics_gateway.cache_exception import CacheException
 
 
 # Function to build os.environ replacement with keys removed and added
@@ -248,8 +252,9 @@ class TestDataPathRoutes(EnvReloadCase):
 
     def setUp(self):
         """
-        Create data directory and QC directory, each holding one file, and point
-        environment at both.
+        Create data directory (dataset, spatial store and its config), QC
+        directory with one figure, and files outside data directory that no
+        route may serve, then point environment at both directories.
 
         Returns:
         --------
@@ -265,6 +270,16 @@ class TestDataPathRoutes(EnvReloadCase):
             h5ad.write(b'not really an h5ad')
         with open(os.path.join(self.qc_dir, 'plot.png'), 'wb') as png:
             png.write(b'not really a png')
+        for path in (
+            'data/store.zarr/zarr.json',
+            'data/vitessce_configs/store.vitessce.json',
+            'secret.txt',
+            'secret.h5ad',
+        ):
+            full_path = os.path.join(self.tmp.name, path)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            with open(full_path, 'wb') as file:
+                file.write(b'0123456789')
         self.reload_env(
             GATEWAY_DATA=self.data_dir,
             QC_DATA=os.path.join(self.tmp.name, 'analysis_qc'),
@@ -298,6 +313,156 @@ class TestDataPathRoutes(EnvReloadCase):
         ):
             gateway.qc_image('ds1', '../../etc/passwd')
         self.assertIn('400', str(getattr(raised.exception, 'http_status', '')))
+
+    def request_status(self, view, *args, url='/', headers=None):
+        """
+        Call route function inside request context and return HTTP status it
+        produces, whether returned as response or raised as error.
+
+        Parameters:
+        -----------
+        view: callable
+          Route function to call.
+        args: str
+          Positional arguments for route function.
+        url: str
+          Request URL, query string included.
+        headers: dict or None
+          Request headers.
+
+        Returns:
+        --------
+        status: int
+          HTTP status code of response or raised error.
+        """
+        with gateway.app.test_request_context(url, headers=headers):
+            try:
+                response = gateway.app.make_response(view(*args))
+            except CacheException as error:
+                return error.http_status
+            except HTTPException as error:
+                return error.code
+        response.close()
+        return response.status_code
+
+    def test_GIVEN_escaping_dataset_id_THEN_qc_routes_reject_it(self):
+        """
+        Test that /qc and /qc-image refuse dataset id pointing outside QC
+        directory, including sibling folder sharing its name as prefix.
+        """
+        for dataset_id in ('..', '../analysis_qc_thumbs'):
+            with self.subTest(dataset_id=dataset_id):
+                self.assertEqual(
+                    400, self.request_status(gateway.qc_report, dataset_id)
+                )
+                self.assertEqual(
+                    400,
+                    self.request_status(
+                        gateway.qc_image, dataset_id, 'secret.txt'
+                    ),
+                )
+
+    def test_GIVEN_unsafe_name_THEN_download_rejected(self):
+        """
+        Test that /download refuses traversal, subfolders and non-.h5ad files,
+        including files that exist outside data directory.
+        """
+        for filename in (
+            '../secret.h5ad',
+            'sub/sample.h5ad',
+            '..\\secret.h5ad',
+            'secret.txt',
+            'sample.h5ad.txt',
+        ):
+            with self.subTest(filename=filename):
+                self.assertEqual(
+                    400, self.request_status(gateway.download_file, filename)
+                )
+
+    def test_GIVEN_missing_file_THEN_download_returns_404(self):
+        """
+        Test that /download reports missing dataset as 404.
+        """
+        self.assertEqual(
+            404, self.request_status(gateway.download_file, 'absent.h5ad')
+        )
+
+    def test_GIVEN_existing_file_THEN_spatial_data_serves_byte_ranges(self):
+        """
+        Test that /spatial-data serves files from data directory, and answers
+        range requests with 206, which Vitessce needs to stream chunks.
+        """
+        path = 'store.zarr/zarr.json'
+        self.assertEqual(200, self.request_status(gateway.spatial_data, path))
+        self.assertEqual(
+            206,
+            self.request_status(
+                gateway.spatial_data, path, headers={'Range': 'bytes=0-3'}
+            ),
+        )
+
+    def test_GIVEN_unsafe_path_THEN_spatial_data_refuses_it(self):
+        """
+        Test that /spatial-data never serves file outside data directory, by
+        traversal or absolute path, and reports missing files as 404.
+        """
+        for subpath, status in (
+            ('../secret.txt', 400),
+            ('store.zarr/../../secret.txt', 400),
+            (os.path.join(self.tmp.name, 'secret.txt'), 404),
+            ('store.zarr/absent', 404),
+        ):
+            with self.subTest(subpath=subpath):
+                self.assertEqual(
+                    status, self.request_status(gateway.spatial_data, subpath)
+                )
+
+    def test_GIVEN_config_THEN_spatial_viewer_checks_it(self):
+        """
+        Test that /spatial-viewer opens config hosted in data directory, and
+        refuses missing, foreign, escaping or absent configs.
+        """
+        prefix = '/spatial-viewer?config='
+        for config, status in (
+            ('/spatial-data/vitessce_configs/store.vitessce.json', 200),
+            ('', 400),
+            ('https://example.org/store.vitessce.json', 400),
+            ('/static/store.vitessce.json', 400),
+            ('/spatial-data/../secret.txt', 404),
+            ('/spatial-data/vitessce_configs/absent.vitessce.json', 404),
+        ):
+            with self.subTest(config=config):
+                self.assertEqual(
+                    status,
+                    self.request_status(
+                        gateway.spatial_viewer, url=prefix + config
+                    ),
+                )
+
+    def test_GIVEN_cellxgene_state_THEN_view_static_proxies_to_loaded(self):
+        """
+        Test that /view/static returns 503 without loaded cellxgene process,
+        and otherwise forwards path to loaded process only.
+        """
+        self.addCleanup(
+            setattr, gateway.cache, 'entry_list', gateway.cache.entry_list
+        )
+        loading = mock.Mock(status=CacheEntryStatus.loading, port=8001)
+        loaded = mock.Mock(status=CacheEntryStatus.loaded, port=8002)
+
+        gateway.cache.entry_list = [loading]
+        self.assertEqual(
+            503, self.request_status(gateway.view_static, 'logo.png')
+        )
+
+        gateway.cache.entry_list = [loading, loaded]
+        upstream = mock.Mock(
+            content=b'png', status_code=200, headers={'Content-Type': 'x'}
+        )
+        with mock.patch('requests.get', return_value=upstream) as get:
+            status = self.request_status(gateway.view_static, 'logo.png')
+        self.assertEqual(200, status)
+        get.assert_called_once_with('http://127.0.0.1:8002/static/logo.png')
 
 
 if __name__ == '__main__':

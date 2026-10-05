@@ -1192,7 +1192,7 @@ def qc_report(dataset_id):
     qc_dir = os.path.normpath(os.path.join(qc_base, dataset_id))
 
     # Security: reject traversal attempts
-    if not qc_dir.startswith(os.path.normpath(qc_base)):
+    if os.path.commonpath([qc_base, qc_dir]) != os.path.normpath(qc_base):
         raise CacheException('Invalid dataset id.', 400)
 
     if not os.path.isdir(qc_dir):
@@ -1326,7 +1326,7 @@ def _validated_qc_dir(dataset_id, image_path):
     qc_dir = os.path.normpath(os.path.join(qc_base, dataset_id))
 
     # Security: reject traversal in either segment
-    if not qc_dir.startswith(os.path.normpath(qc_base)):
+    if os.path.commonpath([qc_base, qc_dir]) != os.path.normpath(qc_base):
         raise CacheException('Invalid dataset id.', 400)
     if '..' in image_path:
         raise CacheException('Invalid image path.', 400)
