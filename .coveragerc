@@ -1,0 +1,9 @@
+# Coverage configuration for unit tests of gateway package; CI installs
+# coverage on top of deployed env and reports to run summary
+
+[run]
+branch = True
+source = omics_gateway
+
+[report]
+skip_empty = True

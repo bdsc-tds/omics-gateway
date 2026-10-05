@@ -172,6 +172,15 @@ GitHub Actions (`.github/workflows/pr-checks.yaml`) runs the tests and linting b
 conda run -n omics-gateway python -m unittest discover tests
 ```
 
+CI also measures how much of the `omics_gateway` package the tests run, with [coverage.py](https://coverage.readthedocs.io/) 7.16.2 configured in `.coveragerc`, and shows a per-file table on each run's summary page. Coverage is not part of the `omics-gateway` environment, which stays identical to the deployed one, so CI installs it on top. To measure locally, use a copy of that environment with coverage added:
+
+```bash
+conda create -n omics-gateway-cov --clone omics-gateway
+conda run -n omics-gateway-cov pip install coverage==7.16.2
+conda run -n omics-gateway-cov coverage run -m unittest discover tests
+conda run -n omics-gateway-cov coverage report
+```
+
 ### Linting
 
 Linting uses [ruff](https://docs.astral.sh/ruff/) 0.16.0, configured in `ruff.toml`. Ruff is not part of the `omics-gateway` environment, so run it from any environment that has it:
