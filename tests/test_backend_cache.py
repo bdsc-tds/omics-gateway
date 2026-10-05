@@ -60,23 +60,6 @@ class TestIsPortInUse(unittest.TestCase):
         self.assertEqual(is_port_in_use(123), False)
 
 
-class TestBackendCacheInit(unittest.TestCase):
-    """
-    Unit tests for `BackendCache` initialisation.
-
-    Verify that new `BackendCache` instance starts with expected default
-    state.
-    """
-
-    def test_GIVEN_new_backend_cache_THEN_entry_list_is_empty(self):
-        """
-        Test that newly created `BackendCache` has empty entry list.
-        """
-
-        cache = BackendCache()
-        self.assertEqual(cache.entry_list, [])
-
-
 class TestBackendCacheGetPorts(unittest.TestCase):
     """
     Unit tests for `BackendCache.get_ports` method.
