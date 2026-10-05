@@ -212,9 +212,9 @@ def initialise_data_sources():
     """
     Initialise data sources from environment variables.
 
-    Reads GATEWAY_DATA and GATEWAY_BUCKET to set up local file and S3
-    item sources. Called lazily on first WSGI request so Gunicorn workers can
-    import module without triggering side effects at import time.
+    Reads GATEWAY_DATA to set up local file item source. Called lazily on
+    first WSGI request so Gunicorn workers can import module without
+    triggering side effects at import time.
 
     Returns:
     --------
@@ -223,22 +223,13 @@ def initialise_data_sources():
     Raises:
     -------
     Exception
-      If neither GATEWAY_DATA nor GATEWAY_BUCKET is set.
+      If GATEWAY_DATA is not set.
     """
 
     global default_item_source
 
     gateway_data = env.gateway_data
-    gateway_bucket = env.gateway_bucket
 
-    if gateway_bucket is not None:
-        from omics_gateway.items.s3.s3item_source import S3ItemSource
-
-        s3_source = S3ItemSource(gateway_bucket, name='s3')
-        item_sources.append(s3_source)
-        default_item_source = s3_source
-        logger.info('Initialized S3 data source')
-        logger.debug(f'S3 bucket: {gateway_bucket}')
     if gateway_data is not None:
         from omics_gateway.items.file.fileitem_source import FileItemSource
 
@@ -248,7 +239,7 @@ def initialise_data_sources():
         logger.info('Initialized local file data source')
         logger.debug(f'Data directory: {gateway_data}')
     if len(item_sources) == 0:
-        raise ValueError('Please specify GATEWAY_DATA or GATEWAY_BUCKET')
+        raise ValueError('Please specify GATEWAY_DATA')
     flask_util.include_source_in_url = len(item_sources) > 1
 
 

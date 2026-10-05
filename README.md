@@ -29,10 +29,7 @@ Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into
 The gateway is configured through environment variables:
 
 * `CELLXGENE_LOCATION`: the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
-
-At least one of the following is required:
 * `GATEWAY_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/gateway_data`
-* `GATEWAY_BUCKET`: an s3 bucket that can contain keys with `.h5ad` data files, e.g. `my-gateway-data-bucket`
 Omics Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
 
 Optional environment variables:
@@ -51,7 +48,6 @@ Optional environment variables:
 * `QC_THUMB_CACHE`: a directory for the thumbnails shown in QC reports, which the gateway builds on demand. Defaults to `<QC_DATA>_thumbs`, outside the QC tree so that tree can stay read-only
 * `SPATIAL_METRICS`: Set to `false` or to `0` to open spatial (`.zarr`) datasets without the Metric layer, which colours cells by per-cell measurements such as cell area. Defaults to `true`. `data_prep/generate_spatial_config.py` writes both configs for each store (`<name>.vitessce.json` and `<name>.nometrics.vitessce.json`), and this variable picks which one the dataset browser links to
 * `GATEWAY_BRANDING`: path to the branding file of the deployment (names, logo, favicon and homepage texts). Defaults to `branding/default/branding.yaml`, which shows neutral Omics Gateway branding. See [Branding](#branding)
-* `S3_ENABLE_LISTINGS_CACHE`: Set to `true` or to `1` to cache listings of S3 folders for performance. If the cache becomes stale, set `filecrawl?refresh=true` query parameter to refresh the cache.
 
 If any of the following optional variables are set, [ProxyFix](https://werkzeug.palletsprojects.com/en/1.0.x/middleware/proxy_fix/) will be used.
 * `PROXY_FIX_FOR`: Number of upstream proxies setting X-Forwarded-For

@@ -172,13 +172,13 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         self.reload_env(GATEWAY_DATA='relative_data')
         self.assertEqual(os.path.abspath('relative_data'), env.gateway_data)
 
-    def test_GIVEN_unset_and_no_bucket_THEN_gateway_raises(self):
+    def test_GIVEN_unset_THEN_gateway_raises(self):
         """
-        Test that gateway refuses to start with neither data directory nor
-        bucket. Its None default is what makes this check reachable, so any
-        unification must keep 'unset' distinguishable from 'set'.
+        Test that gateway refuses to start without data directory. Its None
+        default is what makes this check reachable, so any unification must
+        keep 'unset' distinguishable from 'set'.
         """
-        self.reload_env(unset=['GATEWAY_DATA', 'GATEWAY_BUCKET'])
+        self.reload_env(unset=['GATEWAY_DATA'])
         with self.assertRaises(ValueError) as raised:
             self._effective_gateway_base_path()
         self.assertIn('GATEWAY_DATA', str(raised.exception))

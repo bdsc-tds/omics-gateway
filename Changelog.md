@@ -6,7 +6,8 @@ Renamed to omics-gateway: standalone continuation of Novartis/cellxgene-gateway 
 * Added per-dataset QC reports
 * Added spatial datasets (SpatialData `.zarr`) in a self-hosted Vitessce viewer
 * Gunicorn-only deployment with `deploy/setup.sh`; Docker, uWSGI and Travis files removed
-* Renamed `CELLXGENE_DATA` and `CELLXGENE_BUCKET` to `GATEWAY_DATA` and `GATEWAY_BUCKET`
+* Renamed `CELLXGENE_DATA` to `GATEWAY_DATA`
+* Removed S3 data source (`CELLXGENE_BUCKET`, `S3_ENABLE_LISTINGS_CACHE`)
 
 # 0.4.2
 
