@@ -15,7 +15,6 @@ import json
 import logging
 import os
 import re
-import urllib.parse
 from datetime import datetime, timezone
 from threading import Lock, Thread
 
@@ -34,7 +33,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import safe_join
 
 # Import other functions from package
-from omics_gateway import env, flask_util
+from omics_gateway import env
 from omics_gateway.backend_cache import BackendCache
 from omics_gateway.branding import ASSET_KEYS, format_stat, load_branding
 from omics_gateway.cache_entry import CacheEntryStatus
@@ -53,8 +52,7 @@ app = Flask(__name__)
 # Read once at import, so invalid branding stops gateway before serving
 branding = load_branding(env.branding_file)
 
-item_sources = []
-default_item_source = None
+item_source = None
 
 # Lazy-init guard, so tests import module without env-dependent side
 # effects; initialise_data_sources() sets it
@@ -184,14 +182,6 @@ def _init_on_first_wsgi_request(wsgi_app):
                     initialise_data_sources()
 
                     env.validate()
-                    if not item_sources or not len(item_sources):
-                        raise ValueError(
-                            'No data sources specified for Omics Gateway'
-                        )
-
-                    global default_item_source
-                    if default_item_source is None:
-                        default_item_source = item_sources[0]
 
                     data_sources_initialized = True
                     start_pruner_thread()
@@ -210,7 +200,7 @@ cache = BackendCache()
 # Run once, on first WSGI request, by middleware above
 def initialise_data_sources():
     """
-    Initialise data sources from environment variables.
+    Initialise data source from environment variables.
 
     Reads GATEWAY_DATA to set up local file item source. Called lazily on
     first WSGI request so Gunicorn workers can import module without
@@ -226,21 +216,17 @@ def initialise_data_sources():
       If GATEWAY_DATA is not set.
     """
 
-    global default_item_source
+    global item_source
 
     gateway_data = env.gateway_data
-
-    if gateway_data is not None:
-        from omics_gateway.items.file.fileitem_source import FileItemSource
-
-        file_source = FileItemSource(gateway_data, name='local')
-        item_sources.append(file_source)
-        default_item_source = file_source
-        logger.info('Initialized local file data source')
-        logger.debug(f'Data directory: {gateway_data}')
-    if len(item_sources) == 0:
+    if gateway_data is None:
         raise ValueError('Please specify GATEWAY_DATA')
-    flask_util.include_source_in_url = len(item_sources) > 1
+
+    from omics_gateway.items.file.fileitem_source import FileItemSource
+
+    item_source = FileItemSource(gateway_data, name='local')
+    logger.info('Initialized local file data source')
+    logger.debug(f'Data directory: {gateway_data}')
 
 
 @app.errorhandler(CacheException)
@@ -664,19 +650,7 @@ def filecrawl(path=None):
         )
     else:
         # Fall back to file-based interface when no datasets.tsv is present
-        source_name = request.args.get('source')
-        sources = (
-            filter(
-                lambda x: x.name == urllib.parse.unquote_plus(source_name),
-                item_sources,
-            )
-            if source_name
-            else item_sources
-        )
-        rendered_sources = [
-            render_item_source(item_source, path) for item_source in sources
-        ]
-        rendered_html = '\n'.join(rendered_sources)
+        rendered_html = render_item_source(item_source, path)
 
         resp = make_response(
             render_template(
@@ -695,42 +669,8 @@ def filecrawl(path=None):
 entry_lock = Lock()
 
 
-def matching_source(source_name):
-    """
-    Return item source matching given name.
-
-    Parameters:
-    -----------
-    source_name: str or None
-      Name of item source to look up. Falls back to default_item_source name
-      when None.
-
-    Returns:
-    --------
-    ItemSource
-      Matching item source object.
-
-    Raises:
-    -------
-    Exception
-      If no single item source matches given name.
-    """
-
-    if source_name is None and default_item_source is not None:
-        source_name = default_item_source.name
-    matching = [i for i in item_sources if i.name == source_name]
-    if len(matching) != 1:
-        raise ValueError(f'Could not find matching item source {source_name}')
-    source = matching[0]
-    return source
-
-
-@app.route(
-    '/source/<path:source_name>/view/<path:path>',
-    methods=['GET', 'PUT', 'POST'],
-)
 @app.route('/view/<path:path>', methods=['GET', 'PUT', 'POST'])
-def do_view(path, source_name=None):
+def do_view(path):
     """
     Proxy requests to running cellxgene instance serving given dataset.
 
@@ -741,8 +681,6 @@ def do_view(path, source_name=None):
     -----------
     path: str
       Dataset path within item source.
-    source_name: str or None
-      Name of item source. Uses default source when None.
 
     Returns:
     --------
@@ -751,19 +689,18 @@ def do_view(path, source_name=None):
       still starting up.
     """
 
-    source = matching_source(source_name)
-    match = cache.check_path(source, path)
+    match = cache.check_path(item_source, path)
 
     if match is None:
-        lookup = source.lookup(path)
+        lookup = item_source.lookup(path)
         if lookup is None:
             raise CacheException(
-                f'Could not find item for path <{path.rstrip("/")}> in source <{source.name}>',
+                f'Could not find item for path <{path.rstrip("/")}> in source <{item_source.name}>',
                 404,
             )
-        key = CacheKey.for_lookup(source, lookup)
+        key = CacheKey.for_lookup(item_source, lookup)
         logger.info(
-            f'Viewing dataset={key.file_path}, key={key.descriptor}, annotation_file={key.annotation_file_path}, source={key.source_name}, source_name={source_name}, path={path}'
+            f'Viewing dataset={key.file_path}, key={key.descriptor}, annotation_file={key.annotation_file_path}, source={key.source_name}, path={path}'
         )
         with entry_lock:
             match = cache.check_entry(key)
@@ -777,7 +714,7 @@ def do_view(path, source_name=None):
         match.status == CacheEntryStatus.loaded
         or match.status == CacheEntryStatus.loading
     ):
-        if source.is_authorized(match.key.descriptor):
+        if item_source.is_authorized(match.key.descriptor):
             return match.serve_content(path)
         else:
             raise CacheException('User not authorized to access this data', 403)
@@ -840,7 +777,7 @@ def do_instances_json():
 
 def get_cache_key(path):
     """
-    Build CacheKey for given path using source from request args.
+    Build CacheKey for given path in data source.
 
     Parameters:
     -----------
@@ -853,14 +790,7 @@ def get_cache_key(path):
       Cache key identifying dataset and its source.
     """
 
-    if request.args.get('source_name'):
-        source_name = request.args.get('source_name')
-    elif default_item_source:
-        source_name = default_item_source.name
-    else:
-        source_name = None
-    source = matching_source(source_name)
-    key = CacheKey.for_lookup(source, source.lookup(path))
+    key = CacheKey.for_lookup(item_source, item_source.lookup(path))
     return key
 
 

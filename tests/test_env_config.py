@@ -7,7 +7,7 @@ from unittest import mock
 
 # Import other functions from package
 from omics_gateway import dataset_metadata_loader as dml
-from omics_gateway import env, flask_util, gateway
+from omics_gateway import env, gateway
 
 
 # Function to build os.environ replacement with keys removed and added
@@ -133,18 +133,9 @@ class TestCellxgeneDataResolution(EnvReloadCase):
         base_path: str
           Value passed as FileItemSource's base_path.
         """
-        # initialise_data_sources mutates three globals; restore all of them or
-        # unrelated tests inherit item sources set up here
-        saved_sources = list(gateway.item_sources)
-        saved_default = gateway.default_item_source
-        saved_in_url = flask_util.include_source_in_url
-        self.addCleanup(
-            setattr, flask_util, 'include_source_in_url', saved_in_url
-        )
-        self.addCleanup(setattr, gateway, 'default_item_source', saved_default)
-        self.addCleanup(gateway.item_sources.extend, saved_sources)
-        self.addCleanup(gateway.item_sources.clear)
-        gateway.item_sources.clear()
+        # initialise_data_sources sets module-level source; restore it or
+        # unrelated tests inherit source set up here
+        self.addCleanup(setattr, gateway, 'item_source', gateway.item_source)
         # Patched at its source module: gateway imports it inside function
         with mock.patch(
             'omics_gateway.items.file.fileitem_source.FileItemSource'

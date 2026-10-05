@@ -102,14 +102,14 @@ class CacheKey:
 
     def relaunch_url(self):
         """
-        Generate URL to relaunch cache key based on descriptor and source name.
+        Generate URL to relaunch cache key based on its descriptor.
 
         Returns:
         --------
         str
           URL to relaunch cache key.
         """
-        return flask_util.relaunch_url(self.descriptor, self.source_name)
+        return flask_util.relaunch_url(self.descriptor)
 
     def gateway_basepath(self):
         """
@@ -125,14 +125,14 @@ class CacheKey:
     @property
     def view_url(self):
         """
-        Get view URL for cache key based on descriptor and source name.
+        Get view URL for cache key based on its descriptor.
 
         Returns:
         --------
         str
           View URL of cache key.
         """
-        return flask_util.view_url(self.descriptor, self.source_name)
+        return flask_util.view_url(self.descriptor)
 
     @property
     def source_name(self):

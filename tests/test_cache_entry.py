@@ -2,7 +2,6 @@
 import unittest
 
 # Import other functions from package
-from omics_gateway import flask_util
 from omics_gateway.cache_entry import CacheEntry, CacheEntryStatus
 from omics_gateway.cache_key import CacheKey
 from omics_gateway.gateway import app
@@ -40,14 +39,6 @@ class TestRenderEntry(unittest.TestCase):
         # Popped explicitly: context left on stack leaks into any test module
         # run next, hiding missing contexts there
         self.addCleanup(self.app_context.pop)
-        # Individual tests below flip this module-level flag; restore it so it
-        # does not leak into other test modules
-        self.addCleanup(
-            setattr,
-            flask_util,
-            'include_source_in_url',
-            flask_util.include_source_in_url,
-        )
         self.client = self.app.test_client()
 
     def test_GIVEN_key_and_port_THEN_returns_loading_CacheEntry(self):
@@ -62,10 +53,9 @@ class TestRenderEntry(unittest.TestCase):
     def test_GIVEN_absolute_static_url_THEN_include_path(self):
         """
         Test that absolute CSS `url()` path is rewritten to include cache entry
-        path when `include_source_in_url` is False.
+        path.
         """
 
-        flask_util.include_source_in_url = False
         actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
             'src:url(/static/assets/'
         )
@@ -74,41 +64,13 @@ class TestRenderEntry(unittest.TestCase):
 
     def test_GIVEN_absolute_src_THEN_include_path(self):
         """
-        Test that absolute static `<link>` URL gains cache entry path when
-        `include_source_in_url` is False.
+        Test that absolute static `<link>` URL gains cache entry path.
         """
 
-        flask_util.include_source_in_url = False
         actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
             '<link rel="shortcut icon" href="/static/assets/favicon.png">'
         )
         expected = '<link rel="shortcut icon" href="/view/czi/pbmc3k.h5ad/static/assets/favicon.png">'
-        self.assertEqual(actual, expected)
-
-    def test_GIVEN_absolute_static_url_include_source_THEN_include_path(self):
-        """
-        Test that absolute CSS `url()` path is rewritten to include source path
-        when `include_source_in_url` is True.
-        """
-
-        flask_util.include_source_in_url = True
-        actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
-            'src:url(/static/assets/'
-        )
-        expected = 'src:url(/source/local/view/czi/pbmc3k.h5ad/static/assets/'
-        self.assertEqual(actual, expected)
-
-    def test_GIVEN_absolute_src_include_source_THEN_include_path(self):
-        """
-        Test that absolute static `<link>` URL gains source path when
-        `include_source_in_url` is True.
-        """
-
-        flask_util.include_source_in_url = True
-        actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
-            '<link rel="shortcut icon" href="/static/assets/favicon.png">'
-        )
-        expected = '<link rel="shortcut icon" href="/source/local/view/czi/pbmc3k.h5ad/static/assets/favicon.png">'
         self.assertEqual(actual, expected)
 
 
