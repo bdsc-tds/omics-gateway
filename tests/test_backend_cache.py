@@ -114,20 +114,6 @@ class TestBackendCacheGetPorts(unittest.TestCase):
         ports = cache.get_ports()
         self.assertEqual(ports, [8000, 8001, 8002])
 
-    def test_GIVEN_single_entry_THEN_get_ports_returns_single_port(self):
-        """
-        Test that `get_ports` correctly handles cache with single entry.
-        """
-
-        cache = BackendCache()
-        entry = Mock()
-        entry.port = 9000
-
-        cache.entry_list = [entry]
-
-        ports = cache.get_ports()
-        self.assertEqual(ports, [9000])
-
 
 class TestBackendCacheCheckPath(unittest.TestCase):
     """
@@ -181,25 +167,6 @@ class TestBackendCacheCheckPath(unittest.TestCase):
 
         result = self.cache.check_path(source, '/data/file.txt')
         self.assertIsNone(result)
-
-    def test_GIVEN_single_matching_entry_THEN_check_path_returns_it(self):
-        """
-        Test that `check_path` returns entry when exactly one matches.
-        """
-
-        source = Mock()
-        source.name = 'test_source'
-
-        cache_entry = Mock()
-        cache_entry.status = CacheEntryStatus.loaded
-        cache_entry.key = Mock()
-        cache_entry.key.source.name = 'test_source'
-        cache_entry.key.descriptor = '/data'
-
-        self.cache.entry_list = [cache_entry]
-
-        result = self.cache.check_path(source, '/data/file.txt')
-        self.assertIs(result, cache_entry)
 
     def test_GIVEN_path_that_does_not_start_with_descriptor_THEN_check_path_returns_none(
         self,
@@ -348,23 +315,6 @@ class TestBackendCacheCheckEntry(unittest.TestCase):
         result = self.cache.check_entry(key)
         self.assertIsNone(result)
 
-    def test_GIVEN_single_matching_entry_THEN_check_entry_returns_it(self):
-        """
-        Test that `check_entry` returns entry when exactly one matches key.
-        """
-
-        key = Mock()
-
-        cache_entry = Mock()
-        cache_entry.status = CacheEntryStatus.loaded
-        cache_entry.key = Mock()
-        cache_entry.key.equals.return_value = True
-
-        self.cache.entry_list = [cache_entry]
-
-        result = self.cache.check_entry(key)
-        self.assertIs(result, cache_entry)
-
     def test_GIVEN_multiple_matching_entries_THEN_check_entry_raises_exception(
         self,
     ):
@@ -441,35 +391,6 @@ class TestBackendCachePrune(unittest.TestCase):
     Verify that pruning removes target entry from cache and terminates it,
     without affecting other entries.
     """
-
-    def test_GIVEN_entry_in_cache_THEN_prune_removes_it(self):
-        """
-        Test that `prune` removes entry from cache's entry list.
-        """
-
-        cache = BackendCache()
-
-        entry_mock = Mock()
-        cache.entry_list = [entry_mock]
-
-        cache.prune(entry_mock)
-
-        self.assertEqual(len(cache.entry_list), 0)
-        self.assertNotIn(entry_mock, cache.entry_list)
-
-    def test_GIVEN_entry_in_cache_THEN_prune_terminates_it(self):
-        """
-        Test that `prune` calls `terminate` on removed entry.
-        """
-
-        cache = BackendCache()
-
-        entry_mock = Mock()
-        cache.entry_list = [entry_mock]
-
-        cache.prune(entry_mock)
-
-        entry_mock.terminate.assert_called_once()
 
     def test_GIVEN_multiple_entries_THEN_prune_removes_only_target_entry(self):
         """

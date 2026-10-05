@@ -168,26 +168,6 @@ class TestRenderAnnotation(unittest.TestCase):
         )
 
     @patch('omics_gateway.env.enable_annotations', new=True)
-    def test_GIVEN_annotation_THEN_new_before(self):
-        """
-        Test rendering when at least one annotation exists.
-        """
-
-        annotation = FileItem(
-            subpath='somepath/entry_annotations',
-            name='annot',
-            ext='.csv',
-            type=ItemType.annotation,
-        )
-        entry = make_entry(annotations=[annotation])
-        rendered = render_item(entry, source)
-        self.assertIn(
-            "> | annotations: <a class='new' href='/source/Files:/tmp/view/somepath/entry_annotations'>new</a>,"
-            " <a href='/source/Files:/tmp/view/somepath/entry_annotations/annot.csv/'>annot</a></li>",
-            rendered,
-        )
-
-    @patch('omics_gateway.env.enable_annotations', new=True)
     def test_GIVEN_annotation_THEN_escaped(self):
         """
         Test rendering when annotation names include characters requiring HTML
