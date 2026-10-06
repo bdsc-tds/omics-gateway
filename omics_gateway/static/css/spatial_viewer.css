@@ -58,6 +58,12 @@ div:has(> [class*='layerControllerGrid']) {
   flex-direction: column-reverse;
 }
 
+/* Dot plot's 5px set colour bars straddle axis, under largest bottom-row
+circles; move them clear */
+[class*='vegaContainer'] g.column_footer g.role-axis-domain line {
+  transform: translateY(4px);
+}
+
 /* Hide redundant gene title when colour does not encode it */
 [class*='legend'] svg[height='20'] text[y='18'] {
   display: none;
