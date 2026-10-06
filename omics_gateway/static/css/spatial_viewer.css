@@ -68,3 +68,40 @@ div:has(> [class*='layerControllerGrid']) {
   opacity: 0.35;
   cursor: default;
 }
+
+/* Vega's own export menu drops dot plot's colour bars; gateway export replaces it */
+[class*='vegaContainer'] .vega-embed details {
+  display: none;
+}
+
+[class*='vegaContainer'] .vega-embed.has-actions {
+  padding-right: 0;
+}
+
+/* Export format menu; script copies panel's colours */
+.gateway-export-menu {
+  position: fixed;
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.gateway-export-menu button {
+  padding: 6px 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gateway-export-menu button:hover,
+.gateway-export-menu button:focus-visible {
+  outline: none;
+  background: rgba(128, 128, 128, 0.2);
+}
