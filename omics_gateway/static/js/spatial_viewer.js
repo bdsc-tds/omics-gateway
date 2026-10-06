@@ -468,8 +468,8 @@
     });
   }
 
-  // Download PNG button on deck.gl views (toolbar: canvas as on screen plus
-  // its legends) and Vega plots (title bar: whole plot SVG)
+  // Download menu (PNG, SVG) in title bar of deck.gl views (canvas as on
+  // screen plus its legends) and Vega plots (whole plot SVG)
   function addExportButtons(root, configUrl) {
     const stem = (configUrl.split('/').pop() || 'view').replace(
       /(\.nometrics)?\.vitessce\.json$/,
@@ -576,8 +576,9 @@
       'transform',
     ];
     const MARGIN = 20;
-    // SVG as image, rasterised at scale through its own size, not stretched
-    function svgImage(svg, margin, scale) {
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    // Standalone SVG copy at CSS size, with margin added on each side
+    function svgClone(svg, margin) {
       const clone = svg.cloneNode(true);
       const from = [svg].concat(Array.from(svg.querySelectorAll('*')));
       const to = [clone].concat(Array.from(clone.querySelectorAll('*')));
@@ -602,14 +603,48 @@
       const box = svg.getBoundingClientRect();
       const width = box.width + 2 * margin;
       const height = box.height + 2 * margin;
-      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      clone.setAttribute('width', width * scale);
-      clone.setAttribute('height', height * scale);
+      clone.setAttribute('xmlns', SVG_NS);
+      clone.setAttribute('width', width);
+      clone.setAttribute('height', height);
       clone.setAttribute('viewBox', `${-margin} ${-margin} ${width} ${height}`);
+      return clone;
+    }
+
+    // Clone as image, rasterised at scale through its own size, not stretched
+    function svgImage(clone, scale) {
+      ['width', 'height'].forEach((name) => {
+        clone.setAttribute(name, clone.getAttribute(name) * scale);
+      });
       const text = new XMLSerializer().serializeToString(clone);
       return loadImage(
         `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`,
       );
+    }
+
+    function svgNode(name, attributes) {
+      const node = document.createElementNS(SVG_NS, name);
+      Object.entries(attributes).forEach(([key, value]) => {
+        node.setAttribute(key, value);
+      });
+      return node;
+    }
+
+    // Embedded image; xlink:href, as older editors ignore plain href
+    function svgPicture(href, box) {
+      const node = svgNode('image', { ...box, preserveAspectRatio: 'none' });
+      node.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', href);
+      return node;
+    }
+
+    // Image as data URL, so saved SVG holds it rather than a page link
+    async function dataUrlOf(href) {
+      if (href.startsWith('data:')) return href;
+      const image = await loadImage(href);
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      canvas.getContext('2d').drawImage(image, 0, 0);
+      return canvas.toDataURL('image/png');
     }
 
     function loadImage(src) {
@@ -633,7 +668,8 @@
       }
     }
 
-    async function deckImage(view) {
+    // Canvas copy at EXPORT_SCALE plus legend parts, all read in one task
+    function deckCapture(view) {
       const canvas = view.el;
       const deck = view.node.props.deckRef?.current?.deck;
       const box = canvas.getBoundingClientRect();
@@ -705,9 +741,19 @@
         );
         frame.svgs = Array.prototype.map.call(
           el.querySelectorAll('svg'),
-          (svg) => ({ svg, rect: svg.getBoundingClientRect() }),
+          (svg) => ({
+            clone: svgClone(svg, MARGIN),
+            rect: svg.getBoundingClientRect(),
+          }),
         );
       });
+      return { out, box, scale, frames };
+    }
+
+    // Legends drawn over canvas copy
+    async function deckImage(capture) {
+      const { out, box, scale, frames } = capture;
+      const ctx = out.getContext('2d');
       function place(rect, margin) {
         return [
           (rect.left - box.left - margin) * scale,
@@ -720,9 +766,7 @@
         frames.map((frame) =>
           Promise.all([
             Promise.all(frame.bars.map((bar) => loadImage(bar.href))),
-            Promise.all(
-              frame.svgs.map((item) => svgImage(item.svg, MARGIN, scale)),
-            ),
+            Promise.all(frame.svgs.map((item) => svgImage(item.clone, scale))),
           ]).then(([bars, svgs]) => {
             frame.barImages = bars;
             frame.svgImages = svgs;
@@ -746,11 +790,57 @@
       return out;
     }
 
+    // Canvas copy embedded as PNG under vector legends; deck.gl draws no
+    // vector form
+    async function deckSvg(capture) {
+      const { out, box, frames } = capture;
+      const doc = svgNode('svg', {
+        xmlns: SVG_NS,
+        width: box.width,
+        height: box.height,
+        viewBox: `0 0 ${box.width} ${box.height}`,
+      });
+      function place(rect, margin) {
+        return {
+          x: rect.left - box.left - margin,
+          y: rect.top - box.top - margin,
+          width: rect.width + 2 * margin,
+          height: rect.height + 2 * margin,
+        };
+      }
+      const bars = await Promise.all(
+        frames.map((frame) =>
+          Promise.all(frame.bars.map((bar) => dataUrlOf(bar.href))),
+        ),
+      );
+      doc.appendChild(svgPicture(out.toDataURL('image/png'), place(box, 0)));
+      frames.forEach((frame, i) => {
+        doc.appendChild(
+          svgNode('rect', { ...place(frame.rect, 0), fill: frame.colour }),
+        );
+        frame.tracks.forEach((track) => {
+          doc.appendChild(
+            svgNode('rect', { ...place(track.rect, 0), fill: track.colour }),
+          );
+        });
+        bars[i].forEach((href, j) => {
+          doc.appendChild(svgPicture(href, place(frame.bars[j].rect, 0)));
+        });
+        frame.svgs.forEach((item) => {
+          const { x, y } = place(item.rect, MARGIN);
+          item.clone.setAttribute('x', x);
+          item.clone.setAttribute('y', y);
+          doc.appendChild(item.clone);
+        });
+      });
+      return doc;
+    }
+
     // Whole plot, scrolled-off parts included; legends are part of its SVG
     async function vegaImage(view) {
       const svg = plotSvg(view.el);
       const box = svg.getBoundingClientRect();
-      const image = await svgImage(svg, 0, EXPORT_SCALE);
+      const image = await svgImage(svgClone(svg, 0), EXPORT_SCALE);
       const out = document.createElement('canvas');
       out.width = Math.ceil(box.width * EXPORT_SCALE);
       out.height = Math.ceil(box.height * EXPORT_SCALE);
@@ -761,15 +851,37 @@
       return out;
     }
 
-    async function exportView(view) {
-      const out = await (view.node ? deckImage(view) : vegaImage(view));
-      const blob = await new Promise((resolve) => {
-        out.toBlob(resolve, 'image/png');
+    // Whole plot as vector, on panel background as in PNG
+    function vegaSvg(view) {
+      const svg = plotSvg(view.el);
+      const box = svg.getBoundingClientRect();
+      const doc = svgClone(svg, 0);
+      const background = svgNode('rect', {
+        width: box.width,
+        height: box.height,
+        fill: backgroundOf(view.el),
       });
+      doc.insertBefore(background, doc.firstChild);
+      return doc;
+    }
+
+    async function exportView(view, format) {
+      const capture = view.node ? deckCapture(view) : null;
+      let blob;
+      if (format === 'svg') {
+        const doc = await (capture ? deckSvg(capture) : vegaSvg(view));
+        const text = new XMLSerializer().serializeToString(doc);
+        blob = new Blob([text], { type: 'image/svg+xml' });
+      } else {
+        const out = await (capture ? deckImage(capture) : vegaImage(view));
+        blob = await new Promise((resolve) => {
+          out.toBlob(resolve, 'image/png');
+        });
+      }
       if (!blob) throw new Error('canvas could not be encoded');
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `${stem}_${view.slug}.png`;
+      link.download = `${stem}_${view.slug}.${format}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -781,27 +893,7 @@
       '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">' +
       '<path fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/>' +
       '</svg>';
-    // Deck views: tool button, after recenter. Recenter is plain; pointer
-    // tool would carry its active state
-    function toolButton(view) {
-      const toolbar = view.panel?.querySelector(
-        '[class*="tool"]:has(> button[title])',
-      );
-      if (!toolbar || toolbar.querySelector('.gateway-export')) return null;
-      const model =
-        toolbar.querySelector('button[title="click to recenter"]') ||
-        toolbar.querySelector('button[title]');
-      const button = document.createElement('button');
-      button.className = model.className
-        .split(' ')
-        .filter((name) => name.indexOf('toolActive') === -1)
-        .join(' ');
-      button.innerHTML = ICON;
-      toolbar.appendChild(button);
-      return button;
-    }
-
-    // Vega plots: icon button first in title bar, styled as its neighbours
+    // Icon button first in title bar, styled as its neighbours
     function titleButton(view) {
       const bar = view.panel?.querySelector('[class*="titleButtons"]');
       if (!bar || bar.querySelector('.gateway-export')) return null;
@@ -817,25 +909,82 @@
       return button;
     }
 
+    function runExport(view, format) {
+      view.busy = true;
+      view.button.disabled = true;
+      exportView(view, format)
+        .catch((error) => {
+          console.error('Image export failed', error);
+        })
+        .finally(() => {
+          view.busy = false;
+          view.button.disabled = !ready(view);
+        });
+    }
+
+    // Format menu on body, so panel overflow cannot clip it
+    let menu = null;
+    function closeMenu() {
+      if (!menu) return;
+      menu.el.remove();
+      menu.button.setAttribute('aria-expanded', 'false');
+      menu = null;
+    }
+    function openMenu(view) {
+      const el = document.createElement('div');
+      el.className = 'gateway-export-menu';
+      el.setAttribute('role', 'menu');
+      el.style.background = backgroundOf(view.panel);
+      el.style.color = getComputedStyle(view.panel).color;
+      // Page body is serif; panel title carries Vitessce's font
+      const title = view.panel.querySelector('[class*="titleLeft"]');
+      el.style.fontFamily = getComputedStyle(title || view.panel).fontFamily;
+      ['png', 'svg'].forEach((format) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.setAttribute('role', 'menuitem');
+        item.textContent = `Download ${format.toUpperCase()}`;
+        item.addEventListener('click', () => {
+          closeMenu();
+          runExport(view, format);
+        });
+        el.appendChild(item);
+      });
+      const r = view.button.getBoundingClientRect();
+      el.style.top = `${r.bottom + 2}px`;
+      el.style.right = `${document.documentElement.clientWidth - r.right}px`;
+      document.body.appendChild(el);
+      view.button.setAttribute('aria-expanded', 'true');
+      menu = { el, button: view.button };
+      el.firstChild.focus();
+    }
+    document.addEventListener('pointerdown', (event) => {
+      if (menu && !menu.el.contains(event.target)) {
+        if (!menu.button.contains(event.target)) closeMenu();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !menu) return;
+      const button = menu.button;
+      closeMenu();
+      button.focus();
+    });
+    window.addEventListener('resize', closeMenu);
+
     function addButton(view) {
-      const button = view.node ? toolButton(view) : titleButton(view);
+      const button = titleButton(view);
       if (!button) return;
       button.type = 'button';
       button.classList.add('gateway-export');
-      button.title = 'Download PNG';
-      button.setAttribute('aria-label', 'Download view as PNG');
+      button.title = 'Download image';
+      button.setAttribute('aria-label', 'Download view as image');
+      button.setAttribute('aria-haspopup', 'menu');
+      button.setAttribute('aria-expanded', 'false');
       button.disabled = !ready(view);
       button.addEventListener('click', () => {
-        view.busy = true;
-        button.disabled = true;
-        exportView(view)
-          .catch((error) => {
-            console.error('Image export failed', error);
-          })
-          .finally(() => {
-            view.busy = false;
-            button.disabled = !ready(view);
-          });
+        const open = menu?.button === button;
+        closeMenu();
+        if (!open) openMenu(view);
       });
       view.button = button;
     }
@@ -860,7 +1009,7 @@
       });
     }
     scan();
-    // Toolbars and plots mount with data and again if their view remounts
+    // Title bars and plots mount with data and again if their view remounts
     new MutationObserver(scan).observe(root, {
       childList: true,
       subtree: true,
@@ -872,6 +1021,9 @@
           views.delete(el);
         } else if (view.button && !view.busy) {
           view.button.disabled = !ready(view);
+          if (view.button.disabled && menu?.button === view.button) {
+            closeMenu();
+          }
         }
       });
     }, 500);
