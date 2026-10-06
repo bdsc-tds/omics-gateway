@@ -73,6 +73,20 @@ class TestRenderEntry(unittest.TestCase):
         expected = '<link rel="shortcut icon" href="/view/czi/pbmc3k.h5ad/static/assets/favicon.png">'
         self.assertEqual(actual, expected)
 
+    def test_GIVEN_body_THEN_export_script_keeps_gateway_static_path(self):
+        """
+        Test that page body gains image export script under gateway's own
+        `/static/`, not rewritten to cellxgene's.
+        """
+
+        actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
+            '<body></body>'
+        )
+        self.assertIn(
+            '<script src="/static/js/cellxgene_export.js"></script></body>',
+            actual,
+        )
+
 
 # Entry point for running test suite
 if __name__ == '__main__':
