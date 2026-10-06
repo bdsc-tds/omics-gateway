@@ -68,3 +68,12 @@ div:has(> [class*='layerControllerGrid']) {
   opacity: 0.35;
   cursor: default;
 }
+
+/* Vega's own export menu drops dot plot's colour bars; gateway export replaces it */
+[class*='vegaContainer'] .vega-embed details {
+  display: none;
+}
+
+[class*='vegaContainer'] .vega-embed.has-actions {
+  padding-right: 0;
+}
