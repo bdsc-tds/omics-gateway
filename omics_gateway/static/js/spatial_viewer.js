@@ -636,7 +636,7 @@
       return node;
     }
 
-    // Image as data URL, so saved SVG holds it rather than a page link
+    // Image as data URL, so saved SVG holds it instead of linking to page
     async function dataUrlOf(href) {
       if (href.startsWith('data:')) return href;
       const image = await loadImage(href);
