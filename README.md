@@ -28,7 +28,7 @@ Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into
 
 The gateway is configured through environment variables:
 
-* `CELLXGENE_LOCATION`: the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`
+* `CELLXGENE_LOCATION`: the location of the cellxgene executable, e.g. `~/anaconda2/envs/cellxgene/bin/cellxgene`. The gateway starts cellxgene through `omics_gateway/cellxgene_launcher.py`, run with the `python` in the same folder, so that missing values of categorical columns show as `Unknown` instead of `null`
 * `GATEWAY_DATA`: a directory that can contain subdirectories with `.h5ad` data files, *without* trailing slash, e.g. `/mnt/gateway_data`
 Omics Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
 

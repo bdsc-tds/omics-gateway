@@ -11,6 +11,7 @@
 
 # Import utility modules
 import logging
+import os
 import subprocess
 from http import HTTPStatus
 
@@ -23,6 +24,11 @@ from omics_gateway.dir_util import make_annotations
 
 # Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)
+
+# Script cellxgene is started through, to label missing category values
+LAUNCHER = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'cellxgene_launcher.py'
+)
 
 
 class SubprocessBackend:
@@ -44,7 +50,8 @@ class SubprocessBackend:
     ):
         """
         Construct command to launch Cellxgene with optional annotations and
-        scripts.
+        scripts. Cellxgene runs through LAUNCHER, with python next to
+        cellxgene_loc so both use same environment.
 
         Parameters:
         -----------
@@ -85,8 +92,9 @@ class SubprocessBackend:
         if env.cellxgene_args is not None:
             extra_args += f' {env.cellxgene_args}'
 
+        python = os.path.join(os.path.dirname(cellxgene_loc), 'python')
         cmd = (
-            f'yes | {cellxgene_loc} launch {file_path}'
+            f'yes | {python} -I {LAUNCHER} launch {file_path}'
             + f' --port {port}'
             + ' --host 127.0.0.1'
             + extra_args
