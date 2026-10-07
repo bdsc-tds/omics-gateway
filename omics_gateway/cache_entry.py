@@ -11,6 +11,7 @@
 
 # Import utility modules
 import datetime
+import html
 import logging
 import re
 from enum import Enum
@@ -21,6 +22,7 @@ from requests import get, post, put
 
 # Import other functions from package
 from omics_gateway.cache_exception import CacheException
+from omics_gateway.dataset_metadata_loader import lookup_default_color
 from omics_gateway.flask_util import querystring
 from omics_gateway.util import current_time_stamp
 
@@ -269,6 +271,13 @@ class CacheEntry:
             .replace(self.cellxgene_basepath(), self.key.gateway_basepath())
         )
         if '</body>' in gateway_content:
+            # Read by cellxgene_defaults.js; absent attribute keeps its default
+            default_color = lookup_default_color(self.key.h5ad_item.descriptor)
+            color_attr = (
+                f' data-default-color="{html.escape(default_color)}"'
+                if default_color
+                else ''
+            )
             btn = (
                 f'<a href="/terminate-back/{self.key.descriptor}" style="'
                 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;'
@@ -276,7 +285,9 @@ class CacheEntry:
                 'padding:0.55rem 1.1rem;font-size:1rem;text-decoration:none;'
                 'box-shadow:0 2px 8px rgba(0,0,0,0.18);'
                 '">&#8592;&nbsp; Datasets</a>'
-                # Gateway's own static path, added after rewrite above
+                # Gateway's own static paths, added after rewrite above
+                f'<script src="/static/js/cellxgene_defaults.js"{color_attr}>'
+                '</script>'
                 '<script src="/static/js/cellxgene_export.js"></script>'
             )
             gateway_content = gateway_content.replace(

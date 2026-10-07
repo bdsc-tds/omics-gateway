@@ -1,7 +1,11 @@
 # Import utility modules
+import os
+import tempfile
 import unittest
+from unittest import mock
 
 # Import other functions from package
+from omics_gateway import env
 from omics_gateway.cache_entry import CacheEntry, CacheEntryStatus
 from omics_gateway.cache_key import CacheKey
 from omics_gateway.gateway import app
@@ -86,6 +90,77 @@ class TestRenderEntry(unittest.TestCase):
             '<script src="/static/js/cellxgene_export.js"></script></body>',
             actual,
         )
+
+    def test_GIVEN_body_THEN_defaults_script_keeps_gateway_static_path(self):
+        """
+        Test that page body gains default colouring and sidebar layout script
+        under gateway's own `/static/`.
+        """
+
+        actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
+            '<body></body>'
+        )
+        self.assertIn(
+            '<script src="/static/js/cellxgene_defaults.js"></script>', actual
+        )
+
+    def _defaults_tag(self, tsv_text):
+        """
+        Render page body with given .tsv content and return defaults script tag.
+
+        Parameters:
+        -----------
+        tsv_text: str or None
+          Content of dataset metadata .tsv file, or None for no file.
+
+        Returns:
+        --------
+        tag: str
+          Opening tag of cellxgene_defaults.js script.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            tsv_path = os.path.join(tmp, 'datasets.tsv')
+            if tsv_text is not None:
+                with open(tsv_path, 'w', newline='') as tsv:
+                    tsv.write(tsv_text)
+            with mock.patch.object(env, 'dataset_metadata_tsv', tsv_path):
+                actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
+                    '<body></body>'
+                )
+        start = actual.index('<script src="/static/js/cellxgene_defaults.js"')
+        return actual[start : actual.index('>', start) + 1]
+
+    def test_GIVEN_tsv_default_color_THEN_script_tag_carries_it_escaped(self):
+        """
+        Test that dataset row's default_color reaches script tag, HTML-escaped.
+        """
+
+        tag = self._defaults_tag(
+            'file_path\tdefault_color\n'
+            'other.h5ad\tSex\n'
+            'czi/pbmc3k.h5ad\tcell "type"\n'
+        )
+        self.assertEqual(
+            '<script src="/static/js/cellxgene_defaults.js" '
+            'data-default-color="cell &quot;type&quot;">',
+            tag,
+        )
+
+    def test_GIVEN_no_default_color_THEN_script_tag_has_no_attribute(self):
+        """
+        Test that empty value, missing column, missing row and missing file
+        all leave script's own default.
+        """
+
+        plain = '<script src="/static/js/cellxgene_defaults.js">'
+        for tsv_text in (
+            'file_path\tdefault_color\nczi/pbmc3k.h5ad\t\n',
+            'file_path\nczi/pbmc3k.h5ad\n',
+            'file_path\tdefault_color\nother.h5ad\tSex\n',
+            None,
+        ):
+            with self.subTest(tsv_text=tsv_text):
+                self.assertEqual(plain, self._defaults_tag(tsv_text))
 
 
 # Entry point for running test suite

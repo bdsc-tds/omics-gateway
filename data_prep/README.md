@@ -154,6 +154,7 @@ Then regenerate the dataset table.
 | `cell_count`, `gene_count` | same names, or the table's size when missing |
 | `year` | the first four-digit year in `article_date` |
 | `authors`, `journal`, `doi` | `article_authors`, `article_journal`, `article_doi` |
+| `default_color` | same name |
 
 Values are cleaned on the way: `healthy` is removed from `disease`, NA values from `tissue` and `sex`, and fields holding several values are sorted with NA values last. Rows come in this order: `.h5ad` files, then the merged meta-analysis file if one is given, then the stores. A store without `dataset_name_short` is skipped, which keeps reference or scratch stores under `data/` out of the browser.
 

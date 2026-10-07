@@ -37,6 +37,7 @@ TSV_COLUMNS = [
     'authors',
     'journal',
     'doi',
+    'default_color',
 ]
 
 # uns key read for each TSV column; year is extracted from article_date. Also
@@ -56,6 +57,7 @@ UNS_KEYS = {
     'authors': 'article_authors',
     'journal': 'article_journal',
     'doi': 'article_doi',
+    'default_color': 'default_color',
 }
 
 # Only list columns split comma-separated strings, so titles keep their commas
@@ -276,7 +278,7 @@ def read_table_metadata(group, name):
     meta: dict
       Dictionary with keys: dataset_id, name, description, assay, disease,
       tissue, sex, patients, cell_count, gene_count, year, authors, journal,
-      doi. All values are strings.
+      doi, default_color. All values are strings.
     """
     from anndata.io import read_elem
 
@@ -314,7 +316,7 @@ def extract_h5ad_metadata(h5ad_path):
     meta: dict
       Dictionary with keys: dataset_id, name, description, assay, disease,
       tissue, sex, patients, cell_count, gene_count, year, authors, journal,
-      doi. All values are strings.
+      doi, default_color. All values are strings.
     """
     filename_stem = os.path.splitext(os.path.basename(h5ad_path))[0]
     if not os.path.exists(h5ad_path):
