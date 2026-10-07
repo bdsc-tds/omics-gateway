@@ -95,6 +95,7 @@ analysis_qc/
 * `assay`, `disease`, `tissue`, `sex`: semicolon-separated values, used as filters
 * `patients`, `cell_count`, `gene_count`, `year`: numbers, used for display and as range filters
 * `authors`, `journal`, `doi`: publication details
+* `default_color`: `obs` column that cellxgene colours the embedding by when the dataset opens. When empty, `pred_cell_type` is used if the dataset has it
 
 ### Spatial datasets
 

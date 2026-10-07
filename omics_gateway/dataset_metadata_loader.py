@@ -236,3 +236,38 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
         gene_count_range,
         year_range,
     )
+
+
+# Function to read dataset's default colouring from .tsv file
+def lookup_default_color(file_path, tsv_path=None):
+    """
+    Look up default_color column of dataset row matching file_path.
+
+    Parameters:
+    -----------
+    file_path: str
+      Dataset path relative to data directory, as in .tsv file_path column.
+    tsv_path: str or None
+      Path to dataset metadata .tsv file. If None, env.dataset_metadata_tsv
+      is used.
+
+    Returns:
+    --------
+    default_color: str
+      Obs column to colour embedding by, or '' when file, row or value is
+      missing.
+    """
+    if tsv_path is None:
+        tsv_path = env.dataset_metadata_tsv
+    if not tsv_path or not os.path.exists(tsv_path):
+        return ''
+    wanted = os.path.normpath(file_path)
+    try:
+        with open(tsv_path, newline='') as tsvfile:
+            for row in csv.DictReader(tsvfile, delimiter='\t'):
+                if os.path.normpath(row.get('file_path') or '') == wanted:
+                    return (row.get('default_color') or '').strip()
+    except (OSError, csv.Error) as e:
+        # Viewer still opens, with script's own default colouring
+        logger.warning(f'Could not read default colour from {tsv_path}: {e}')
+    return ''

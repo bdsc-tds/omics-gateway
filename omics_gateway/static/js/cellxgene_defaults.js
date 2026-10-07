@@ -4,8 +4,10 @@
 // Relies on cellxgene 1.3.0 internals (React 17 fibers, Redux store, sidebar
 // markup); breakage leaves cellxgene's own defaults
 (() => {
-  // Obs column coloured on load, when dataset has it
-  const DEFAULT_COLOR = 'pred_cell_type';
+  // Obs column coloured on load, when dataset has it; gateway sets
+  // data-default-color from datasets.tsv to override it per dataset
+  const DEFAULT_COLOR =
+    document.currentScript?.dataset.defaultColor || 'pred_cell_type';
   // Obs columns always shown, in this order; rest go in collapsed panel
   const MAIN_METADATA = ['Disease', 'Tissue', 'Sex', 'Donor', 'pred_cell_type'];
 
@@ -43,10 +45,17 @@
       if (!schema) return;
       unsubscribe();
       // Reducer toggles: same action on current accessor resets colouring
-      if (!schema.annotations.obsByName[DEFAULT_COLOR]) return;
+      const column = schema.annotations.obsByName[DEFAULT_COLOR];
+      if (!column) return;
       if (state.colors?.colorAccessor) return;
+      // Same test as cellxgene's own histogram list
+      const continuous =
+        !column.writable &&
+        (column.type === 'int32' || column.type === 'float32');
       store.dispatch({
-        type: 'color by categorical metadata',
+        type: continuous
+          ? 'color by continuous metadata'
+          : 'color by categorical metadata',
         colorAccessor: DEFAULT_COLOR,
       });
     }
