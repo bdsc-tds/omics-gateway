@@ -9,6 +9,7 @@ from omics_gateway.cellxgene_exception import CellxgeneException
 from omics_gateway.items.file.fileitem import FileItem
 from omics_gateway.items.file.fileitem_source import FileItemSource
 from omics_gateway.items.item import ItemType
+from omics_gateway.subprocess_backend import LAUNCHER
 
 
 class TestSubprocessBackend(unittest.TestCase):
@@ -55,7 +56,7 @@ class TestSubprocessBackend(unittest.TestCase):
             backend.launch(cellxgene_loc, scripts, entry)
         popen.assert_called_once_with(
             [
-                'yes | /some/cellxgene launch /tmp/czi/pbmc3k.h5ad --port 8000 --host 127.0.0.1 --disable-annotations --disable-gene-sets-save --scripts http://example.com/script.js --scripts http://example.com/script2.js'
+                f'yes | /some/python -I {LAUNCHER} launch /tmp/czi/pbmc3k.h5ad --port 8000 --host 127.0.0.1 --disable-annotations --disable-gene-sets-save --scripts http://example.com/script.js --scripts http://example.com/script2.js'
             ],
             shell=True,
             stderr=-1,
@@ -101,7 +102,7 @@ class TestSubprocessBackend(unittest.TestCase):
             backend.launch(cellxgene_loc, [], entry)
         popen.assert_called_once_with(
             [
-                'yes | /some/cellxgene launch /tmp/czi/pbmc3k.h5ad --port 8000 --host 127.0.0.1 --annotations-file /tmp/czi/pbmc3k_annotations/foo.csv --gene-sets-file /tmp/czi/pbmc3k_annotations/foo_gene_sets.csv'
+                f'yes | /some/python -I {LAUNCHER} launch /tmp/czi/pbmc3k.h5ad --port 8000 --host 127.0.0.1 --annotations-file /tmp/czi/pbmc3k_annotations/foo.csv --gene-sets-file /tmp/czi/pbmc3k_annotations/foo_gene_sets.csv'
             ],
             shell=True,
             stderr=-1,
