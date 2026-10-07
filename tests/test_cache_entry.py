@@ -87,6 +87,19 @@ class TestRenderEntry(unittest.TestCase):
             actual,
         )
 
+    def test_GIVEN_body_THEN_defaults_script_keeps_gateway_static_path(self):
+        """
+        Test that page body gains default colouring and sidebar layout script
+        under gateway's own `/static/`.
+        """
+
+        actual = CacheEntry.for_key(key, 8000).rewrite_text_content(
+            '<body></body>'
+        )
+        self.assertIn(
+            '<script src="/static/js/cellxgene_defaults.js"></script>', actual
+        )
+
 
 # Entry point for running test suite
 if __name__ == '__main__':

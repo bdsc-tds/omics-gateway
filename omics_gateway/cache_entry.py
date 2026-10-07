@@ -276,7 +276,8 @@ class CacheEntry:
                 'padding:0.55rem 1.1rem;font-size:1rem;text-decoration:none;'
                 'box-shadow:0 2px 8px rgba(0,0,0,0.18);'
                 '">&#8592;&nbsp; Datasets</a>'
-                # Gateway's own static path, added after rewrite above
+                # Gateway's own static paths, added after rewrite above
+                '<script src="/static/js/cellxgene_defaults.js"></script>'
                 '<script src="/static/js/cellxgene_export.js"></script>'
             )
             gateway_content = gateway_content.replace(
