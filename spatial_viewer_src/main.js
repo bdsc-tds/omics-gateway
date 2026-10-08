@@ -17,6 +17,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Vitessce } from 'vitessce';
+import { GATEWAY_VIEW_TYPES } from './gateway_views.js';
 import { setGatewayOptions } from './vitessce_patches.js';
 
 // Read from query string rather than server-side templating: bundle is
@@ -163,6 +164,7 @@ function Viewer({ config: initialConfig, restorable }) {
       // config fails schema; Vitessce allows skipping it for emitted configs
       validateConfig: config === initialConfig,
       onConfigChange: restorable ? onConfigChange : undefined,
+      pluginViewTypes: GATEWAY_VIEW_TYPES,
       theme: 'light',
       // Vitessce needs explicit pixel height; it does not fill its parent.
       height: window.innerHeight,

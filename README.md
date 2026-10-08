@@ -206,6 +206,7 @@ Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript applicati
 * `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
 * `vite.config.js`: build settings (output directory, browser shims for Node globals) and the build-time patches to Vitessce (see below)
 * `vitessce_patches.js`: the code those patches call
+* `gateway_views.js`: the gateway's own views, registered as Vitessce plugins: a cell type breakdown of the selected cells, and tabs showing several views in one panel
 * `package.json` and `package-lock.json`: the npm packages, pinned to exact versions
 * `viewer_build_env.yaml`: the conda environment providing Node
 
@@ -232,6 +233,7 @@ The build patches Vitessce's prebuilt code as it reads it. Each patch in `vite.c
 * **point sub-rows visible**: the per-gene rows under *Transcript* in the layer controller appear only while the Transcript layer is visible.
 * **queries never stale**: loaded data is kept for the whole visit, so a view shown later (such as a tab switch) does not load it again and flash every view's loading state; failed loads are still retried.
 * **gene chips** and **set buttons**: the gene list gets a row of the selected genes, with buttons to remove one or clear them all, and the Cell Sets toolbar gets *All* and *None*.
+* **view internals**: the hooks and components that the gateway's own views need (data loading, the panel title bar, coordination types), which the `vitessce` package does not export.
 
 The snippets contain names that Vitessce's own build minified, so they change between versions. The build stops with `Vitessce patch '<name>' matches <n> times` or `Vitessce patches not applied: <names>` when a snippet no longer matches exactly once. After an upgrade, find the new snippets by searching `node_modules/vitessce/dist/` for the readable strings around them (the two `vitessce.io` addresses, the dot plot's `shift_dot_select`, the spatial view's `LEGEND_VISIBLE`, the matrix loader's `sparseArrays` and `_sparseMatrix`). If the parquet-wasm address has changed, download the new build's `esm/parquet_wasm.js`, `esm/parquet_wasm_bg.wasm`, `LICENSE_MIT` and `LICENSE_APACHE` into a new vendor folder named after it, and update the path in `vitessce_patches.js` and `CREDITS.md`.
 

@@ -136,6 +136,11 @@ circles; move them clear */
   background: #f0f0f0;
 }
 
+/* Tab switch label; drawn here so title text, which names exports, omits it */
+.gateway-tab-switch::after {
+  content: attr(data-gateway-label);
+}
+
 /* Temporary variant switch: closed panel cannot be reopened without reload */
 body.gateway-hide-close button[aria-label='Close panel button'] {
   display: none;

@@ -1,6 +1,6 @@
-import { _t as e, c as t, dt as n, ft as r, lt as i, rt as a, st as o, tt as s, ut as c } from "./index-CDVgyDq2-BYJiWDXH.js";
+import { Dt as e, St as t, _t as n, bt as r, c as i, ft as a, lt as o, xt as s, yt as c } from "./index-CDVgyDq2-BCxL6NV8.js";
 //#region node_modules/vitessce/dist/higlass-e9_JY6_6.js
-var l = /* @__PURE__ */ e(r(), 1), u = /* @__PURE__ */ e(n(), 1), d = o();
+var l = /* @__PURE__ */ e(t(), 1), u = /* @__PURE__ */ e(s(), 1), d = n();
 function f(e) {
 	var t = this.constructor;
 	return this.then(function(n) {
@@ -228,8 +228,8 @@ function k() {
 		return s;
 	}, D;
 }
-var A = /* @__PURE__ */ t(k());
-typeof globalThis > "u" && (typeof self < "u" ? self.globalThis = self : typeof i < "u" && (i.globalThis = i)), globalThis.Promise || (globalThis.Promise = b), Object.assign || (Object.assign = A);
+var A = /* @__PURE__ */ i(k());
+typeof globalThis > "u" && (typeof self < "u" ? self.globalThis = self : typeof c < "u" && (c.globalThis = c)), globalThis.Promise || (globalThis.Promise = b), Object.assign || (Object.assign = A);
 var j = 16;
 if (Date.now && Date.prototype.getTime || (Date.now = function() {
 	return (/* @__PURE__ */ new Date()).getTime();
@@ -566,13 +566,13 @@ function Ae() {
 		}, s.prototype.off = s.prototype.removeListener, s.prototype.addListener = s.prototype.on, s.prefixed = n, s.EventEmitter = s, e.exports = s;
 	}(Oe)), Oe.exports;
 }
-var je = /* @__PURE__ */ t(Ae()), Me = {}, Ne = { exports: {} }, Pe = Ne.exports, Fe;
+var je = /* @__PURE__ */ i(Ae()), Me = {}, Ne = { exports: {} }, Pe = Ne.exports, Fe;
 function Ie() {
 	return Fe || (Fe = 1, function(e, t) {
 		(function(n) {
-			var r = t && !t.nodeType && t, i = e && !e.nodeType && e, a = typeof s == "object" && s;
+			var r = t && !t.nodeType && t, i = e && !e.nodeType && e, a = typeof o == "object" && o;
 			(a.global === a || a.window === a || a.self === a) && (n = a);
-			var o, c = 2147483647, l = 36, u = 1, d = 26, f = 38, p = 700, m = 72, h = 128, g = "-", _ = /^xn--/, v = /[^\x20-\x7E]/, y = /[\x2E\u3002\uFF0E\uFF61]/g, b = {
+			var s, c = 2147483647, l = 36, u = 1, d = 26, f = 38, p = 700, m = 72, h = 128, g = "-", _ = /^xn--/, v = /[^\x20-\x7E]/, y = /[\x2E\u3002\uFF0E\uFF61]/g, b = {
 				overflow: "Overflow: input needs wider integers to process",
 				"not-basic": "Illegal input >= 0x80 (not a basic code point)",
 				"invalid-input": "Invalid input"
@@ -643,7 +643,7 @@ function Ie() {
 					return v.test(e) ? "xn--" + P(e) : e;
 				});
 			}
-			if (o = {
+			if (s = {
 				version: "1.3.2",
 				ucs2: {
 					decode: O,
@@ -653,9 +653,9 @@ function Ie() {
 				encode: P,
 				toASCII: I,
 				toUnicode: F
-			}, r && i) if (e.exports == r) i.exports = o;
-			else for (w in o) o.hasOwnProperty(w) && (r[w] = o[w]);
-			else n.punycode = o;
+			}, r && i) if (e.exports == r) i.exports = s;
+			else for (w in s) s.hasOwnProperty(w) && (r[w] = s[w]);
+			else n.punycode = s;
 		})(Pe);
 	}(Ne, Ne.exports)), Ne.exports;
 }
@@ -18824,7 +18824,7 @@ var Zg = /* @__PURE__ */ vc(/* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object
 function $g() {
 	if (Qg) return pg;
 	Qg = 1;
-	var e = Zg, t = typeof c < "u" ? (e) => c.from(e).toString("base64") : (e) => btoa(String.fromCharCode(...e)), n = typeof c < "u" ? (e) => c.from(e, "base64") : (e) => Uint8Array.from(atob(e), (e) => e.charCodeAt(0));
+	var e = Zg, t = typeof r < "u" ? (e) => r.from(e).toString("base64") : (e) => btoa(String.fromCharCode(...e)), n = typeof r < "u" ? (e) => r.from(e, "base64") : (e) => Uint8Array.from(atob(e), (e) => e.charCodeAt(0));
 	return pg.encode = function(n) {
 		return t(e.parse(n)).replace(/\+/g, "-").replace(/\//g, "_").substring(0, 22);
 	}, pg.decode = function(t) {
@@ -56307,16 +56307,16 @@ var Rj = {}, zj = {}, Bj;
 function Vj() {
 	if (Bj) return zj;
 	Bj = 1, Object.defineProperty(zj, "__esModule", { value: !0 }), zj.update = void 0;
-	var e = /* @__PURE__ */ SA(), t = Fj(), n = Mj(), r = /* @__PURE__ */ BO();
-	function i(e, i, o) {
-		if (typeof c < "u" && c.isBuffer(e) && (e = e.toString()), typeof e == "string") return i.xmlMode || i._useHtmlParser2 ? t.parse(e, i) : n.parse(e, i, o);
-		var s = e;
-		if (!Array.isArray(s) && r.isDocument(s)) return s;
-		var l = new r.Document([]);
-		return a(s, l), l;
+	var e = /* @__PURE__ */ SA(), t = Fj(), n = Mj(), i = /* @__PURE__ */ BO();
+	function a(e, a, s) {
+		if (typeof r < "u" && r.isBuffer(e) && (e = e.toString()), typeof e == "string") return a.xmlMode || a._useHtmlParser2 ? t.parse(e, a) : n.parse(e, a, s);
+		var c = e;
+		if (!Array.isArray(c) && i.isDocument(c)) return c;
+		var l = new i.Document([]);
+		return o(c, l), l;
 	}
-	zj.default = i;
-	function a(t, n) {
+	zj.default = a;
+	function o(t, n) {
 		var r = Array.isArray(t) ? t : [t];
 		n ? n.children = r : n = null;
 		for (var i = 0; i < r.length; i++) {
@@ -56325,7 +56325,7 @@ function Vj() {
 		}
 		return n;
 	}
-	return zj.update = a, zj;
+	return zj.update = o, zj;
 }
 var Hj = {}, Uj;
 function Wj() {
