@@ -1,8 +1,8 @@
-import { F as e, L as t, M as n, P as r, dt as i, g as a, gt as o, st as s, t as c } from "./index-CDVgyDq2-CeVGYU3O.js";
+import { F as e, L as t, M as n, P as r, _t as i, ft as a, g as o, st as s, t as c } from "./index-CDVgyDq2-BYJiWDXH.js";
 import { $a as l, $i as u, Ar as d, Er as f, Ga as p, Gt as m, Ln as h, Qi as g, Qr as _, Ri as v, Wa as y, Ya as b, co as ee, eo as x, gr as S, ir as C, to as w, ut as T, zi as E } from "./three.core-1aHSpGwp.js";
-import { a as D, i as te, r as O, t as k } from "./OrbitControls-3A7SGYFV.js";
+import { a as D, i as te, r as O, t as k } from "./OrbitControls-DcqaN4FG.js";
 //#region node_modules/vitessce/dist/index-CM_UtbDW.js
-var A = s(), j = /* @__PURE__ */ o(i(), 1), M = 32, N = 64, P = 64, F = 4, I = N * P * F, L = N * M, R = P * M, z = F * M, B = {
+var A = s(), j = /* @__PURE__ */ i(a(), 1), M = 32, N = 64, P = 64, F = 4, I = N * P * F, L = N * M, R = P * M, z = F * M, B = {
 	NOT_STARTED: "not_started",
 	IN_PROGRESS: "in_progress",
 	COMPLETE: "complete",
@@ -1039,7 +1039,7 @@ function ue(t, n) {
 	}
 }
 function $(t) {
-	let { images: n, imageLayerScopes: r, imageLayerCoordination: i, imageChannelScopesByLayer: o, imageChannelCoordination: s, spatialRenderingMode: c, spatialRenderingModeChanging: h, onVolumeLoadingUpdate: v } = t, { gl: y } = D(), b = D((e) => e.invalidate), x = (0, j.useRef)(null), w = (0, j.useRef)(null), T = (0, j.useRef)(null), E = (0, j.useRef)(null), O = (0, j.useRef)(null), [M, N] = (0, j.useState)({
+	let { images: n, imageLayerScopes: r, imageLayerCoordination: i, imageChannelScopesByLayer: a, imageChannelCoordination: s, spatialRenderingMode: c, spatialRenderingModeChanging: h, onVolumeLoadingUpdate: v } = t, { gl: y } = D(), b = D((e) => e.invalidate), x = (0, j.useRef)(null), w = (0, j.useRef)(null), T = (0, j.useRef)(null), E = (0, j.useRef)(null), O = (0, j.useRef)(null), [M, N] = (0, j.useState)({
 		uniforms: null,
 		shader: null,
 		meshScale: [
@@ -1076,7 +1076,7 @@ function $(t) {
 		};
 	}, [y]);
 	let Y = r?.[0], X = n?.[Y];
-	o?.[Y];
+	a?.[Y];
 	let Z = s?.[0]?.[Y];
 	(0, j.useEffect)(() => {
 		Q("useEffect INIT");
@@ -1118,7 +1118,7 @@ function $(t) {
 				images: n,
 				imageLayerScopes: r,
 				imageLayerCoordination: i,
-				imageChannelScopesByLayer: o,
+				imageChannelScopesByLayer: a,
 				imageChannelCoordination: s,
 				spatialRenderingMode: c
 			};
@@ -1144,7 +1144,7 @@ function $(t) {
 		n,
 		r,
 		i,
-		o,
+		a,
 		s,
 		c,
 		F
@@ -1173,14 +1173,14 @@ function $(t) {
 			lastFrameCountRef: ne
 		}), G.current += 1;
 	}, 1);
-	let $ = a((e) => {
+	let $ = o((e) => {
 		if (Q("invalidateOnInteraction callback"), H(e), e) {
 			let e = w.current?.material?.uniforms;
 			e && (e.renderRes.value = q.PT.lowestDataRes), W.current = !1, b();
 		}
-	}), de = a((e) => {
+	}), de = o((e) => {
 		$(!0);
-	}), fe = a((e) => {
+	}), fe = o((e) => {
 		clearTimeout(U.current), U.current = setTimeout(() => {
 			$(!1);
 		}, 300);
@@ -1196,11 +1196,11 @@ function $(t) {
 		$,
 		F
 	]);
-	let pe = a(() => {
+	let pe = o(() => {
 		q && q.stopLoading();
-	}), me = a(() => {
+	}), me = o(() => {
 		q && q.restartLoading();
-	}), he = a(() => q ? q.getLoadingProgress() : null);
+	}), he = o(() => q ? q.getLoadingProgress() : null);
 	return (0, j.useEffect)(() => {
 		if (!v) return;
 		let e = setInterval(() => {

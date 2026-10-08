@@ -1,4 +1,4 @@
-import { v as e } from "./index-CDVgyDq2-CeVGYU3O.js";
+import { v as e } from "./index-CDVgyDq2-BYJiWDXH.js";
 //#region node_modules/vitessce/dist/raw-DHM7Wj2Y.js
 var t = class extends e {
 	decodeBlock(e) {

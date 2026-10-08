@@ -1,6 +1,6 @@
-import { c as e, ct as t, dt as n, gt as r, lt as i, rt as a, st as o, tt as s, ut as c } from "./index-CDVgyDq2-CeVGYU3O.js";
+import { _t as e, c as t, dt as n, ft as r, lt as i, rt as a, st as o, tt as s, ut as c } from "./index-CDVgyDq2-BYJiWDXH.js";
 //#region node_modules/vitessce/dist/higlass-e9_JY6_6.js
-var l = /* @__PURE__ */ r(n(), 1), u = /* @__PURE__ */ r(c(), 1), d = o();
+var l = /* @__PURE__ */ e(r(), 1), u = /* @__PURE__ */ e(n(), 1), d = o();
 function f(e) {
 	var t = this.constructor;
 	return this.then(function(n) {
@@ -228,8 +228,8 @@ function k() {
 		return s;
 	}, D;
 }
-var A = /* @__PURE__ */ e(k());
-typeof globalThis > "u" && (typeof self < "u" ? self.globalThis = self : typeof t < "u" && (t.globalThis = t)), globalThis.Promise || (globalThis.Promise = b), Object.assign || (Object.assign = A);
+var A = /* @__PURE__ */ t(k());
+typeof globalThis > "u" && (typeof self < "u" ? self.globalThis = self : typeof i < "u" && (i.globalThis = i)), globalThis.Promise || (globalThis.Promise = b), Object.assign || (Object.assign = A);
 var j = 16;
 if (Date.now && Date.prototype.getTime || (Date.now = function() {
 	return (/* @__PURE__ */ new Date()).getTime();
@@ -566,7 +566,7 @@ function Ae() {
 		}, s.prototype.off = s.prototype.removeListener, s.prototype.addListener = s.prototype.on, s.prefixed = n, s.EventEmitter = s, e.exports = s;
 	}(Oe)), Oe.exports;
 }
-var je = /* @__PURE__ */ e(Ae()), Me = {}, Ne = { exports: {} }, Pe = Ne.exports, Fe;
+var je = /* @__PURE__ */ t(Ae()), Me = {}, Ne = { exports: {} }, Pe = Ne.exports, Fe;
 function Ie() {
 	return Fe || (Fe = 1, function(e, t) {
 		(function(n) {
@@ -18824,7 +18824,7 @@ var Zg = /* @__PURE__ */ vc(/* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object
 function $g() {
 	if (Qg) return pg;
 	Qg = 1;
-	var e = Zg, t = typeof i < "u" ? (e) => i.from(e).toString("base64") : (e) => btoa(String.fromCharCode(...e)), n = typeof i < "u" ? (e) => i.from(e, "base64") : (e) => Uint8Array.from(atob(e), (e) => e.charCodeAt(0));
+	var e = Zg, t = typeof c < "u" ? (e) => c.from(e).toString("base64") : (e) => btoa(String.fromCharCode(...e)), n = typeof c < "u" ? (e) => c.from(e, "base64") : (e) => Uint8Array.from(atob(e), (e) => e.charCodeAt(0));
 	return pg.encode = function(n) {
 		return t(e.parse(n)).replace(/\+/g, "-").replace(/\//g, "_").substring(0, 22);
 	}, pg.decode = function(t) {
@@ -56308,15 +56308,15 @@ function Vj() {
 	if (Bj) return zj;
 	Bj = 1, Object.defineProperty(zj, "__esModule", { value: !0 }), zj.update = void 0;
 	var e = /* @__PURE__ */ SA(), t = Fj(), n = Mj(), r = /* @__PURE__ */ BO();
-	function a(e, a, s) {
-		if (typeof i < "u" && i.isBuffer(e) && (e = e.toString()), typeof e == "string") return a.xmlMode || a._useHtmlParser2 ? t.parse(e, a) : n.parse(e, a, s);
-		var c = e;
-		if (!Array.isArray(c) && r.isDocument(c)) return c;
+	function i(e, i, o) {
+		if (typeof c < "u" && c.isBuffer(e) && (e = e.toString()), typeof e == "string") return i.xmlMode || i._useHtmlParser2 ? t.parse(e, i) : n.parse(e, i, o);
+		var s = e;
+		if (!Array.isArray(s) && r.isDocument(s)) return s;
 		var l = new r.Document([]);
-		return o(c, l), l;
+		return a(s, l), l;
 	}
-	zj.default = a;
-	function o(t, n) {
+	zj.default = i;
+	function a(t, n) {
 		var r = Array.isArray(t) ? t : [t];
 		n ? n.children = r : n = null;
 		for (var i = 0; i < r.length; i++) {
@@ -56325,7 +56325,7 @@ function Vj() {
 		}
 		return n;
 	}
-	return zj.update = o, zj;
+	return zj.update = a, zj;
 }
 var Hj = {}, Uj;
 function Wj() {

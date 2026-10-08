@@ -17,6 +17,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Vitessce } from 'vitessce';
+import { setGatewayOptions } from './vitessce_patches.js';
 
 // Read from query string rather than server-side templating: bundle is
 // static asset, so Jinja cannot render it.
@@ -123,6 +124,11 @@ async function main() {
     const config = await response.json();
     absolutizeUrls(config);
     fitSpatialZoom(config, window.innerWidth, window.innerHeight);
+    // Temporary switches for variant configs offered to collaborators; key
+    // is not part of Vitessce's schema
+    const options = config.gatewayOptions || {};
+    delete config.gatewayOptions;
+    setGatewayOptions(options);
     root.render(
       React.createElement(Vitessce, {
         config,

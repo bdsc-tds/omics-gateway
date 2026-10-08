@@ -1,7 +1,7 @@
-import { dt as e, gt as t, st as n } from "./index-CDVgyDq2-CeVGYU3O.js";
-import { t as r } from "./xrStore-BC7o4upD-BPlTveZC.js";
+import { _t as e, ft as t, st as n } from "./index-CDVgyDq2-BYJiWDXH.js";
+import { t as r } from "./xrStore-BC7o4upD-Bpvs_8_p.js";
 //#region node_modules/vitessce/dist/XREnterButton-CLRf7k6e.js
-var i = n(), a = /* @__PURE__ */ t(e(), 1);
+var i = n(), a = /* @__PURE__ */ e(t(), 1);
 function o() {
 	let [e, t] = (0, a.useState)(!1), [n, o] = (0, a.useState)(!1);
 	return (0, a.useEffect)(() => {
