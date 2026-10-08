@@ -81,6 +81,14 @@ const PATCHES = [
     replace: 'a && Ce && O ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
   },
   {
+    // Served data never changes during visit: views mounted later (tabs)
+    // otherwise refetch shared queries, flashing every view's loading state.
+    // Failed queries still retry on mount
+    name: 'queries never stale',
+    find: 'refetchOnWindowFocus: !1,',
+    replace: 'refetchOnWindowFocus: !1, staleTime: 1 / 0,',
+  },
+  {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
     name: 'auto-fill',
     find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',

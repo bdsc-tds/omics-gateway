@@ -52227,6 +52227,7 @@ function P3e(e) {
 	]), L = (0, H.useMemo)(() => new PLe({
 		defaultOptions: { queries: {
 			refetchOnWindowFocus: !1,
+			staleTime: Infinity,
 			retry: 2
 		} },
 		queryCache: new wLe({ onError: (e) => {
@@ -139098,9 +139099,9 @@ async function Jfn(e) {
 	if (!t) throw Error(`Unknown compression method identifier: ${e.Compression}`);
 	return new (await (t()))(e);
 }
-mI([void 0, 1], () => import("./raw-DHM7Wj2Y-SqVkIVUq.js").then((e) => e.default)), mI(5, () => import("./lzw-BdRDgMbg-D9sBl5CB.js").then((e) => e.default)), mI(6, () => {
+mI([void 0, 1], () => import("./raw-DHM7Wj2Y-2_WhjKIk.js").then((e) => e.default)), mI(5, () => import("./lzw-BdRDgMbg-BYsJb3sK.js").then((e) => e.default)), mI(6, () => {
 	throw Error("old style JPEG compression is not supported.");
-}), mI(7, () => import("./jpeg-f5LgOrOW-CrSERCcM.js").then((e) => e.default)), mI([8, 32946], () => import("./deflate-CYVx5gI8-JutF_mwn.js").then((e) => e.default)), mI(32773, () => import("./packbits-rgkGAV4R-e2AXpfNd.js").then((e) => e.default)), mI(34887, () => import("./lerc-CROxlfHv-BqibqW3C.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), mI(50001, () => import("./webimage-BilIOhkt-c4QpYgBD.js").then((e) => e.default));
+}), mI(7, () => import("./jpeg-f5LgOrOW-Zf06gOMy.js").then((e) => e.default)), mI([8, 32946], () => import("./deflate-CYVx5gI8-CMhWvq1k.js").then((e) => e.default)), mI(32773, () => import("./packbits-rgkGAV4R-CSDdm8OE.js").then((e) => e.default)), mI(34887, () => import("./lerc-CROxlfHv-D1lvZgZ4.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), mI(50001, () => import("./webimage-BilIOhkt-kzK9RsOR.js").then((e) => e.default));
 function hI(e, t, n, r = 1) {
 	return new (Object.getPrototypeOf(e)).constructor(t * n * r);
 }
@@ -167229,7 +167230,7 @@ var uIn = class extends H.Component {
 		return e ? n : t;
 	}
 }, dIn = H.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-C04NjukO-BEmhzVVU.js").then((e) => e.r).then((e) => e.a);
+	let { SpatialWrapper: e } = await import("./index-C04NjukO-BF3cqqaX.js").then((e) => e.r).then((e) => e.a);
 	return { default: e };
 }), fIn = H.forwardRef((e, t) => (0, U.jsx)("div", {
 	ref: t,
@@ -167245,7 +167246,7 @@ var uIn = class extends H.Component {
 		})
 	})
 })), pIn = H.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-Gn2vYcAx.js");
+	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-6eXSJcNE.js");
 	return { default: e };
 }), mIn = H.forwardRef((e, t) => (0, U.jsx)("div", {
 	ref: t,
@@ -178518,7 +178519,7 @@ SVn({
 	config: pW.config
 }, { pluginType: "dataFetcher" });
 var ZHn = H.lazy(async () => {
-	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-DOlq90su.js");
+	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-B3xUUSUg.js");
 	return { default: e };
 }), hW = 800;
 function QHn(e, t) {
@@ -180608,7 +180609,7 @@ function pUn(e) {
 		parentClassName: t.neuroglancerWrapper
 	})] });
 }
-var mUn = H.lazy(() => import("./ReactNeuroglancer-BBJJpq73-erbqFfE3.js"));
+var mUn = H.lazy(() => import("./ReactNeuroglancer-BBJJpq73-tEVCCdHv.js"));
 function hUn() {
 	let e = new cUn();
 	return e.AsyncComputationWorker = lUn, e;
