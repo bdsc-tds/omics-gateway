@@ -12,6 +12,10 @@
  * margins) while circle size stays constant, so each added gene squeezed rows
  * until circles overlapped; height now grows by DOT_PLOT_ROW_HEIGHT per gene.
  *
+ * Matrix retry: AnnData loader caches CSR matrix promise on first gene
+ * selection, rejected ones included, so one failed fetch broke every later
+ * selection until reload; dropping rejected promise lets next one fetch again.
+ *
  * Auto-fill: segmentation channels are filled when they switch to gene
  * colouring and unfilled when they switch away. Acting on transitions only
  * leaves Filled ticked or unticked by hand until next switch, and respects
@@ -45,6 +49,15 @@ const DOT_PLOT_ROW_HEIGHT = 20;
 export function gatewayDotPlotHeight(defaultHeight, rows) {
   const genes = new Set(rows.map((row) => row.keyFeature)).size;
   return Math.max(defaultHeight, genes * DOT_PLOT_ROW_HEIGHT);
+}
+
+// Cached load promise, dropped if it rejects so next call fetches again
+export function gatewayForgetOnReject(owner, key) {
+  const promise = owner[key];
+  promise.catch(() => {
+    if (owner[key] === promise) owner[key] = undefined;
+  });
+  return promise;
 }
 
 // Gene colouring needs filled polygons to be readable; outlines suit sets
