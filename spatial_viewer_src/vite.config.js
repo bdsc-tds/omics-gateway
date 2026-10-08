@@ -65,6 +65,15 @@ const PATCHES = [
       '      }), s;\n    }), gatewayForgetOnReject(this, "_sparseMatrix"));',
   },
   {
+    // Point colours in beta spatial view (ft: point layer coordination, Ke:
+    // point gene indices)
+    name: 'point colours',
+    find: '[Ke, it, Ct] = Nfe(f, S, B, p),',
+    replace:
+      '[Ke, it, Ct] = Nfe(f, S, B, p), ' +
+      'gatewayPointColoursDone = useGatewayPointColours(ft, Ke),',
+  },
+  {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
     name: 'auto-fill',
     find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',
@@ -95,7 +104,7 @@ function patchVitessce() {
       if (patched === code) return null;
       const names =
         'useGatewayAutoFill, gatewayDotPlotHeight, gatewayForgetOnReject, ' +
-        'gatewayGeneMappingUrl, gatewayParquetWasmUrl';
+        'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },
