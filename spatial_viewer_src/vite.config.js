@@ -74,6 +74,13 @@ const PATCHES = [
       'gatewayPointColoursDone = useGatewayPointColours(ft, Ke),',
   },
   {
+    // Transcript sub-rows only while layer is visible (a: per-feature rows,
+    // Ce: genes selected, O: layer visible)
+    name: 'point sub-rows visible',
+    find: 'a && Ce ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
+    replace: 'a && Ce && O ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
+  },
+  {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
     name: 'auto-fill',
     find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',
