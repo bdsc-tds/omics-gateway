@@ -65,6 +65,30 @@ const PATCHES = [
       '      }), s;\n    }), gatewayForgetOnReject(this, "_sparseMatrix"));',
   },
   {
+    // Point colours in beta spatial view (ft: point layer coordination, Ke:
+    // point gene indices)
+    name: 'point colours',
+    find: '[Ke, it, Ct] = Nfe(f, S, B, p),',
+    replace:
+      '[Ke, it, Ct] = Nfe(f, S, B, p), ' +
+      'gatewayPointColoursDone = useGatewayPointColours(ft, Ke),',
+  },
+  {
+    // Transcript sub-rows only while layer is visible (a: per-feature rows,
+    // Ce: genes selected, O: layer visible)
+    name: 'point sub-rows visible',
+    find: 'a && Ce ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
+    replace: 'a && Ce && O ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
+  },
+  {
+    // Served data never changes during visit: views mounted later (tabs)
+    // otherwise refetch shared queries, flashing every view's loading state.
+    // Failed queries still retry on mount
+    name: 'queries never stale',
+    find: 'refetchOnWindowFocus: !1,',
+    replace: 'refetchOnWindowFocus: !1, staleTime: 1 / 0,',
+  },
+  {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
     name: 'auto-fill',
     find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',
@@ -95,7 +119,7 @@ function patchVitessce() {
       if (patched === code) return null;
       const names =
         'useGatewayAutoFill, gatewayDotPlotHeight, gatewayForgetOnReject, ' +
-        'gatewayGeneMappingUrl, gatewayParquetWasmUrl';
+        'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },

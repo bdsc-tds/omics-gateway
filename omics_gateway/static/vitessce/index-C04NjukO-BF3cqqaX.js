@@ -1,6 +1,6 @@
-import { A as e, M as t, dt as n, ft as r, gt as i, ht as a, pt as o, st as s } from "./index-CDVgyDq2-BKZSl-n3.js";
+import { A as e, M as t, dt as n, ft as r, gt as i, ht as a, pt as o, st as s } from "./index-CDVgyDq2-CeVGYU3O.js";
 import { $a as c, $i as l, A as u, An as d, Ar as f, E as p, Fi as m, Ia as h, Ln as g, Lt as _, Qi as v, Ri as y, Rt as b, U as x, Wa as S, Zr as C, an as w, ar as T, do as E, eo as D, er as O, fr as k, in as A, ir as j, ka as ee, kr as te, nr as ne, on as re, or as M, pn as N, pr as ie, qt as P, rr as F, sr as ae, to as I, ua as L, ut as oe, x as R } from "./three.core-1aHSpGwp.js";
-import { a as z, c as B, n as V, o as H, r as se, s as ce, t as U } from "./OrbitControls-COu0IRic.js";
+import { a as z, c as B, n as V, o as H, r as se, s as ce, t as U } from "./OrbitControls-3A7SGYFV.js";
 //#region node_modules/three-stdlib/_polyfill/constants.js
 var W = /* @__PURE__ */ parseInt("185".replace(/\D+/g, "")), le = W >= 125 ? "uv1" : "uv2", ue = /* @__PURE__ */ new p(), de = /* @__PURE__ */ new D(), fe = class extends w {
 	constructor() {
@@ -7097,7 +7097,7 @@ function Ga(e) {
 		}, Ua(e)))
 	})] });
 }
-var Ka = K.lazy(() => import("./GeometryAndMeshXR-DhL415aR-DP-v5gnv.js").catch(() => ({ default: Ga }))), qa = K.lazy(() => import("./XRSceneComponents-CpuAUm3S-DXujz2Ym.js").catch(() => ({ default: () => null })));
+var Ka = K.lazy(() => import("./GeometryAndMeshXR-DhL415aR-BvFaxZg6.js").catch(() => ({ default: Ga }))), qa = K.lazy(() => import("./XRSceneComponents-CpuAUm3S-CU6eTo4N.js").catch(() => ({ default: () => null })));
 function Ja(e) {
 	let t = (0, K.useRef)(null), n = (0, K.useRef)(null), [r, i] = (0, K.useState)(!1), [a, o] = (0, K.useState)(!1), [s, c] = (0, K.useState)(null), [l, u] = (0, K.useState)([
 		1,
@@ -7340,7 +7340,7 @@ function Za() {
 	if (!Ya) throw Error("@react-three/xr is not loaded; call loadXRModule() first.");
 	return Ya;
 }
-var Qa = K.lazy(() => import("./XRWrapper-B9IIMYL--eEgghMeI.js").catch(() => ({ default: ({ children: e }) => e }))), $a = K.lazy(() => import("./XREnterButton-CLRf7k6e-DtotjtfY.js").catch(() => ({ default: () => null }))), eo = (0, K.forwardRef)((e, t) => {
+var Qa = K.lazy(() => import("./XRWrapper-B9IIMYL--D1uGnCDj.js").catch(() => ({ default: ({ children: e }) => e }))), $a = K.lazy(() => import("./XREnterButton-CLRf7k6e-r6qYqYsY.js").catch(() => ({ default: () => null }))), eo = (0, K.forwardRef)((e, t) => {
 	let [n, r] = (0, K.useState)(!1);
 	return (0, K.useEffect)(() => {
 		Xa().then(() => r(!0)).catch(() => {});
