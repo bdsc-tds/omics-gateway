@@ -48,6 +48,23 @@ const PATCHES = [
     replace: 'Z = n ? gatewayDotPlotHeight(Dl(A - E - b - 50, 10, 1 / 0), f) :',
   },
   {
+    // Matrix retry: zarr arrays of sparse X, opened once per loader
+    name: 'matrix arrays retry',
+    find: '{ kind: "array" }))), this.sparseArrays);',
+    replace:
+      '{ kind: "array" }))), gatewayForgetOnReject(this, "sparseArrays"));',
+  },
+  {
+    // Matrix retry: dense copy of CSR X, built on first gene selection
+    name: 'matrix CSR retry',
+    find:
+      's[a * i[1] + d] = u;\n        }\n        a += 1;\n' +
+      '      }), s;\n    }), this._sparseMatrix);',
+    replace:
+      's[a * i[1] + d] = u;\n        }\n        a += 1;\n' +
+      '      }), s;\n    }), gatewayForgetOnReject(this, "_sparseMatrix"));',
+  },
+  {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
     name: 'auto-fill',
     find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',
@@ -77,8 +94,8 @@ function patchVitessce() {
       }
       if (patched === code) return null;
       const names =
-        'useGatewayAutoFill, gatewayDotPlotHeight, gatewayGeneMappingUrl, ' +
-        'gatewayParquetWasmUrl';
+        'useGatewayAutoFill, gatewayDotPlotHeight, gatewayForgetOnReject, ' +
+        'gatewayGeneMappingUrl, gatewayParquetWasmUrl';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },
