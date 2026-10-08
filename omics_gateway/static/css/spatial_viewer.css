@@ -18,8 +18,9 @@ body,
   background: inherit;
 }
 
-/* Flip controller's reversed layer rows; their container has no class */
-div:has(> [class*='layerControllerGrid']) {
+/* Flip controller's reversed layer rows; their container has no class. Point
+row's own grid holds its per-gene sub-rows, which keep their order */
+div:has(> [class*='layerControllerGrid']):not([class*='layerControllerGrid']) {
   display: flex;
   flex-direction: column-reverse;
 }

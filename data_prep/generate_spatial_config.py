@@ -42,6 +42,20 @@ DATASET_UID = 'A'
 # Layer name in viewer comes from obsType, so transcripts need one of their own
 POINT_OBS_TYPE = 'transcript'
 
+# Vitessce's PALETTE, which its random-by-feature mode indexes by gene position;
+# prefilled per gene so transcripts open in same colours, but editable
+POINT_PALETTE = [
+    [68, 119, 170],
+    [136, 204, 238],
+    [68, 170, 153],
+    [17, 119, 51],
+    [153, 153, 51],
+    [221, 204, 119],
+    [204, 102, 119],
+    [136, 34, 85],
+    [170, 68, 153],
+]
+
 # Centroids pre-scaled to rendered coordinates, written by convert_xenium.py
 CENTROIDS_KEY = 'spatial_global'
 
@@ -215,6 +229,26 @@ def detect_metric_cols(obs_dir):
         metric_cols.append(name)
 
     return metric_cols
+
+
+# Function to read gene names in table's var order
+def read_feature_names(table_dir):
+    """
+    Read table's var index, whose order transcripts' feature codes follow.
+
+    Parameters:
+    -----------
+    table_dir: str
+      Path to table element within store.
+
+    Returns:
+    --------
+    names: list of str
+      Gene names, in var order.
+    """
+    var = read_elem(zarr.open_group(os.path.join(table_dir, 'var'), mode='r'))
+
+    return var.index.tolist()
 
 
 # Function to write per-cell metric values shown in spatial tooltip
@@ -579,6 +613,9 @@ def generate_config(
 
     spatial = vc.add_view('spatialBeta', dataset=dataset)
     controller = vc.add_view('layerControllerBeta', dataset=dataset)
+    # Sub-row per selected gene under Transcript row, with colour picker and
+    # button removing gene from selection
+    controller.set_props(layerPerFeatureForPoints=True)
     scatterplot = vc.add_view('scatterplot', dataset=dataset, mapping='UMAP')
     obs_sets = vc.add_view('obsSets', dataset=dataset)
     # Mean expression and fraction expressing per cell set, for selected genes
@@ -813,8 +850,23 @@ def generate_config(
                         # Half brightness: points are dense enough at full
                         # opacity to hide morphology image under them
                         'spatialLayerOpacity': 0.5,
-                        # Distinct colour per gene rather than one flat colour
-                        'obsColorEncoding': 'randomByFeature',
+                        # Colour per gene from featureColor; unlike
+                        # randomByFeature, its swatches can be edited
+                        'obsColorEncoding': 'geneSelection',
+                        # Vitessce's light-theme default, declared so row's
+                        # picker can change it while no gene is selected
+                        'spatialLayerColor': [200, 200, 200],
+                        'featureColor': [
+                            {
+                                'name': gene,
+                                'color': POINT_PALETTE[i % len(POINT_PALETTE)],
+                            }
+                            for i, gene in enumerate(
+                                read_feature_names(
+                                    os.path.join(zarr_path, table_path)
+                                )
+                            )
+                        ],
                         # Draw only genes picked in gene list, not all 13.5M
                         # detections. Checkbox in viewer sets this same string
                         'featureFilterMode': 'featureSelection',
