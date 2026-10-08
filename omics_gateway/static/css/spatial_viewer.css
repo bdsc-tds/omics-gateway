@@ -112,3 +112,31 @@ circles; move them clear */
   outline: none;
   background: rgba(128, 128, 128, 0.2);
 }
+
+/* Shown only while a panel is closed; sits over Description panel */
+.gateway-restore-panels {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 1200;
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-family: sans-serif;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.gateway-restore-panels:hover,
+.gateway-restore-panels:focus-visible {
+  outline: none;
+  background: #f0f0f0;
+}
+
+/* Temporary variant switch: closed panel cannot be reopened without reload */
+body.gateway-hide-close button[aria-label='Close panel button'] {
+  display: none;
+}

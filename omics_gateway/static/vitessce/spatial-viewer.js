@@ -18583,7 +18583,42 @@ function ae(e, t, n) {
 	let m = Math.max(...r.map((e) => e.y + e.h)), h = (t - 2 * b - (te - 1) * ee) / te, g = (n - 2 * b - (m - 1) * ee) / m, _ = i.w * h + (i.w - 1) * ee - ne[0], v = i.h * g + (i.h - 1) * ee - ne[1];
 	!(_ > 0) || !(v > 0) || (s[o.spatialZoom] = Math.log2(ie * Math.min(_ / d, v / f)));
 }
-async function oe() {
+function oe({ config: e, restorable: t }) {
+	let [n, r] = p.useState(e), [i, o] = p.useState(0), s = p.useRef(null), c = p.useRef(null), l = p.useRef(0), u = p.useCallback((e) => {
+		s.current ||= e, c.current = e;
+		let t = new Set(e.layout.map((e) => e.uid));
+		o(s.current.layout.filter((e) => !t.has(e.uid)).length);
+	}, []);
+	function d() {
+		let e = c.current, t = s.current, n = new Map(e.layout.map((e) => [e.uid, e])), i = t.layout.map((e) => ({
+			...n.get(e.uid) || e,
+			x: e.x,
+			y: e.y,
+			w: e.w,
+			h: e.h
+		}));
+		l.current += 1;
+		let a = {
+			...e,
+			layout: i,
+			uid: `${t.uid}-restored-${l.current}`
+		};
+		c.current = a, o(0), r(a);
+	}
+	return p.createElement(p.Fragment, null, p.createElement(a, {
+		config: n,
+		validateConfig: n === e,
+		onConfigChange: t ? u : void 0,
+		theme: "light",
+		height: window.innerHeight
+	}), i > 0 && p.createElement("button", {
+		type: "button",
+		className: "gateway-restore-panels",
+		title: "Reopen closed panels; selections are kept, data reloads",
+		onClick: d
+	}, i === 1 ? "Restore closed panel" : `Restore ${i} closed panels`));
+}
+async function se() {
 	if (!m) {
 		g("No config specified. Use ?config=<url>.");
 		return;
@@ -18594,14 +18629,13 @@ async function oe() {
 		let n = await e.json();
 		_(n), ae(n, window.innerWidth, window.innerHeight);
 		let r = n.gatewayOptions || {};
-		delete n.gatewayOptions, t(r), h.render(p.createElement(a, {
+		delete n.gatewayOptions, t(r), document.body.classList.toggle("gateway-hide-close", !!r.hideCloseButtons), h.render(p.createElement(oe, {
 			config: n,
-			theme: "light",
-			height: window.innerHeight
+			restorable: !!r.restorePanels
 		}));
 	} catch (e) {
 		g(`Failed to load config from ${m}: ${e}`);
 	}
 }
-oe();
+se();
 //#endregion
