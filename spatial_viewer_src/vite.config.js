@@ -132,6 +132,75 @@ const PATCHES = [
     replace: 'refetchOnWindowFocus: !1, staleTime: 1 / 0, gcTime: 6e5,',
   },
   {
+    // Gene chips: raw selection setter, so Clear keeps colour encoding
+    name: 'gene chips clear',
+    find:
+      'setGeneSelection: be, setGeneFilter: b, setGeneHighlight: y, ' +
+      'enableMultiSelect: A,',
+    replace:
+      'setGeneSelection: be, gatewayClearSelection: () => E(null), ' +
+      'setGeneFilter: b, setGeneHighlight: y, enableMultiSelect: A,',
+  },
+  {
+    // Gene chips between search box and table, which shrinks to fit (`A`:
+    // selection, `a`: list's setter, `l`: multi-select, `o`: labels)
+    name: 'gene chips',
+    find:
+      'onChange: p }), _(nmi, { columns: m, columnLabels: R, data: S, ' +
+      'hasColorEncoding: i, idKey: "key", selectedIds: A, onChange: f, ' +
+      'allowMultiple: l, allowUncheck: l, showTableHead: R.length > 1, ' +
+      'width: e, height: n - 34 })',
+    replace:
+      'onChange: p }), _(GatewayGeneChips, { enabled: l, selection: A, ' +
+      'setSelection: a, clearSelection: t.gatewayClearSelection, ' +
+      'labels: o, cleanId: hS }), _(nmi, { columns: m, columnLabels: R, ' +
+      'data: S, hasColorEncoding: i, idKey: "key", selectedIds: A, ' +
+      'onChange: f, allowMultiple: l, allowUncheck: l, ' +
+      'showTableHead: R.length > 1, width: e, ' +
+      'height: n - 34 - gatewayGeneChipsHeight(l, A) })',
+  },
+  {
+    // Row click: toggle unless Shift, which keeps only that row (`a`:
+    // multi-select, `F`: Shift held, `B`: selection, `h`: its setter)
+    name: 'click toggles',
+    find: '(J || l) && (!F && (J || !J && a && B.length > 1) ? h([Z])',
+    replace:
+      '(J || l) && ((a ? F : !F) && (J || !J && a && B.length > 1) ? ' +
+      '(gatewayNoteSoloClick(a), h([Z]))',
+  },
+  {
+    // Shift+click drops genes hidden by search too (`b`: hidden selected
+    // genes, `Q`: genes matching search)
+    name: 'solo click hidden genes',
+    find: 'const b = (A || []).filter((W) => !Q.includes(W)),',
+    replace:
+      'const b = gatewayTakeSoloClick() ? [] : ' +
+      '(A || []).filter((W) => !Q.includes(W)),',
+  },
+  {
+    // Set buttons: subscriber passes selection setter to sets manager
+    name: 'set buttons setter',
+    find: 'onCheckLevel: Y, onNodeSetColor: ne,',
+    replace:
+      'onCheckLevel: Y, gatewaySetObsSetSelection: F, onNodeSetColor: ne,',
+  },
+  {
+    // Set buttons in toolbar (`n`: sets, `A`: selection, `S`: onCheckLevel)
+    name: 'set buttons',
+    find:
+      '_("div", { className: he.setOperationButtons, children: _(VGn, { ' +
+      'onUnion: v, onIntersection: G, onComplement: k, operatable: u, ' +
+      'hasCheckedSetsToUnion: X, hasCheckedSetsToIntersect: Y, ' +
+      'hasCheckedSetsToComplement: L }) })',
+    replace:
+      'Le("div", { className: he.setOperationButtons, children: [' +
+      '_(GatewaySetButtons, { sets: n, selection: A, ' +
+      'onCheckLevel: S, setSelection: t.gatewaySetObsSetSelection }), ' +
+      '_(VGn, { onUnion: v, onIntersection: G, onComplement: k, ' +
+      'operatable: u, hasCheckedSetsToUnion: X, ' +
+      'hasCheckedSetsToIntersect: Y, hasCheckedSetsToComplement: L })] })',
+  },
+  {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
     name: 'auto-fill',
     find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',
@@ -162,7 +231,9 @@ function patchVitessce() {
       if (patched === code) return null;
       const names =
         'useGatewayAutoFill, gatewayDotPlotHeight, gatewayForgetOnReject, ' +
-        'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours';
+        'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours, ' +
+        'GatewayGeneChips, gatewayGeneChipsHeight, GatewaySetButtons, ' +
+        'gatewayNoteSoloClick, gatewayTakeSoloClick';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },

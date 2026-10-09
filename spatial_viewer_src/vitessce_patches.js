@@ -25,9 +25,19 @@
  * swatches can be edited; each newly selected gene gets entry from
  * Vitessce's palette by gene position, colour its random-by-feature mode
  * gives same gene, instead of config storing one per gene.
+ *
+ * Gene chips: multi-select gene list gets row of selected genes, each with
+ * button removing it, plus Clear, as list itself only shades selected rows.
+ *
+ * Set buttons: Cell Sets toolbar gets All (every set of hierarchy of last
+ * ticked set, as clicking its name does) and None, which Vitessce has no
+ * gesture for.
+ *
+ * Click toggles: plain click on multi-select list row adds or removes it,
+ * Shift+click keeps only that row, genes hidden by search included.
  */
 
-import { useEffect, useRef } from 'react';
+import { createElement as h, useEffect, useRef } from 'react';
 
 // Relative to built chunk in static/vitessce/; variables, not literals, so
 // Vite leaves them for runtime instead of bundling them as assets
@@ -127,4 +137,156 @@ export function useGatewayAutoFill(channelCoordination) {
       }
     }
   });
+}
+
+// Chip row height, including margins; virtualised table below needs it
+const GENE_CHIPS_HEIGHT = 30;
+
+const CHIP_STYLE = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  flex: '0 0 auto',
+  height: 22,
+  marginRight: 4,
+  padding: '0 2px 0 8px',
+  border: '1px solid currentColor',
+  borderRadius: 11,
+  fontSize: 12,
+  opacity: 0.85,
+};
+
+const CHIP_BUTTON_STYLE = {
+  border: 0,
+  padding: '0 4px',
+  background: 'none',
+  color: 'inherit',
+  font: 'inherit',
+  cursor: 'pointer',
+};
+
+function showsGeneChips(enabled, selection) {
+  return !!enabled && Array.isArray(selection) && selection.length > 0;
+}
+
+// Height taken from gene list's table by chip row
+export function gatewayGeneChipsHeight(enabled, selection) {
+  return showsGeneChips(enabled, selection) ? GENE_CHIPS_HEIGHT : 0;
+}
+
+// Set by Shift+click, read once by gene list, which otherwise keeps
+// selected genes hidden by search
+let soloClickPending = false;
+
+export function gatewayNoteSoloClick(isSolo) {
+  soloClickPending = isSolo;
+}
+
+export function gatewayTakeSoloClick() {
+  const pending = soloClickPending;
+  soloClickPending = false;
+  return pending;
+}
+
+// Selected genes as chips; x uses list's own setter, Clear one that leaves
+// colour encoding alone
+export function GatewayGeneChips({
+  enabled,
+  selection,
+  setSelection,
+  clearSelection,
+  labels,
+  cleanId,
+}) {
+  if (!showsGeneChips(enabled, selection)) return null;
+  const chips = selection.map((gene) => {
+    const label = labels?.get(gene) || labels?.get(cleanId(gene)) || gene;
+    const remaining = selection.filter((other) => other !== gene);
+    return h(
+      'span',
+      { key: gene, style: CHIP_STYLE, title: label },
+      label,
+      h(
+        'button',
+        {
+          type: 'button',
+          style: CHIP_BUTTON_STYLE,
+          'aria-label': `Remove ${label} from selection`,
+          onClick: () => setSelection(remaining.length ? remaining : null),
+        },
+        '\u00d7',
+      ),
+    );
+  });
+  const clear = h(
+    'button',
+    {
+      key: 'clear',
+      type: 'button',
+      style: { ...CHIP_STYLE, ...CHIP_BUTTON_STYLE, padding: '0 8px' },
+      title: 'Deselect all genes',
+      onClick: () => clearSelection(),
+    },
+    'Clear',
+  );
+  return h(
+    'div',
+    {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        height: GENE_CHIPS_HEIGHT,
+        overflowX: 'auto',
+        whiteSpace: 'nowrap',
+        boxSizing: 'border-box',
+        padding: '0 4px',
+      },
+    },
+    clear,
+    ...chips,
+  );
+}
+
+const SET_BUTTON_STYLE = { fontSize: 12, lineHeight: '20px' };
+
+// All and None ahead of Cell Sets' set operation buttons, sharing their style
+export function GatewaySetButtons({
+  sets,
+  selection,
+  onCheckLevel,
+  setSelection,
+}) {
+  const names = (sets?.tree || []).map((node) => node.name);
+  // Hierarchy of last ticked set of dataset's own (ticks append; lasso
+  // selections ignored), else first one
+  const ticked = (selection || [])
+    .map((path) => path[0])
+    .filter((name) => names.includes(name));
+  const hierarchy = ticked.length ? ticked[ticked.length - 1] : names[0];
+  const none = !selection?.length;
+  return [
+    h(
+      'button',
+      {
+        key: 'all',
+        type: 'button',
+        style: SET_BUTTON_STYLE,
+        title: `Select all of ${hierarchy}`,
+        disabled: !hierarchy || !onCheckLevel,
+        onClick: () => onCheckLevel(hierarchy, 1),
+      },
+      'All',
+    ),
+    h(
+      'button',
+      {
+        key: 'none',
+        type: 'button',
+        style: { ...SET_BUTTON_STYLE, opacity: none ? 0.4 : 1 },
+        title: 'Deselect all sets',
+        disabled: none || !setSelection,
+        onClick: () => setSelection([]),
+      },
+      'None',
+    ),
+  ];
 }
