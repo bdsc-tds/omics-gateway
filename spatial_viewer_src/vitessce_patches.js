@@ -182,6 +182,26 @@ export function gatewayGeneChipsHeight(enabled, selection) {
   return showsGeneChips(enabled, selection) ? GENE_CHIPS_HEIGHT : 0;
 }
 
+// Multi-select list where plain click toggles row, Shift+click keeps only it;
+// tied to chips, which show what accumulates
+export function gatewayClickToggles(allowMultiple) {
+  return !!gatewayOptions.geneChips && !!allowMultiple;
+}
+
+// Set by Shift+click, read once by gene list, which otherwise keeps
+// selected genes hidden by search
+let soloClickPending = false;
+
+export function gatewayNoteSoloClick(isSolo) {
+  soloClickPending = isSolo;
+}
+
+export function gatewayTakeSoloClick() {
+  const pending = soloClickPending;
+  soloClickPending = false;
+  return pending;
+}
+
 // Selected genes as chips; x uses list's own setter, Clear one that leaves
 // colour encoding alone
 export function GatewayGeneChips({
