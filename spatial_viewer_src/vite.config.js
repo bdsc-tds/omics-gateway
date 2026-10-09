@@ -74,16 +74,59 @@ const PATCHES = [
       'gatewayPointColoursDone = useGatewayPointColours(ft, Ke),',
   },
   {
-    // Transcript sub-rows only while layer is visible (a: per-feature rows,
-    // Ce: genes selected, O: layer visible)
+    // Hidden Transcript layer fetches nothing; deck.gl loads tiles of
+    // invisible layers too (l: layer visible)
+    name: 'point hidden no fetch',
+    find:
+      'getTileData: async (v) => {\n' +
+      '        const { index: G, signal: k, bbox: X, zoom: Y } = v,',
+    replace:
+      'getTileData: async (v) => {\n' +
+      '        if (!l) return { src: { x: [], y: [], featureIndices: [] }, length: 0 };\n' +
+      '        const { index: G, signal: k, bbox: X, zoom: Y } = v,',
+  },
+  {
+    // Showing or hiding Transcript layer reloads its tiles
+    name: 'point visibility reload',
+    find:
+      'updateTriggers: {\n        getTileData: [\n          p,\n          d,\n' +
+      '          I,\n          C,\n          c,\n          m\n        ]',
+    replace:
+      'updateTriggers: {\n        getTileData: [\n          p,\n          d,\n' +
+      '          I,\n          C,\n          c,\n          m,\n          l\n        ]',
+  },
+  {
+    // Lookup rectangles past data's far edge clamp instead of throwing
+    // 'Rectangle out of bounds' (Vitessce's own TODO; het: max code value)
+    name: 'point rect clamp',
+    find:
+      '    Math.max(Math.floor((o - e) / s * het), 0),\n' +
+      '    Math.max(Math.floor((A - i) / a * het), 0)\n',
+    replace:
+      '    Math.min(Math.max(Math.floor((o - e) / s * het), 0), het),\n' +
+      '    Math.min(Math.max(Math.floor((A - i) / a * het), 0), het)\n',
+  },
+  {
+    // Morton code past last row group's max bisects to one past last index
+    // (l: row group count)
+    name: 'point row group clamp',
+    find:
+      '      return g;\n    },\n    meta: { queryClient: t, store: e }\n' +
+      '  });\n}\nasync function _er(',
+    replace:
+      '      return Math.min(g, l - 1);\n    },\n' +
+      '    meta: { queryClient: t, store: e }\n  });\n}\nasync function _er(',
+  },
+  {
+    // Transcript sub-rows only while layer is visible (`a`: per-feature rows,
+    // `Ce`: genes selected, `O`: layer visible)
     name: 'point sub-rows visible',
     find: 'a && Ce ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
     replace: 'a && Ce && O ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
   },
   {
-    // Served data never changes during visit: views mounted later (tabs)
-    // otherwise refetch shared queries, flashing every view's loading state.
-    // Failed queries still retry on mount
+    // Served data never changes during visit, so views mounted later skip
+    // refetching shared queries; failed ones still retry on mount
     name: 'queries never stale',
     find: 'refetchOnWindowFocus: !1,',
     replace: 'refetchOnWindowFocus: !1, staleTime: 1 / 0,',

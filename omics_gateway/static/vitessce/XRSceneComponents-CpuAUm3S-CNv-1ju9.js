@@ -1,6 +1,6 @@
-import { dt as e, gt as t, st as n } from "./index-CDVgyDq2-CeVGYU3O.js";
-import { a as r, i } from "./OrbitControls-3A7SGYFV.js";
-import { i as a } from "./index-C04NjukO-BF3cqqaX.js";
+import { dt as e, gt as t, st as n } from "./index-CDVgyDq2-BPb1Iq3x.js";
+import { a as r, i } from "./OrbitControls-BJe2XCfX.js";
+import { i as a } from "./index-C04NjukO-Dytyx2jZ.js";
 //#region node_modules/vitessce/dist/XRSceneComponents-CpuAUm3S.js
 var o = n(), s = /* @__PURE__ */ t(e(), 1), { useXRInputSourceState: c } = a();
 function l(e, t) {
