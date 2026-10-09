@@ -160,6 +160,24 @@ const PATCHES = [
       'height: n - 34 - gatewayGeneChipsHeight(l, A) })',
   },
   {
+    // Row click: toggle unless Shift, which keeps only that row (`a`:
+    // multi-select, `F`: Shift held, `B`: selection, `h`: its setter)
+    name: 'click toggles',
+    find: '(J || l) && (!F && (J || !J && a && B.length > 1) ? h([Z])',
+    replace:
+      '(J || l) && ((a ? F : !F) && (J || !J && a && B.length > 1) ? ' +
+      '(gatewayNoteSoloClick(a), h([Z]))',
+  },
+  {
+    // Shift+click drops genes hidden by search too (`b`: hidden selected
+    // genes, `Q`: genes matching search)
+    name: 'solo click hidden genes',
+    find: 'const b = (A || []).filter((W) => !Q.includes(W)),',
+    replace:
+      'const b = gatewayTakeSoloClick() ? [] : ' +
+      '(A || []).filter((W) => !Q.includes(W)),',
+  },
+  {
     // Set buttons: subscriber passes selection setter to sets manager
     name: 'set buttons setter',
     find: 'onCheckLevel: Y, onNodeSetColor: ne,',
@@ -214,7 +232,8 @@ function patchVitessce() {
       const names =
         'useGatewayAutoFill, gatewayDotPlotHeight, gatewayForgetOnReject, ' +
         'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours, ' +
-        'GatewayGeneChips, gatewayGeneChipsHeight, GatewaySetButtons';
+        'GatewayGeneChips, gatewayGeneChipsHeight, GatewaySetButtons, ' +
+        'gatewayNoteSoloClick, gatewayTakeSoloClick';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },

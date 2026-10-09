@@ -32,6 +32,9 @@
  * Set buttons: Cell Sets toolbar gets All (every set of hierarchy of last
  * ticked set, as clicking its name does) and None, which Vitessce has no
  * gesture for.
+ *
+ * Click toggles: plain click on multi-select list row adds or removes it,
+ * Shift+click keeps only that row, genes hidden by search included.
  */
 
 import { createElement as h, useEffect, useRef } from 'react';
@@ -168,6 +171,20 @@ function showsGeneChips(enabled, selection) {
 // Height taken from gene list's table by chip row
 export function gatewayGeneChipsHeight(enabled, selection) {
   return showsGeneChips(enabled, selection) ? GENE_CHIPS_HEIGHT : 0;
+}
+
+// Set by Shift+click, read once by gene list, which otherwise keeps
+// selected genes hidden by search
+let soloClickPending = false;
+
+export function gatewayNoteSoloClick(isSolo) {
+  soloClickPending = isSolo;
+}
+
+export function gatewayTakeSoloClick() {
+  const pending = soloClickPending;
+  soloClickPending = false;
+  return pending;
 }
 
 // Selected genes as chips; x uses list's own setter, Clear one that leaves
