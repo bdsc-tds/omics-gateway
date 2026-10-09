@@ -1,7 +1,7 @@
-import { dt as e, gt as t, st as n } from "./index-CDVgyDq2-BPb1Iq3x.js";
+import { dt as e, gt as t, st as n } from "./index-CDVgyDq2-q8nATMfc.js";
 import { E as r, eo as i, rr as a } from "./three.core-1aHSpGwp.js";
-import { a as o, i as s } from "./OrbitControls-BJe2XCfX.js";
-import { a as c, i as l, n as u, o as d, t as f } from "./index-C04NjukO-Dytyx2jZ.js";
+import { a as o, i as s } from "./OrbitControls-DHyfhwSV.js";
+import { a as c, i as l, n as u, o as d, t as f } from "./index-C04NjukO-BNNKzqv8.js";
 //#region node_modules/vitessce/dist/GeometryAndMeshXR-DhL415aR.js
 var p = n(), m = /* @__PURE__ */ t(e(), 1), { useXR: h, useXRInputSourceState: g } = l();
 function _(e, t) {

@@ -125,11 +125,11 @@ const PATCHES = [
     replace: 'a && Ce && O ? Le(Ur, { children: [F.map((ee) => _(Xmi, {',
   },
   {
-    // Served data never changes during visit, so views mounted later skip
-    // refetching shared queries; failed ones still retry on mount
+    // Served data never changes: later views skip refetching shared queries
+    // (failed ones retry on mount); unused kept 10 min as gene changes reuse
     name: 'queries never stale',
     find: 'refetchOnWindowFocus: !1,',
-    replace: 'refetchOnWindowFocus: !1, staleTime: 1 / 0,',
+    replace: 'refetchOnWindowFocus: !1, staleTime: 1 / 0, gcTime: 6e5,',
   },
   {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
