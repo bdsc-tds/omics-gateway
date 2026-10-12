@@ -24,6 +24,9 @@ Usage:
 
 --metadata writes dataset metadata into table (see write_store_metadata.py),
 from which generate_datasets_tsv.py builds store's datasets.tsv row.
+
+--rotate turns whole sample clockwise by quarter turns, since 2D viewer cannot
+rotate it.
 """
 
 # Import utility modules
@@ -33,12 +36,17 @@ import resource
 import time
 
 import dask
+import dask.array as da
 import numpy as np
 import pandas as pd
 import spatialdata_io
 from spatialdata import SpatialData
-from spatialdata.models import PointsModel, TableModel
-from spatialdata.transformations import get_transformation, set_transformation
+from spatialdata.models import Image2DModel, PointsModel, TableModel
+from spatialdata.transformations import (
+    Identity,
+    get_transformation,
+    set_transformation,
+)
 from vitessce.data_utils import (
     sdata_morton_sort_points,
     sdata_points_modify_row_group_size,
@@ -317,6 +325,143 @@ def reindex_nucleus_boundaries(sdata):
     return int(nuclei.index.duplicated().sum())
 
 
+# Function to build clockwise quarter-turn rotation of image frame
+def quarter_turn_matrix(degrees, width, height):
+    """
+    Build affine matrix rotating global pixel frame clockwise by quarter turns.
+
+    y axis points down, so clockwise on screen. Translation keeps rotated
+    image in positive quadrant with origin at its top-left corner, so image
+    stays on identity transform.
+
+    Parameters:
+    -----------
+    degrees: int
+      Clockwise rotation: 90, 180 or 270.
+    width: int
+      Image width in global pixels, before rotation.
+    height: int
+      Image height in global pixels, before rotation.
+
+    Returns:
+    --------
+    matrix: numpy.ndarray
+      3x3 affine matrix acting on (x, y, 1) column vectors.
+    """
+    matrices = {
+        90: [[0, -1, height], [1, 0, 0], [0, 0, 1]],
+        180: [[-1, 0, width], [0, -1, height], [0, 0, 1]],
+        270: [[0, 1, 0], [-1, 0, width], [0, 0, 1]],
+    }
+
+    return np.array(matrices[degrees], dtype='float64')
+
+
+# Function to express global rotation in element's own coordinates
+def element_rotation(element, rotation):
+    """
+    Conjugate global-frame rotation by element's transform to global.
+
+    Shapes and points stay in microns with their micron-to-pixel scale, so
+    their coordinates are rotated by T^-1 R T rather than by R itself.
+
+    Parameters:
+    -----------
+    element: spatialdata element
+      Shapes or points carrying 'global' transformation.
+    rotation: numpy.ndarray
+      3x3 rotation of global frame, from quarter_turn_matrix.
+
+    Returns:
+    --------
+    matrix: numpy.ndarray
+      3x3 affine matrix acting on element's own (x, y, 1).
+    """
+    to_global = get_transformation(element).to_affine_matrix(
+        input_axes=('x', 'y'), output_axes=('x', 'y')
+    )
+
+    return np.linalg.inv(to_global) @ rotation @ to_global
+
+
+# Function to rotate whole sample by clockwise quarter turns
+def rotate_sample(sdata, degrees, image_name='morphology_focus'):
+    """
+    Rotate image, shapes, transcripts and table centroids clockwise in place.
+
+    Data are rotated physically rather than given rotation transform, so
+    viewer and every downstream step see ordinary upright sample. Must run
+    before centroids are copied to global frame and before transcripts are
+    Morton-sorted, both of which read rotated coordinates.
+
+    Parameters:
+    -----------
+    sdata: spatialdata.SpatialData
+      Freshly read Xenium object; rasterised labels are not supported.
+    degrees: int
+      Clockwise rotation: 90, 180 or 270.
+    image_name: str
+      Image element defining global frame's extent.
+
+    Returns:
+    --------
+    size: tuple of int
+      Rotated image width and height in pixels.
+    """
+    image = sdata.images[image_name]
+    if get_transformation(image) != Identity():
+        raise ValueError(f'{image_name} must sit on identity transform.')
+    base = image['scale0']['image']
+    _, height, width = base.shape
+    rotation = quarter_turn_matrix(degrees, width, height)
+
+    # Pyramid rebuilt from rotated full resolution with original level count
+    rotated = da.rot90(base.data, k=-degrees // 90, axes=(1, 2))
+    n_levels = len(image.children)
+    sdata.images[image_name] = Image2DModel.parse(
+        rotated.rechunk((1, 2048, 2048)),
+        dims=('c', 'y', 'x'),
+        c_coords=list(base.coords['c'].values),
+        scale_factors=[2] * (n_levels - 1),
+        chunks=(1, 2048, 2048),
+        transformations={'global': Identity()},
+    )
+
+    # shapely order: x' = a x + b y + xoff, y' = d x + e y + yoff
+    for name in sdata.shapes:
+        shapes = sdata.shapes[name]
+        m = element_rotation(shapes, rotation)
+        shapes.geometry = shapes.geometry.affine_transform([
+            m[0, 0],
+            m[0, 1],
+            m[1, 0],
+            m[1, 1],
+            m[0, 2],
+            m[1, 2],
+        ])
+
+    if 'transcripts' in sdata.points:
+        points = sdata.points['transcripts']
+        transformations = get_transformation(points, get_all=True)
+        m = element_rotation(points, rotation)
+        x, y = points['x'], points['y']
+        rotated_points = points.assign(
+            x=m[0, 0] * x + m[0, 1] * y + m[0, 2],
+            y=m[1, 0] * x + m[1, 1] * y + m[1, 2],
+        )
+        sdata.points['transcripts'] = parse_points_keeping_transform(
+            rotated_points, transformations
+        )
+
+    # Table centroids share cell outlines' micron frame
+    table = sdata.tables['table']
+    m = element_rotation(sdata.shapes['cell_boundaries'], rotation)
+    centroids = np.asarray(table.obsm['spatial'], dtype='float64')
+    table.obsm['spatial'] = centroids @ m[:2, :2].T + m[:2, 2]
+
+    return (height, width) if degrees in (90, 270) else (width, height)
+
+
 # Function to re-parse points element without losing its coordinate transform
 def parse_points_keeping_transform(points, transformations):
     """
@@ -559,6 +704,13 @@ def parse_args():
         help='Optional YAML of dataset metadata for datasets.tsv '
         '(see write_store_metadata.py).',
     )
+    parser.add_argument(
+        '--rotate',
+        type=int,
+        default=0,
+        choices=[0, 90, 180, 270],
+        help='Rotate the sample clockwise by this many degrees.',
+    )
 
     return parser.parse_args()
 
@@ -583,6 +735,15 @@ if __name__ == '__main__':
     )
     print(f'read in {time.time() - start:.1f}s', flush=True)
     print(sdata, flush=True)
+
+    if args.rotate:
+        if args.cells_labels:
+            raise ValueError('--rotate does not support --cells-labels.')
+        size = rotate_sample(sdata, args.rotate)
+        print(
+            f'rotated {args.rotate} degrees clockwise ({size[0]}x{size[1]} px)',
+            flush=True,
+        )
 
     if 'nucleus_boundaries' in sdata.shapes:
         n = reindex_nucleus_boundaries(sdata)

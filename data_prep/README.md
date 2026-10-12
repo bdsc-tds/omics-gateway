@@ -101,6 +101,7 @@ Options:
 
 - `--no-transcripts` skips the transcript positions, by far the slowest part; the viewer then has no Transcript layer.
 - `--no-nucleus-boundaries` skips the nucleus outlines; the viewer then has no Nucleus layer.
+- `--rotate 90`, `180` or `270` turns the sample clockwise by that many degrees, for samples whose orientation on the slide is inconvenient to read. The viewer cannot rotate a sample itself, so this is the only way to change its orientation. It cannot be combined with `--cells-labels`.
 
 What the script does to the data is described under [What the conversion does](#what-the-conversion-does).
 
@@ -187,11 +188,12 @@ conda run -n omics-gateway python data_prep/generate_datasets_tsv.py \
 
 `convert_xenium.py` reads the output folder with [spatialdata-io](https://github.com/scverse/spatialdata-io), then:
 
-1. **Adds annotations**: the cell types from the CSV, and Xenium Ranger's own UMAP, so the viewer needs no embedding of its own.
-2. **Adapts the data to the viewer.** Several details of a freshly read sample stop Vitessce from showing it, without any error message, so the script links the cell table to the cell outlines, converts text columns to a format Vitessce can read, fills missing annotations, indexes nucleus outlines by cell, and narrows 64-bit integer columns.
-3. **Filters and prepares the transcripts.** Control-probe detections are dropped, and so are transcripts with a quality score (`qv`) below 20. Xenium Ranger's own gene counts per cell, which drive gene colouring, use exactly the transcripts at or above 20, so the Transcript layer shows the same molecules the counts include. Only each transcript's position and gene are kept. The rows are then sorted by position and split into blocks of 50,000, so the browser fetches only the transcripts in view.
-4. **Writes the store piece by piece**, single-threaded, which keeps memory use bounded and leaves a partial store rather than nothing if something fails.
-5. **Writes the metadata** from `--metadata`, as `write_store_metadata.py` would.
+1. **Rotates the sample** if `--rotate` is given: the image pixels themselves are turned, and the cell and nucleus outlines, transcripts and cell centroids are moved with them, so the rest of the pipeline sees an ordinary upright sample. The zoomed-out image levels are rebuilt from the rotated full-resolution image, so they can differ slightly from Xenium Ranger's own.
+2. **Adds annotations**: the cell types from the CSV, and Xenium Ranger's own UMAP, so the viewer needs no embedding of its own.
+3. **Adapts the data to the viewer.** Several details of a freshly read sample stop Vitessce from showing it, without any error message, so the script links the cell table to the cell outlines, converts text columns to a format Vitessce can read, fills missing annotations, indexes nucleus outlines by cell, and narrows 64-bit integer columns.
+4. **Filters and prepares the transcripts.** Control-probe detections are dropped, and so are transcripts with a quality score (`qv`) below 20. Xenium Ranger's own gene counts per cell, which drive gene colouring, use exactly the transcripts at or above 20, so the Transcript layer shows the same molecules the counts include. Only each transcript's position and gene are kept. The rows are then sorted by position and split into blocks of 50,000, so the browser fetches only the transcripts in view.
+5. **Writes the store piece by piece**, single-threaded, which keeps memory use bounded and leaves a partial store rather than nothing if something fails.
+6. **Writes the metadata** from `--metadata`, as `write_store_metadata.py` would.
 
 ## QC reports
 
