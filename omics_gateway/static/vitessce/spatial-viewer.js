@@ -18783,7 +18783,43 @@ function E(e, t, n) {
 	let m = Math.max(...r.map((e) => e.y + e.h)), h = (t - 2 * be - (Se - 1) * xe) / Se, g = (n - 2 * be - (m - 1) * xe) / m, _ = i.w * h + (i.w - 1) * xe - Ce[0], v = i.h * g + (i.h - 1) * xe - Ce[1];
 	!(_ > 0) || !(v > 0) || (s[o.spatialZoom] = Math.log2(Te * Math.min(_ / d, v / f)));
 }
-async function Ee() {
+function Ee({ config: e }) {
+	let [t, n] = x.useState(e), [r, i] = x.useState(0), a = x.useRef(null), o = x.useRef(null), s = x.useRef(0), c = x.useCallback((e) => {
+		a.current ||= e, o.current = e;
+		let t = new Set(e.layout.map((e) => e.uid));
+		i(a.current.layout.filter((e) => !t.has(e.uid)).length);
+	}, []);
+	function l() {
+		let e = o.current, t = a.current, r = new Map(e.layout.map((e) => [e.uid, e])), c = t.layout.map((e) => ({
+			...r.get(e.uid) || e,
+			x: e.x,
+			y: e.y,
+			w: e.w,
+			h: e.h
+		}));
+		s.current += 1;
+		let l = {
+			...e,
+			layout: c,
+			uid: `${t.uid}-restored-${s.current}`
+		};
+		o.current = l, i(0), n(l);
+	}
+	return x.createElement(x.Fragment, null, x.createElement(d, {
+		config: t,
+		validateConfig: t === e,
+		onConfigChange: c,
+		pluginViewTypes: w,
+		theme: "light",
+		height: window.innerHeight
+	}), r > 0 && x.createElement("button", {
+		type: "button",
+		className: "gateway-restore-panels",
+		title: "Reopen closed panels; selections are kept, data reloads",
+		onClick: l
+	}, r === 1 ? "Restore closed panel" : `Restore ${r} closed panels`));
+}
+async function De() {
 	if (!he) {
 		_e("No config specified. Use ?config=<url>.");
 		return;
@@ -18792,15 +18828,10 @@ async function Ee() {
 		let e = await fetch(he);
 		if (!e.ok) throw Error(`${e.status} ${e.statusText}`);
 		let t = await e.json();
-		ve(t), E(t, window.innerWidth, window.innerHeight), ge.render(x.createElement(d, {
-			config: t,
-			pluginViewTypes: w,
-			theme: "light",
-			height: window.innerHeight
-		}));
+		ve(t), E(t, window.innerWidth, window.innerHeight), ge.render(x.createElement(Ee, { config: t }));
 	} catch (e) {
 		_e(`Failed to load config from ${he}: ${e}`);
 	}
 }
-Ee();
+De();
 //#endregion
