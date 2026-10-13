@@ -6,13 +6,26 @@
  * or of whole selection; Vitessce shows this nowhere, as Cell Set Sizes
  * only plots whole sets.
  *
- * Data hooks and TitleInfo are not exported by 'vitessce';
- * 'gateway-vitessce-internals' is Vitessce's own chunk with them re-exported
- * (see vite.config.js). @vitessce/* packages cannot stand in: they are
- * separate copies whose React contexts Vitessce never provides.
+ * Tabs: two or more existing views sharing one grid slot, one shown at
+ * once, switched by buttons after shown view's title. Grid passes every view
+ * registered view types, so inner components come from same bundle copy.
+ * Each tab keeps own coordination scopes, from view's props, over tab view's
+ * auto-initialised ones.
+ *
+ * Data hooks, TitleInfo and coordination type lists are not exported by
+ * 'vitessce'; 'gateway-vitessce-internals' is Vitessce's own chunk with
+ * them re-exported (see vite.config.js). @vitessce/* packages cannot stand
+ * in: they are separate copies whose React contexts Vitessce never provides.
  */
 
-import { createElement as h, useMemo } from 'react';
+import {
+  createElement as h,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 import {
   PluginViewType,
   useCoordination,
@@ -20,6 +33,7 @@ import {
 } from 'vitessce';
 import {
   GatewayTitleInfo,
+  gatewayComponentCoordinationTypes,
   gatewayMergeObsSets,
   gatewayUseLoaders,
   gatewayUseObsSetsData,
@@ -34,6 +48,9 @@ const COUNTS_COORDINATION_TYPES = [
   'obsSetColor',
   'additionalObsSets',
 ];
+
+// Views offered as tabs; tab view needs union of their coordination types
+const TAB_VIEW_TYPES = ['dotPlot', 'obsSetFeatureValueDistribution'];
 
 // Cell ids of every leaf at or below node
 function collectIds(node, out) {
@@ -295,10 +312,115 @@ function CellTypeCounts(props) {
   );
 }
 
+const SWITCH_STYLE = {
+  marginLeft: 8,
+  padding: '0 8px',
+  border: '1px solid currentColor',
+  borderRadius: 10,
+  background: 'none',
+  color: 'inherit',
+  font: 'inherit',
+  fontSize: '0.85em',
+  lineHeight: 1.4,
+  opacity: 0.7,
+  cursor: 'pointer',
+  verticalAlign: 'middle',
+};
+
+// Existing views in one slot; active view's title bar holds buttons
+// switching to others, so its own title stays only title
+function Tabs(props) {
+  const {
+    tabs = [],
+    viewTypes,
+    uuid,
+    coordinationScopes,
+    coordinationScopesBy,
+    ...rest
+  } = props;
+  const [active, setActive] = useState(0);
+  const container = useRef(null);
+  // Own element for buttons: title text update rewrites title element's
+  // content, which deleted buttons portalled straight into it
+  const holder = useRef(null);
+  if (!holder.current) holder.current = document.createElement('span');
+  /* biome-ignore lint/correctness/useExhaustiveDependencies: inner view
+  remounts on switch, so its title element is found again */
+  useLayoutEffect(() => {
+    const title = container.current?.querySelector('[class*="titleLeft"]');
+    if (!title) return undefined;
+    const attach = () => {
+      if (holder.current.parentNode !== title) title.append(holder.current);
+    };
+    attach();
+    const observer = new MutationObserver(attach);
+    observer.observe(title, { childList: true });
+    return () => {
+      observer.disconnect();
+      holder.current.remove();
+    };
+  }, [active]);
+  const tab = tabs[active];
+  const Component = viewTypes?.find(
+    (viewType) => viewType.name === tab?.component,
+  )?.component;
+  const switches = tabs
+    .map((other, index) => ({ other, index }))
+    .filter(({ index }) => index !== active)
+    .map(({ other, index }) =>
+      h('button', {
+        key: other.label,
+        type: 'button',
+        style: SWITCH_STYLE,
+        title: `Show ${other.label}`,
+        'aria-label': `Show ${other.label}`,
+        // Label drawn by CSS: export file names come from title text
+        'data-gateway-label': other.label,
+        className: 'gateway-tab-switch',
+        // Title bar is panel's drag handle
+        onMouseDown: (event) => event.stopPropagation(),
+        onClick: () => setActive(index),
+      }),
+    );
+  // Inactive view unmounts: views measure their size only on mount and resize
+  const view = Component
+    ? h(Component, {
+        ...rest,
+        ...tab.props,
+        key: active,
+        viewTypes,
+        uuid: `${uuid}-${active}`,
+        coordinationScopes: {
+          ...coordinationScopes,
+          ...tab.coordinationScopes,
+        },
+        coordinationScopesBy: tab.coordinationScopesBy ?? coordinationScopesBy,
+      })
+    : null;
+  return h(
+    'div',
+    {
+      ref: container,
+      style: { display: 'flex', flexDirection: 'column', height: '100%' },
+    },
+    view,
+    createPortal(switches, holder.current),
+  );
+}
+
+const tabCoordinationTypes = [
+  ...new Set(
+    TAB_VIEW_TYPES.flatMap(
+      (name) => gatewayComponentCoordinationTypes[name] || [],
+    ),
+  ),
+];
+
 export const GATEWAY_VIEW_TYPES = [
   new PluginViewType(
     'gatewayCellTypeCounts',
     CellTypeCounts,
     COUNTS_COORDINATION_TYPES,
   ),
+  new PluginViewType('gatewayTabs', Tabs, tabCoordinationTypes),
 ];

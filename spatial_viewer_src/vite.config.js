@@ -216,13 +216,13 @@ const PATCHES = [
   },
   {
     // Internals for gateway_views.js (Ps useLoaders, Pp useObsSetsData, js
-    // TitleInfo, ka useReady, Td useUrls, md mergeObsSets)
+    // TitleInfo, ka useReady, Td useUrls, md mergeObsSets, xo view types)
     name: 'view internals',
     find: 'export {\n  AUn as $,',
     replace:
       'export {\n  Ps as gatewayUseLoaders, Pp as gatewayUseObsSetsData, ' +
       'js as GatewayTitleInfo, ka as gatewayUseReady, Td as gatewayUseUrls, ' +
-      'md as gatewayMergeObsSets,\n' +
+      'md as gatewayMergeObsSets, xo as gatewayComponentCoordinationTypes,\n' +
       '  AUn as $,',
   },
   {

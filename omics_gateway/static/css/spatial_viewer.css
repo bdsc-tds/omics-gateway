@@ -112,3 +112,8 @@ circles; move them clear */
   outline: none;
   background: rgba(128, 128, 128, 0.2);
 }
+
+/* Tab switch label; drawn here so title text, which names exports, omits it */
+.gateway-tab-switch::after {
+  content: attr(data-gateway-label);
+}
