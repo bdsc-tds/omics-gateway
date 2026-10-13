@@ -17,6 +17,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Vitessce } from 'vitessce';
+import { GATEWAY_VIEW_TYPES } from './gateway_views.js';
 
 // Read from query string rather than server-side templating: bundle is
 // static asset, so Jinja cannot render it.
@@ -126,6 +127,7 @@ async function main() {
     root.render(
       React.createElement(Vitessce, {
         config,
+        pluginViewTypes: GATEWAY_VIEW_TYPES,
         theme: 'light',
         // Vitessce needs explicit pixel height; it does not fill its parent.
         height: window.innerHeight,

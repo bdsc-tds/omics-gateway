@@ -591,9 +591,8 @@ def generate_config(
     # Shift-click enables multi-gene selection with distinct transcript colours
     # Defaults false for single-select behavior and no deselection
     feature_list.set_props(enableMultiSelect=True)
-    distribution = vc.add_view(
-        'obsSetFeatureValueDistribution', dataset=dataset
-    )
+    # Gateway's own view: cell types of lasso regions or selected sets
+    breakdown = vc.add_view('gatewayCellTypeCounts', dataset=dataset)
     description = vc.add_view('description', dataset=dataset)
     description.set_props(description=os.path.splitext(name)[0])
     # Metric list takes status panel's slot, least used one
@@ -614,7 +613,7 @@ def generate_config(
             obs_sets,
             dot_plot,
             feature_list,
-            distribution,
+            breakdown,
         ],
         ['obsType'],
         [obs_type],
@@ -649,14 +648,7 @@ def generate_config(
     # otherwise silently ignores additional genes
     aggregation_strategy.set_value('mean')
 
-    for view in (
-        spatial,
-        controller,
-        scatterplot,
-        obs_sets,
-        feature_list,
-        distribution,
-    ):
+    for view in (spatial, controller, scatterplot, obs_sets, feature_list):
         view.use_coordination(
             color_encoding,
             feature_selection,
@@ -671,6 +663,7 @@ def generate_config(
     dot_plot.use_coordination(
         feature_selection, obs_set_selection, obs_set_color
     )
+    breakdown.use_coordination(obs_set_selection, obs_set_color)
 
     # Cells are annotated, so their channel reuses shared selection scopes;
     # extra segmentations have no table and only carry fixed colour
@@ -876,7 +869,7 @@ def generate_config(
         (feature_list, (10, 0, 2, 2)),
         (obs_sets, (10, 2, 2, 2)),
         (dot_plot, (3, 4, 5, 2)),
-        (distribution, (8, 4, 4, 2)),
+        (breakdown, (8, 4, 4, 2)),
     ):
         view.set_xywh(x, y, w, h)
 

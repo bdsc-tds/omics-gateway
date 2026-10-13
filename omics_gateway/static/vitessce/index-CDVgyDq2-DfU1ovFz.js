@@ -139297,9 +139297,9 @@ async function Tpn(e) {
 	if (!t) throw Error(`Unknown compression method identifier: ${e.Compression}`);
 	return new (await (t()))(e);
 }
-mI([void 0, 1], () => import("./raw-DHM7Wj2Y-DS4mU8FH.js").then((e) => e.default)), mI(5, () => import("./lzw-BdRDgMbg-DOxVYef1.js").then((e) => e.default)), mI(6, () => {
+mI([void 0, 1], () => import("./raw-DHM7Wj2Y-BhDWoSEl.js").then((e) => e.default)), mI(5, () => import("./lzw-BdRDgMbg-CGlFjkbM.js").then((e) => e.default)), mI(6, () => {
 	throw Error("old style JPEG compression is not supported.");
-}), mI(7, () => import("./jpeg-f5LgOrOW-DvSwSwTl.js").then((e) => e.default)), mI([8, 32946], () => import("./deflate-CYVx5gI8-BR3-50aa.js").then((e) => e.default)), mI(32773, () => import("./packbits-rgkGAV4R-CKkVhg5E.js").then((e) => e.default)), mI(34887, () => import("./lerc-CROxlfHv--rwQLNGS.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), mI(50001, () => import("./webimage-BilIOhkt-DXMkRY2G.js").then((e) => e.default));
+}), mI(7, () => import("./jpeg-f5LgOrOW-j4DbEgaq.js").then((e) => e.default)), mI([8, 32946], () => import("./deflate-CYVx5gI8-tx3us71A.js").then((e) => e.default)), mI(32773, () => import("./packbits-rgkGAV4R-q7QhoBAq.js").then((e) => e.default)), mI(34887, () => import("./lerc-CROxlfHv-CvlXOWgt.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), mI(50001, () => import("./webimage-BilIOhkt-DNp_QJCR.js").then((e) => e.default));
 function hI(e, t, n, r = 1) {
 	return new (Object.getPrototypeOf(e)).constructor(t * n * r);
 }
@@ -167437,7 +167437,7 @@ var HIn = class extends U.Component {
 		return e ? n : t;
 	}
 }, UIn = U.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-C04NjukO-C1VxW4ts.js").then((e) => e.r).then((e) => e.a);
+	let { SpatialWrapper: e } = await import("./index-C04NjukO-BP9ByPPB.js").then((e) => e.r).then((e) => e.a);
 	return { default: e };
 }), WIn = U.forwardRef((e, t) => (0, W.jsx)("div", {
 	ref: t,
@@ -167453,7 +167453,7 @@ var HIn = class extends U.Component {
 		})
 	})
 })), GIn = U.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-DNppPId0.js");
+	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-BOUdM6tk.js");
 	return { default: e };
 }), KIn = U.forwardRef((e, t) => (0, W.jsx)("div", {
 	ref: t,
@@ -178738,7 +178738,7 @@ eHn({
 	config: fW.config
 }, { pluginType: "dataFetcher" });
 var kUn = U.lazy(async () => {
-	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-fCkBZst7.js");
+	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-V7FFbH6b.js");
 	return { default: e };
 }), mW = 800;
 function AUn(e, t) {
@@ -180828,7 +180828,7 @@ function GUn(e) {
 		parentClassName: t.neuroglancerWrapper
 	})] });
 }
-var KUn = U.lazy(() => import("./ReactNeuroglancer-BBJJpq73-B-Kmq6Bu.js"));
+var KUn = U.lazy(() => import("./ReactNeuroglancer-BBJJpq73-JzWZF-lB.js"));
 function qUn() {
 	let e = new BUn();
 	return e.AsyncComputationWorker = VUn, e;
@@ -231352,4 +231352,4 @@ function ZYr() {
 }
 ZYr();
 //#endregion
-export { Nit as $, rR as A, tS as B, Gx as C, Bx as D, rot as E, It as F, Ait as G, fat as H, sst as I, w$e as J, Ux as K, Lt as L, J as M, Ast as N, Wx as O, gg as P, dS as Q, ect as R, Kot as S, Rot as T, cS as U, Zx as V, eS as W, $x as X, lat as Y, Sot as Z, Cat as _, ppn as a, xst as at, Jx as b, At as c, de as ct, Qst as d, N as dt, Kx as et, Xx as f, A as ft, sc as g, u as gt, uS as h, c as ht, JYr as i, dot as it, Hx as j, Ust as k, wWn as l, ue as lt, Ov as m, s as mt, fct as n, fpn as nt, zx as o, Cv as ot, lst as p, k as pt, Pst as q, lS as r, RXt as rt, wv as s, nt as st, Kt as t, kt as tt, Yx as u, I as ut, Smn as v, gst as w, Vx as x, qx as y, Git as z };
+export { Ait as $, rot as A, Py as B, qx as C, s as Ct, Gx as D, Kot as E, Hx as F, wx as G, sst as H, J as I, tS as J, ect as K, Ast as L, Wx as M, Ust as N, gst as O, rR as P, eS as Q, gg as R, Smn as S, k as St, Vx as T, u as Tt, Lt as U, It as V, rv as W, fat as X, Zx as Y, cS as Z, qy as _, de as _t, ppn as a, Sot as at, Cat as b, N as bt, At as c, Kx as ct, Qst as d, sv as dt, Ux as et, f8e as f, RXt as ft, uS as g, nt as gt, Ov as h, Cv as ht, JYr as i, $x as it, Bx as j, Rot as k, wWn as l, kt as lt, lst as m, xst as mt, fct as n, w$e as nt, zx as o, dS as ot, Xx as p, dot as pt, Git as q, lS as r, lat as rt, wv as s, Nit as st, Kt as t, Pst as tt, Yx as u, fpn as ut, uv as v, ue as vt, Jx as w, c as wt, Fy as x, A as xt, sc as y, I as yt, Vy as z };

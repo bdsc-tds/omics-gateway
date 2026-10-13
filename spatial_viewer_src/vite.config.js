@@ -215,6 +215,17 @@ const PATCHES = [
       'hasCheckedSetsToIntersect: Y, hasCheckedSetsToComplement: L })] })',
   },
   {
+    // Internals for gateway_views.js (Ps useLoaders, Pp useObsSetsData, js
+    // TitleInfo, ka useReady, Td useUrls, md mergeObsSets)
+    name: 'view internals',
+    find: 'export {\n  AUn as $,',
+    replace:
+      'export {\n  Ps as gatewayUseLoaders, Pp as gatewayUseObsSetsData, ' +
+      'js as GatewayTitleInfo, ka as gatewayUseReady, Td as gatewayUseUrls, ' +
+      'md as gatewayMergeObsSets,\n' +
+      '  AUn as $,',
+  },
+  {
     // Auto-fill in beta spatial view (Xe: segmentation channel coordination)
     name: 'auto-fill',
     find: 'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), He = pl([',
@@ -261,8 +272,15 @@ function patchVitessce() {
   };
 }
 
+// Chunk holding Vitessce's internals; same module as 'vitessce' imports, so
+// one React context. Name changes with Vitessce version
+const VITESSCE_CHUNK = fileURLToPath(
+  new URL('./node_modules/vitessce/dist/index-CDVgyDq2.js', import.meta.url),
+);
+
 export default defineConfig({
   plugins: [patchVitessce(), nodePolyfills()],
+  resolve: { alias: { 'gateway-vitessce-internals': VITESSCE_CHUNK } },
   build: {
     outDir: '../omics_gateway/static/vitessce',
     emptyOutDir: true,
