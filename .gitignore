@@ -142,6 +142,7 @@ dmypy.json
 
 # Avoid importing data and QC
 data/
+spatial_sources/
 analysis_qc/
 analysis_qc_thumbs/
 summary/

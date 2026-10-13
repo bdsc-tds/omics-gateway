@@ -18,9 +18,9 @@ down with it:
 Usage:
     systemd-run --user --scope -p MemoryMax=5G -p MemorySwapMax=0 \
         conda run -n spatial python data_prep/convert_xenium.py \
-            --xenium-dir /path/to/xenium_output \
+            --xenium-dir spatial_sources/xenium_sample \
             --out data/xenium_sample.zarr \
-            --metadata data/xenium_sample.metadata.yaml
+            --metadata spatial_sources/xenium_sample.metadata.yaml
 
 --metadata writes dataset metadata into table (see write_store_metadata.py),
 from which generate_datasets_tsv.py builds store's datasets.tsv row.

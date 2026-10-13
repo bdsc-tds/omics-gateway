@@ -24,7 +24,7 @@ cell_count and gene_count can be left out: they default to table size.
 Usage:
     conda run -n spatial python data_prep/write_store_metadata.py \
         --zarr data/xenium_D1903482.zarr \
-        --metadata data/xenium_D1903482.metadata.yaml
+        --metadata spatial_sources/xenium_D1903482.metadata.yaml
 """
 
 # Import utility modules
