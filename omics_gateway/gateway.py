@@ -1564,7 +1564,8 @@ def launch():
         current_time_stamp()
     )
     app.run(
-        host='0.0.0.0',
+        # Loopback unless GATEWAY_IP set, as in start_gunicorn.sh
+        host=env.ip or '127.0.0.1',
         port=env.gateway_port,
         debug=False,
         request_handler=CustomRequestHandler,

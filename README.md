@@ -36,7 +36,7 @@ Optional environment variables:
 * `CELLXGENE_ARGS`: catch-all variable that can be used to pass additional command line args to cellxgene server
 * `EXTERNAL_HOST`: the hostname and port from the perspective of the web browser, typically `localhost:5005` if running locally. Defaults to "localhost:{GATEWAY_PORT}"
 * `EXTERNAL_PROTOCOL`: typically http when running locally, can be https when deployed if the gateway is behind a load balancer or reverse proxy that performs https termination. No default; when unset, the gateway does not override the scheme and Flask infers it from the incoming request
-* `GATEWAY_IP`: ip addess of instance gateway is running on, mostly used to display SSH instructions. No default; when unset, `/metadata/ip_address` returns an empty response
+* `GATEWAY_IP`: ip addess of instance gateway is running on, mostly used to display SSH instructions. No default; when unset, `/metadata/ip_address` returns an empty response. It is also the address the gateway listens on: `127.0.0.1` when unset, so only the machine itself can reach it; set it to `0.0.0.0` to accept connections from the network
 * `GATEWAY_PORT`: local port that the gateway should bind to, defaults to 5005
 * `GATEWAY_EXPIRE_SECONDS`: time in seconds that a cellxgene process will remain idle before being terminated. Defaults to 3600 (one hour)
 * `GATEWAY_EXTRA_SCRIPTS`: JSON array of script paths, will be embedded into each page and forwarded with `--scripts` to cellxgene server
@@ -150,6 +150,8 @@ export CELLXGENE_LOCATION=`which cellxgene`
 ```bash
 omics-gateway
 ```
+
+It listens on `127.0.0.1` only, so other machines cannot reach it; see `GATEWAY_IP` in [Configuring](#configuring) to change this.
 
 ## Updating
 
