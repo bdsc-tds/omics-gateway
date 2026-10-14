@@ -118,6 +118,20 @@ const PATCHES = [
       '    meta: { queryClient: t, store: e }\n  });\n}\nasync function _er(',
   },
   {
+    // Row-group min/max from footer statistics instead of downloading row
+    // group (o8: footers by part, vFe: row group load, i: column, r: index)
+    name: 'row-group extents',
+    find:
+      's = o.meta?.store, l = (await vFe({ queryClient: A, store: s }, n, r))' +
+      '.getChild(i);',
+    replace:
+      's = o.meta?.store, gatewayExtent = gatewayRowGroupExtent(' +
+      'await o8({ queryClient: A, store: s }, n), i, r);\n' +
+      '      if (gatewayExtent) return gatewayExtent;\n' +
+      '      const l = (await vFe({ queryClient: A, store: s }, n, r))' +
+      '.getChild(i);',
+  },
+  {
     // Transcript sub-rows only while layer is visible (`a`: per-feature rows,
     // `Ce`: genes selected, `O`: layer visible)
     name: 'point sub-rows visible',
@@ -233,7 +247,7 @@ function patchVitessce() {
         'useGatewayAutoFill, gatewayDotPlotHeight, gatewayForgetOnReject, ' +
         'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours, ' +
         'GatewayGeneChips, gatewayGeneChipsHeight, GatewaySetButtons, ' +
-        'gatewayNoteSoloClick, gatewayTakeSoloClick';
+        'gatewayNoteSoloClick, gatewayTakeSoloClick, gatewayRowGroupExtent';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },
