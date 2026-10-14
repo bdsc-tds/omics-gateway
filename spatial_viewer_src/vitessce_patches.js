@@ -35,6 +35,12 @@
  *
  * Click toggles: plain click on multi-select list row adds or removes it,
  * Shift+click keeps only that row, genes hidden by search included.
+ *
+ * Row-group extents: to find row groups covering transcript tile, Vitessce
+ * bisects them, downloading each probed row group whole for its first and
+ * last Morton code, one after another. Same min/max sit in Parquet footer
+ * statistics, already downloaded but unexposed by parquet-wasm, so they are
+ * decoded here; Vitessce's own path runs whenever they are missing.
  */
 
 import { createElement as h, useEffect, useRef } from 'react';
@@ -289,4 +295,183 @@ export function GatewaySetButtons({
       'None',
     ),
   ];
+}
+
+// Thrift compact protocol type ids (Parquet footer encoding)
+const THRIFT_TRUE = 1;
+const THRIFT_FALSE = 2;
+const THRIFT_BYTE = 3;
+const THRIFT_I16 = 4;
+const THRIFT_I32 = 5;
+const THRIFT_I64 = 6;
+const THRIFT_DOUBLE = 7;
+const THRIFT_BINARY = 8;
+const THRIFT_LIST = 9;
+const THRIFT_SET = 10;
+const THRIFT_MAP = 11;
+const THRIFT_STRUCT = 12;
+
+// Cursor over footer bytes; integers as Numbers, exact up to 2^53
+function thriftReader(bytes) {
+  const reader = {
+    pos: 0,
+    byte() {
+      if (reader.pos >= bytes.length) throw new Error('Footer ended early');
+      return bytes[reader.pos++];
+    },
+    varint() {
+      let value = 0;
+      let scale = 1;
+      let byte;
+      do {
+        byte = reader.byte();
+        value += (byte & 0x7f) * scale;
+        scale *= 128;
+      } while (byte & 0x80);
+      return value;
+    },
+    zigzag() {
+      const value = reader.varint();
+      return value % 2 ? -(value + 1) / 2 : value / 2;
+    },
+    bytes(length) {
+      if (reader.pos + length > bytes.length) {
+        throw new Error('Footer ended early');
+      }
+      reader.pos += length;
+      return bytes.subarray(reader.pos - length, reader.pos);
+    },
+  };
+  return reader;
+}
+
+// Booleans are field types outside collections, one byte each inside them
+function readThriftValue(reader, type, inCollection) {
+  switch (type) {
+    case THRIFT_TRUE:
+    case THRIFT_FALSE:
+      return inCollection
+        ? reader.byte() === THRIFT_TRUE
+        : type === THRIFT_TRUE;
+    case THRIFT_BYTE:
+      return reader.byte();
+    case THRIFT_I16:
+    case THRIFT_I32:
+    case THRIFT_I64:
+      return reader.zigzag();
+    case THRIFT_DOUBLE:
+      return reader.bytes(8);
+    case THRIFT_BINARY:
+      return reader.bytes(reader.varint());
+    case THRIFT_LIST:
+    case THRIFT_SET: {
+      const header = reader.byte();
+      const size = header >> 4 === 15 ? reader.varint() : header >> 4;
+      return Array.from({ length: size }, () =>
+        readThriftValue(reader, header & 0x0f, true),
+      );
+    }
+    case THRIFT_MAP: {
+      const size = reader.varint();
+      const types = size ? reader.byte() : 0;
+      return Array.from({ length: size }, () => [
+        readThriftValue(reader, types >> 4, true),
+        readThriftValue(reader, types & 0x0f, true),
+      ]);
+    }
+    case THRIFT_STRUCT:
+      return readThriftStruct(reader);
+    default:
+      throw new Error(`Unknown Thrift type ${type}`);
+  }
+}
+
+// Struct as object keyed by Thrift field id
+function readThriftStruct(reader) {
+  const fields = {};
+  let fieldId = 0;
+  for (;;) {
+    const header = reader.byte();
+    if ((header & 0x0f) === 0) return fields;
+    fieldId = header >> 4 ? fieldId + (header >> 4) : reader.zigzag();
+    fields[fieldId] = readThriftValue(reader, header & 0x0f, false);
+  }
+}
+
+// Decoded FileMetaData per footer; Vitessce caches footer bytes for good
+const decodedFooters = new WeakMap();
+
+// Plain-encoded statistic as value of Arrow's type for column (Numbers for
+// 32-bit, BigInts for 64-bit, as row group's own column would return)
+function decodeStatistic(bytes, type) {
+  if (!bytes || typeof type?.isSigned !== 'boolean') return undefined;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (type.bitWidth === 32 && bytes.length === 4) {
+    return type.isSigned ? view.getInt32(0, true) : view.getUint32(0, true);
+  }
+  if (type.bitWidth === 64 && bytes.length === 8) {
+    return type.isSigned
+      ? view.getBigInt64(0, true)
+      : view.getBigUint64(0, true);
+  }
+  return undefined;
+}
+
+// Min and max of column in one row group of one part, or null if footer
+// lacks them; numbers are Thrift field ids of Parquet's footer structs
+function partRowGroupExtent(part, columnName, index) {
+  let footer = decodedFooters.get(part.schemaBytes);
+  if (!footer) {
+    footer = readThriftStruct(thriftReader(part.schemaBytes));
+    decodedFooters.set(part.schemaBytes, footer);
+  }
+  // FileMetaData 4: row groups; RowGroup 1: column chunks, 3: row count
+  const rowGroup = footer[4]?.[index];
+  if (rowGroup?.[3] === 0) return { min: null, max: null };
+  const decoder = new TextDecoder();
+  // ColumnChunk 3: metadata; ColumnMetaData 3: column path, 12: statistics
+  const chunk = rowGroup?.[1]?.find(
+    (candidate) =>
+      candidate[3]?.[3]?.map((name) => decoder.decode(name)).join('.') ===
+      columnName,
+  );
+  const statistics = chunk?.[3]?.[12];
+  // Statistics 3: null count, 5: max, 6: min
+  if (statistics?.[3] !== 0) return null;
+  const field = part.schema.schema.fields.find(
+    (candidate) => candidate.name === columnName,
+  );
+  const min = decodeStatistic(statistics[6], field?.type);
+  const max = decodeStatistic(statistics[5], field?.type);
+  return min === undefined || max === undefined ? null : { min, max };
+}
+
+let extentFallbackLogged = false;
+
+// Extent of row group across parts (metadata: Vitessce's per-part footers),
+// or null so Vitessce downloads row group as before
+export function gatewayRowGroupExtent(metadata, columnName, rowGroupIndex) {
+  let extent = null;
+  let failure = '';
+  try {
+    let first = 0;
+    for (const part of metadata.parts) {
+      const count = part.metadata.numRowGroups();
+      if (rowGroupIndex < first + count) {
+        extent = partRowGroupExtent(part, columnName, rowGroupIndex - first);
+        break;
+      }
+      first += count;
+    }
+  } catch (error) {
+    failure = error;
+  }
+  if (!extent && !extentFallbackLogged) {
+    extentFallbackLogged = true;
+    console.warn(
+      `No footer statistics for ${columnName}, row groups load whole`,
+      failure,
+    );
+  }
+  return extent;
 }
