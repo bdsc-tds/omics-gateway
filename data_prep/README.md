@@ -66,6 +66,8 @@ A Xenium sample becomes one SpatialData store plus its viewer configs. You need:
 - optionally, a **cell-type file**: a CSV with a `cell_id` column (Xenium's cell IDs) and a `group` column (the cell type). Cells missing from it are labelled `Unassigned`;
 - a **metadata file**, described in step 1.
 
+Keep these inputs in `spatial_sources/` at the repository root, which git ignores. Never put them under `data/`: the gateway serves every file there to anyone who knows its path.
+
 ### 1. Write the metadata file
 
 This YAML file holds the details shown in the dataset browser, under the same keys as an `.h5ad` file's `uns` (see [Dataset table](#dataset-table)). Values are strings or lists of strings; the cell and gene counts can be left out, as they are read from the data:
@@ -89,10 +91,10 @@ article_authors: A. Thiebaut
 ```bash
 systemd-run --user --scope -p MemoryMax=5G -p MemorySwapMax=0 \
     conda run -n spatial python data_prep/convert_xenium.py \
-        --xenium-dir /path/to/xenium_output \
+        --xenium-dir spatial_sources/<sample> \
         --out data/<sample>.zarr \
-        --cell-types /path/to/cell_types.csv \
-        --metadata data/<sample>.metadata.yaml
+        --cell-types spatial_sources/<sample>_cell_types.csv \
+        --metadata spatial_sources/<sample>.metadata.yaml
 ```
 
 The `systemd-run` prefix caps the conversion's memory at 5 GB, so that if it ever grows out of bounds, only the conversion is stopped and not the rest of the machine. Always use it, or an equivalent limit on systems without systemd: writing the full-resolution image without precautions once exhausted a 16 GB workstation. The script itself keeps the peak at about 3 GB, and a sample of 39,000 cells takes about two minutes on a 20-core machine.
@@ -135,7 +137,7 @@ To change a store's metadata without converting it again, edit the YAML file and
 ```bash
 conda run -n spatial python data_prep/write_store_metadata.py \
     --zarr data/<sample>.zarr \
-    --metadata data/<sample>.metadata.yaml
+    --metadata spatial_sources/<sample>.metadata.yaml
 ```
 
 Then regenerate the dataset table.

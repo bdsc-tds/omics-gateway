@@ -36,7 +36,7 @@ Optional environment variables:
 * `CELLXGENE_ARGS`: catch-all variable that can be used to pass additional command line args to cellxgene server
 * `EXTERNAL_HOST`: the hostname and port from the perspective of the web browser, typically `localhost:5005` if running locally. Defaults to "localhost:{GATEWAY_PORT}"
 * `EXTERNAL_PROTOCOL`: typically http when running locally, can be https when deployed if the gateway is behind a load balancer or reverse proxy that performs https termination. No default; when unset, the gateway does not override the scheme and Flask infers it from the incoming request
-* `GATEWAY_IP`: ip addess of instance gateway is running on, mostly used to display SSH instructions. No default; when unset, `/metadata/ip_address` returns an empty response
+* `GATEWAY_IP`: ip addess of instance gateway is running on, mostly used to display SSH instructions. No default; when unset, `/metadata/ip_address` returns an empty response. It is also the address the gateway listens on: `127.0.0.1` when unset, so only the machine itself can reach it; set it to `0.0.0.0` to accept connections from the network
 * `GATEWAY_PORT`: local port that the gateway should bind to, defaults to 5005
 * `GATEWAY_EXPIRE_SECONDS`: time in seconds that a cellxgene process will remain idle before being terminated. Defaults to 3600 (one hour)
 * `GATEWAY_EXTRA_SCRIPTS`: JSON array of script paths, will be embedded into each page and forwarded with `--scripts` to cellxgene server
@@ -151,6 +151,8 @@ export CELLXGENE_LOCATION=`which cellxgene`
 omics-gateway
 ```
 
+It listens on `127.0.0.1` only, so other machines cannot reach it; see `GATEWAY_IP` in [Configuring](#configuring) to change this.
+
 ## Updating
 
 Pull the changes:
@@ -206,6 +208,7 @@ Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript applicati
 * `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
 * `vite.config.js`: build settings (output directory, browser shims for Node globals) and the build-time patches to Vitessce (see below)
 * `vitessce_patches.js`: the code those patches call
+* `gateway_views.js`: the gateway's own views, registered as Vitessce plugins: a cell type breakdown of the selected cells, and tabs showing several views in one panel
 * `package.json` and `package-lock.json`: the npm packages, pinned to exact versions
 * `viewer_build_env.yaml`: the conda environment providing Node
 
@@ -234,6 +237,7 @@ The build patches Vitessce's prebuilt code as it reads it. Each patch in `vite.c
 * **row-group extents**: to find which transcript row groups a tile needs, Vitessce searches them one after another, downloading each row group it checks in full just to read its first and last Morton code. The patch reads those values from the minimum and maximum statistics in the Parquet file's footer, which the browser has already downloaded, so only the row groups shown are fetched, all at once. If the statistics are missing (pyarrow writes them by default), Vitessce's own search runs and the browser console shows `No footer statistics for …`.
 * **gene chips** and **set buttons**: the gene list gets a row of the selected genes, with buttons to remove one or clear them all, and the Cell Sets toolbar gets *All* and *None*.
 * **click toggles** and **solo click hidden genes**: a plain click on a gene adds it to the selection or removes it, also among search results; Shift+click keeps only the clicked gene, including dropping selected genes the search hides.
+* **view internals**: the hooks and components that the gateway's own views need (data loading, the panel title bar, coordination types), which the `vitessce` package does not export.
 
 The snippets contain names that Vitessce's own build minified, so they change between versions. The build stops with `Vitessce patch '<name>' matches <n> times` or `Vitessce patches not applied: <names>` when a snippet no longer matches exactly once. After an upgrade, find the new snippets by searching `node_modules/vitessce/dist/` for the readable strings around them (the two `vitessce.io` addresses, the dot plot's `shift_dot_select`, the spatial view's `LEGEND_VISIBLE`, the matrix loader's `sparseArrays` and `_sparseMatrix`, the Parquet loader's `_loadParquetRowGroupColumnExtent`). If the parquet-wasm address has changed, download the new build's `esm/parquet_wasm.js`, `esm/parquet_wasm_bg.wasm`, `LICENSE_MIT` and `LICENSE_APACHE` into a new vendor folder named after it, and update the path in `vitessce_patches.js` and `CREDITS.md`.
 

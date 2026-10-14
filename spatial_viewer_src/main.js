@@ -17,6 +17,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Vitessce } from 'vitessce';
+import { GATEWAY_VIEW_TYPES } from './gateway_views.js';
 
 // Read from query string rather than server-side templating: bundle is
 // static asset, so Jinja cannot render it.
@@ -110,6 +111,79 @@ function fitSpatialZoom(config, width, height) {
   );
 }
 
+// Vitessce cannot reopen closed view, but keeps selections in its config:
+// restoring remounts it on live config with full layout, so data reloads
+function Viewer({ config: initialConfig }) {
+  const [config, setConfig] = React.useState(initialConfig);
+  const [closedCount, setClosedCount] = React.useState(0);
+  const fullConfig = React.useRef(null);
+  const liveConfig = React.useRef(null);
+  const restoreCount = React.useRef(0);
+
+  const onConfigChange = React.useCallback((next) => {
+    // First emission is initialised config: every view, with assigned uids
+    if (!fullConfig.current) fullConfig.current = next;
+    liveConfig.current = next;
+    const open = new Set(next.layout.map((view) => view.uid));
+    setClosedCount(
+      fullConfig.current.layout.filter((view) => !open.has(view.uid)).length,
+    );
+  }, []);
+
+  function restorePanels() {
+    const live = liveConfig.current;
+    const full = fullConfig.current;
+    const liveViews = new Map(live.layout.map((view) => [view.uid, view]));
+    // Original positions: grid may have moved open views into gaps
+    const layout = full.layout.map((view) => ({
+      ...(liveViews.get(view.uid) || view),
+      x: view.x,
+      y: view.y,
+      w: view.w,
+      h: view.h,
+    }));
+    restoreCount.current += 1;
+    // New uid is what makes Vitessce remount
+    const restored = {
+      ...live,
+      layout,
+      uid: `${full.uid}-restored-${restoreCount.current}`,
+    };
+    liveConfig.current = restored;
+    setClosedCount(0);
+    setConfig(restored);
+  }
+
+  return React.createElement(
+    React.Fragment,
+    null,
+    React.createElement(Vitessce, {
+      config,
+      // Spatial view writes alpha into static colours in place, so live
+      // config fails schema; Vitessce allows skipping it for emitted configs
+      validateConfig: config === initialConfig,
+      onConfigChange,
+      pluginViewTypes: GATEWAY_VIEW_TYPES,
+      theme: 'light',
+      // Vitessce needs explicit pixel height; it does not fill its parent.
+      height: window.innerHeight,
+    }),
+    closedCount > 0 &&
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          className: 'gateway-restore-panels',
+          title: 'Reopen closed panels; selections are kept, data reloads',
+          onClick: restorePanels,
+        },
+        closedCount === 1
+          ? 'Restore closed panel'
+          : `Restore ${closedCount} closed panels`,
+      ),
+  );
+}
+
 async function main() {
   if (!configUrl) {
     showMessage('No config specified. Use ?config=<url>.');
@@ -123,14 +197,7 @@ async function main() {
     const config = await response.json();
     absolutizeUrls(config);
     fitSpatialZoom(config, window.innerWidth, window.innerHeight);
-    root.render(
-      React.createElement(Vitessce, {
-        config,
-        theme: 'light',
-        // Vitessce needs explicit pixel height; it does not fill its parent.
-        height: window.innerHeight,
-      }),
-    );
+    root.render(React.createElement(Viewer, { config }));
   } catch (err) {
     showMessage(`Failed to load config from ${configUrl}: ${err}`);
   }

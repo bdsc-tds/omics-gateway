@@ -1,6 +1,6 @@
-import { A as e, M as t, dt as n, ft as r, gt as i, ht as a, pt as o, st as s } from "./index-CDVgyDq2-chOp7fmy.js";
+import { Ct as e, Et as t, I as n, P as r, St as i, Tt as a, _t as o, xt as s } from "./index-CDVgyDq2-BYPzMBsJ.js";
 import { $a as c, $i as l, A as u, An as d, Ar as f, E as p, Fi as m, Ia as h, Ln as g, Lt as _, Qi as v, Ri as y, Rt as b, U as x, Wa as S, Zr as C, an as w, ar as T, do as E, eo as D, er as O, fr as k, in as A, ir as j, ka as ee, kr as te, nr as ne, on as re, or as M, pn as N, pr as ie, qt as P, rr as F, sr as ae, to as I, ua as L, ut as oe, x as R } from "./three.core-1aHSpGwp.js";
-import { a as z, c as B, n as V, o as H, r as se, s as ce, t as U } from "./OrbitControls-BCWuR9T1.js";
+import { a as z, c as B, n as V, o as H, r as se, s as ce, t as U } from "./OrbitControls-DRWzwxUW.js";
 //#region node_modules/three-stdlib/_polyfill/constants.js
 var W = /* @__PURE__ */ parseInt("185".replace(/\D+/g, "")), le = W >= 125 ? "uv1" : "uv2", ue = /* @__PURE__ */ new p(), de = /* @__PURE__ */ new D(), fe = class extends w {
 	constructor() {
@@ -515,7 +515,7 @@ var Me = class extends j {
 	constructor(e = new pe(), t = new me({ color: Math.random() * 16777215 })) {
 		super(e, t), this.isLine2 = !0, this.type = "Line2";
 	}
-}, K = /* @__PURE__ */ i(n()), Pe = /* @__PURE__ */ K.forwardRef(function({ points: e, color: t = 16777215, vertexColors: n, linewidth: r, lineWidth: i, segments: a, dashed: o, ...s }, l) {
+}, K = /* @__PURE__ */ t(s()), Pe = /* @__PURE__ */ K.forwardRef(function({ points: e, color: t = 16777215, vertexColors: n, linewidth: r, lineWidth: i, segments: a, dashed: o, ...s }, l) {
 	var u;
 	let d = z((e) => e.size), f = K.useMemo(() => a ? new Me() : new Ne(), [a]), [p] = K.useState(() => new me()), m = (n == null || (u = n[0]) == null ? void 0 : u.length) === 4 ? 4 : 3, h = K.useMemo(() => {
 		let r = a ? new fe() : new pe(), i = e.map((e) => {
@@ -575,7 +575,7 @@ var Me = class extends j {
 });
 //#endregion
 //#region node_modules/troika-worker-utils/dist/troika-worker-utils.esm.js
-r();
+i();
 function Fe() {
 	var e = Object.create(null);
 	function t(n, i) {
@@ -688,15 +688,15 @@ function Ie(e) {
 	}, t;
 }
 var q = function() {
-	var e = !1;
+	var t = !1;
 	if (typeof window < "u" && window.document !== void 0) try {
-		new Worker(URL.createObjectURL(new Blob([""], { type: "application/javascript" }))).terminate(), e = !0;
-	} catch (e) {
-		o !== void 0 && o.env.NODE_ENV === "test" || console.log("Troika createWorkerModule: web workers not allowed; falling back to main thread execution. Cause: [" + e.message + "]");
+		new Worker(URL.createObjectURL(new Blob([""], { type: "application/javascript" }))).terminate(), t = !0;
+	} catch (t) {
+		e !== void 0 && e.env.NODE_ENV === "test" || console.log("Troika createWorkerModule: web workers not allowed; falling back to main thread execution. Cause: [" + t.message + "]");
 	}
 	return q = function() {
-		return e;
-	}, e;
+		return t;
+	}, t;
 }, Le = 0, Re = 0, ze = !1, Be = Object.create(null), Ve = Object.create(null), He = Object.create(null);
 function Ue(e) {
 	if ((!e || typeof e.init != "function") && !ze) throw Error("requires `options.init` function");
@@ -6317,7 +6317,7 @@ var ya = (e) => e.isMesh, ba = /* @__PURE__ */ K.forwardRef(({ enabled: e = !0, 
 	g: () => Za,
 	i: () => Wa,
 	s: () => Ua
-}), $ = s(), Ca = Object.defineProperty, wa = (e, t, n) => t in e ? Ca(e, t, {
+}), $ = o(), Ca = Object.defineProperty, wa = (e, t, n) => t in e ? Ca(e, t, {
 	enumerable: !0,
 	configurable: !0,
 	writable: !0,
@@ -6790,7 +6790,7 @@ var Da = class {
 	minimumIntensityProjection: 1,
 	additive: 2
 };
-function Aa(e, n, r, i, a, o) {
+function Aa(e, t, r, i, a, o) {
 	let { spatialRenderingMode: s } = o, c = a?.image?.instance?.getData();
 	if (!c) return {
 		channelsVisible: null,
@@ -6807,7 +6807,7 @@ function Aa(e, n, r, i, a, o) {
 		ySlice: null,
 		zSlice: null
 	};
-	let l = a.image.instance, u = s === "3D", d = n[t.PHOTOMETRIC_INTERPRETATION] === "RGB", f = ka[n[t.VOLUMETRIC_RENDERING_ALGORITHM]], p = n[t.SPATIAL_LAYER_VISIBLE], m = n[t.SPATIAL_LAYER_OPACITY];
+	let l = a.image.instance, u = s === "3D", d = t[n.PHOTOMETRIC_INTERPRETATION] === "RGB", f = ka[t[n.VOLUMETRIC_RENDERING_ALGORITHM]], p = t[n.SPATIAL_LAYER_VISIBLE], m = t[n.SPATIAL_LAYER_OPACITY];
 	l.isInterleaved();
 	let h = d ? [
 		[
@@ -6825,19 +6825,19 @@ function Aa(e, n, r, i, a, o) {
 			0,
 			255
 		]
-	] : r.map((e) => i[e][t.SPATIAL_CHANNEL_COLOR]), g = d ? [
+	] : r.map((e) => i[e][n.SPATIAL_CHANNEL_COLOR]), g = d ? [
 		[0, 255],
 		[0, 255],
 		[0, 255]
-	] : r.map((e) => i[e][t.SPATIAL_CHANNEL_WINDOW] || [0, 255]), _ = d ? [
+	] : r.map((e) => i[e][n.SPATIAL_CHANNEL_WINDOW] || [0, 255]), _ = d ? [
 		p && !0,
 		p && !0,
 		p && !0
-	] : r.map((e) => p && i[e][t.SPATIAL_CHANNEL_VISIBLE]), v = d ? [
+	] : r.map((e) => p && i[e][n.SPATIAL_CHANNEL_VISIBLE]), v = d ? [
 		p && !0,
 		p && !0,
 		p && !0
-	] : r.map((e) => p && l.getChannelIndex(i[e][t.SPATIAL_TARGET_C])), y = l.getAutoTargetResolution(), b = n[t.SPATIAL_TARGET_RESOLUTION], x = b === null || Number.isNaN(b) ? y : b, S = a.image.loaders[0].channels ?? [], C = n[t.SPATIAL_SLICE_X], w = n[t.SPATIAL_SLICE_Y], T = n[t.SPATIAL_SLICE_Z];
+	] : r.map((e) => p && l.getChannelIndex(i[e][n.SPATIAL_TARGET_C])), y = l.getAutoTargetResolution(), b = t[n.SPATIAL_TARGET_RESOLUTION], x = b === null || Number.isNaN(b) ? y : b, S = a.image.loaders[0].channels ?? [], C = t[n.SPATIAL_SLICE_X], w = t[n.SPATIAL_SLICE_Y], T = t[n.SPATIAL_SLICE_Z];
 	return C = C === null ? [-1, 1e5] : C, w = w === null ? [-1, 1e5] : w, T = T === null ? [-1, 1e5] : T, {
 		channelsVisible: _,
 		allChannels: S,
@@ -6949,17 +6949,17 @@ var Fa = {
 	Float32: Float32Array,
 	Float64: Float64Array
 };
-async function Ia({ source: t, selection: n, onUpdate: r = () => {}, downsampleDepth: i = 1, signal: a }) {
-	let { shape: o, labels: s, dtype: c } = t, { height: l, width: u } = e(t), d = o[s.indexOf("z")], f = Math.max(1, Math.floor(d / i)), p = l * u, m = Fa[c], h = new m(p * f);
-	return await Promise.all(Array(f).fill(0).map(async (e, o) => {
+async function Ia({ source: e, selection: t, onUpdate: n = () => {}, downsampleDepth: i = 1, signal: a }) {
+	let { shape: o, labels: s, dtype: c } = e, { height: l, width: u } = r(e), d = o[s.indexOf("z")], f = Math.max(1, Math.floor(d / i)), p = l * u, m = Fa[c], h = new m(p * f);
+	return await Promise.all(Array(f).fill(0).map(async (r, o) => {
 		let s = {
-			...n,
+			...t,
 			z: o * i
-		}, { data: c } = await t.getRaster({
+		}, { data: c } = await e.getRaster({
 			selection: s,
 			signal: a
 		}), l = 0;
-		for (r({
+		for (n({
 			z: o,
 			total: f,
 			progress: .5
@@ -6967,7 +6967,7 @@ async function Ia({ source: t, selection: n, onUpdate: r = () => {}, downsampleD
 			let e = o * p + (p - l - 1), t = (u - l - 1) % u + u * Math.floor(l / u);
 			h[e] = c[t], l += 1;
 		}
-		r({
+		n({
 			z: o,
 			total: f,
 			progress: 1
@@ -7097,7 +7097,7 @@ function Ga(e) {
 		}, Ua(e)))
 	})] });
 }
-var Ka = K.lazy(() => import("./GeometryAndMeshXR-DhL415aR-BEET7ZQo.js").catch(() => ({ default: Ga }))), qa = K.lazy(() => import("./XRSceneComponents-CpuAUm3S-CobKVbYn.js").catch(() => ({ default: () => null })));
+var Ka = K.lazy(() => import("./GeometryAndMeshXR-DhL415aR-CQlMWBX2.js").catch(() => ({ default: Ga }))), qa = K.lazy(() => import("./XRSceneComponents-CpuAUm3S-Rig1jem_.js").catch(() => ({ default: () => null })));
 function Ja(e) {
 	let t = (0, K.useRef)(null), n = (0, K.useRef)(null), [r, i] = (0, K.useState)(!1), [a, o] = (0, K.useState)(!1), [s, c] = (0, K.useState)(null), [l, u] = (0, K.useState)([
 		1,
@@ -7340,7 +7340,7 @@ function Za() {
 	if (!Ya) throw Error("@react-three/xr is not loaded; call loadXRModule() first.");
 	return Ya;
 }
-var Qa = K.lazy(() => import("./XRWrapper-B9IIMYL--Bcs-9Zcq.js").catch(() => ({ default: ({ children: e }) => e }))), $a = K.lazy(() => import("./XREnterButton-CLRf7k6e-vjp3AP7U.js").catch(() => ({ default: () => null }))), eo = (0, K.forwardRef)((e, t) => {
+var Qa = K.lazy(() => import("./XRWrapper-B9IIMYL--CiVcCOMK.js").catch(() => ({ default: ({ children: e }) => e }))), $a = K.lazy(() => import("./XREnterButton-CLRf7k6e-7HC4jBBz.js").catch(() => ({ default: () => null }))), eo = (0, K.forwardRef)((e, t) => {
 	let [n, r] = (0, K.useState)(!1);
 	return (0, K.useEffect)(() => {
 		Xa().then(() => r(!0)).catch(() => {});

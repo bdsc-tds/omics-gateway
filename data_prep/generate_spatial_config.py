@@ -420,6 +420,54 @@ def drop_extra_segmentation_table_paths(config, extra_file_uids):
     return n_stripped
 
 
+# Function to put dot plot and violin plot in one panel, as tabs
+def nest_plot_tabs(config):
+    """
+    Replace dot plot and violin plot layout entries with one gatewayTabs view.
+
+    Tabs view is gateway's own plugin (spatial_viewer_src/gateway_views.js)
+    and takes dot plot's slot. Each tab keeps its view's coordination scopes
+    and props, which viewer applies over tabs view's auto-initialised scopes,
+    so dot plot's aggregation strategy stays unshared.
+
+    Parameters:
+    -----------
+    config: dict
+      Vitessce config, modified in place.
+    """
+    labels = {
+        'dotPlot': 'Dot plot',
+        'obsSetFeatureValueDistribution': 'Violin plot',
+    }
+    views = {
+        view['component']: view
+        for view in config['layout']
+        if view['component'] in labels
+    }
+    dot_plot = views['dotPlot']
+    tabs = {
+        'component': 'gatewayTabs',
+        **{key: dot_plot[key] for key in ('x', 'y', 'w', 'h')},
+        'coordinationScopes': {},
+        'props': {
+            'tabs': [
+                {
+                    'label': label,
+                    'component': component,
+                    'coordinationScopes': views[component][
+                        'coordinationScopes'
+                    ],
+                    'props': views[component].get('props', {}),
+                }
+                for component, label in labels.items()
+            ]
+        },
+    }
+    config['layout'] = [
+        view for view in config['layout'] if view['component'] not in labels
+    ] + [tabs]
+
+
 # Function to build and write Vitessce config for SpatialData store
 def generate_config(
     zarr_path,
@@ -594,6 +642,8 @@ def generate_config(
     distribution = vc.add_view(
         'obsSetFeatureValueDistribution', dataset=dataset
     )
+    # Gateway's own view: cell types of lasso regions or selected sets
+    breakdown = vc.add_view('gatewayCellTypeCounts', dataset=dataset)
     description = vc.add_view('description', dataset=dataset)
     description.set_props(description=os.path.splitext(name)[0])
     # Metric list takes status panel's slot, least used one
@@ -615,6 +665,7 @@ def generate_config(
             dot_plot,
             feature_list,
             distribution,
+            breakdown,
         ],
         ['obsType'],
         [obs_type],
@@ -671,6 +722,7 @@ def generate_config(
     dot_plot.use_coordination(
         feature_selection, obs_set_selection, obs_set_color
     )
+    breakdown.use_coordination(obs_set_selection, obs_set_color)
 
     # Cells are annotated, so their channel reuses shared selection scopes;
     # extra segmentations have no table and only carry fixed colour
@@ -876,12 +928,14 @@ def generate_config(
         (feature_list, (10, 0, 2, 2)),
         (obs_sets, (10, 2, 2, 2)),
         (dot_plot, (3, 4, 5, 2)),
-        (distribution, (8, 4, 4, 2)),
+        (breakdown, (8, 4, 4, 2)),
     ):
         view.set_xywh(x, y, w, h)
 
     config = vc.to_dict()
     drop_extra_segmentation_table_paths(config, extra_file_uids)
+    # Violin plot had no grid slot: it joins dot plot's as tab
+    nest_plot_tabs(config)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, 'w') as handle:
