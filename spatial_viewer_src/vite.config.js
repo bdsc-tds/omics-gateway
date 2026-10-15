@@ -233,6 +233,26 @@ const PATCHES = [
       'f, S, ie.SEGMENTATION_LAYER, ie.SEGMENTATION_CHANNEL), ' +
       'gatewayAutoFillDone = useGatewayAutoFill(Xe), He = pl([',
   },
+  {
+    // Scale bar length from config's microns per unit, hidden without it
+    // (I$: Viv's ScaleBarLayer, r: 3D mode)
+    name: 'scale bar size',
+    find:
+      'return !e || !n || !i || r ? null : new I$({\n' +
+      '      id: "scalebar-layer",\n      unit: "um",\n      size: 1,\n',
+    replace:
+      'return !e || !n || !i || r || !gatewayMicronsPerUnit() ? null : new I$({\n' +
+      '      id: "scalebar-layer",\n      unit: "um",\n' +
+      '      size: gatewayMicronsPerUnit(),\n',
+  },
+  {
+    // Scale bar dark on light box (Q, f, S: bar and end ticks, p: label)
+    name: 'scale bar colour',
+    find: 'return [Q, f, S, p];\n  }\n};\nI$.layerName = "ScaleBarLayer";',
+    replace:
+      'return gatewayScaleBarLayers([Q, f, S, p]);\n  }\n};\n' +
+      'I$.layerName = "ScaleBarLayer";',
+  },
 ];
 
 // Function to apply PATCHES to Vitessce's prebuilt bundle
@@ -258,7 +278,8 @@ function patchVitessce() {
         'useGatewayAutoFill, gatewayDotPlotHeight, gatewayForgetOnReject, ' +
         'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours, ' +
         'GatewayGeneChips, gatewayGeneChipsHeight, GatewaySetButtons, ' +
-        'gatewayNoteSoloClick, gatewayTakeSoloClick, gatewayRowGroupExtent';
+        'gatewayNoteSoloClick, gatewayTakeSoloClick, gatewayRowGroupExtent, ' +
+        'gatewayMicronsPerUnit, gatewayScaleBarLayers';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },

@@ -18,6 +18,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Vitessce } from 'vitessce';
 import { GATEWAY_VIEW_TYPES } from './gateway_views.js';
+import { setGatewayMicronsPerUnit } from './vitessce_patches.js';
 
 // Read from query string rather than server-side templating: bundle is
 // static asset, so Jinja cannot render it.
@@ -194,7 +195,9 @@ async function main() {
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }
-    const config = await response.json();
+    // Gateway's own options are unknown to Vitessce's config schema
+    const { gatewayOptions = {}, ...config } = await response.json();
+    setGatewayMicronsPerUnit(gatewayOptions.micronsPerUnit);
     absolutizeUrls(config);
     fitSpatialZoom(config, window.innerWidth, window.innerHeight);
     root.render(React.createElement(Viewer, { config }));
