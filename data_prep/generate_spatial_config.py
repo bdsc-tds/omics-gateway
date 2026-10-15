@@ -229,6 +229,32 @@ def read_microns_per_unit(zarr_path, image, seg_path):
     return None
 
 
+# Function to derive layer file uid from segmentation element name
+def file_uid_of(element_name, sample=None):
+    """
+    Derive file uid from segmentation element name, without sample prefix.
+
+    File uid also names extra layers' rows (e.g. 'nucleus'), so prefix of
+    multi-sample stores is dropped.
+
+    Parameters:
+    -----------
+    element_name: str
+      Shapes or labels element name (e.g. 'pso1_nucleus_boundaries').
+    sample: str or None
+      Sample key prefixing element names, if any.
+
+    Returns:
+    --------
+    file_uid: str
+      Name without sample prefix and '_boundaries' suffix (e.g. 'nucleus').
+    """
+    if sample is not None:
+        element_name = element_name.removeprefix(f'{sample}_')
+
+    return element_name.replace('_boundaries', '')
+
+
 # Function to pick metric obs columns viewer can load
 def detect_metric_cols(obs_dir):
     """
@@ -334,9 +360,13 @@ def fit_zoom(image_shape, viewport=(800, 450)):
 
 
 # Function to auto-detect element paths of spatial store
-def detect_elements(zarr_path, image=None, segmentations=None):
+def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
     """
     Pick image, segmentation and table element paths from store.
+
+    Multi-sample stores prefix each sample's elements with its key
+    (e.g. 'pso1_he', 'pso1_cell_boundaries', 'pso1_table'); sample restricts
+    detection to those, so other samples never appear as extra layers.
 
     Parameters:
     -----------
@@ -346,6 +376,8 @@ def detect_elements(zarr_path, image=None, segmentations=None):
       Image element name to use; first one found when None.
     segmentations: str or None
       Segmentation element name; first labels or shapes element when None.
+    sample: str or None
+      Sample key of multi-sample store; whole store when None.
 
     Returns:
     --------
@@ -355,9 +387,30 @@ def detect_elements(zarr_path, image=None, segmentations=None):
       'obs_points_path', 'coordinate_system', 'obs_set_cols',
       'obs_embeddings', 'centroids_path' and 'metric_cols'.
     """
-    images = list_group_members(os.path.join(zarr_path, 'images'))
-    tables = list_group_members(os.path.join(zarr_path, 'tables'))
-    points = list_group_members(os.path.join(zarr_path, 'points'))
+
+    # Function to list group members, restricted to sample's elements
+    def members_of(group):
+        """
+        List element names of store group, keeping only sample's when set.
+
+        Parameters:
+        -----------
+        group: str
+          Group name within store (e.g. 'images').
+
+        Returns:
+        --------
+        names: list of str
+          Sorted element names.
+        """
+        names = list_group_members(os.path.join(zarr_path, group))
+        if sample is None:
+            return names
+        return [name for name in names if name.startswith(f'{sample}_')]
+
+    images = members_of('images')
+    tables = members_of('tables')
+    points = members_of('points')
 
     if not images:
         raise ValueError(f'No image elements found in {zarr_path}/images')
@@ -370,7 +423,7 @@ def detect_elements(zarr_path, image=None, segmentations=None):
     seg_path = None
     other_seg_paths = []
     for group in SEGMENTATION_GROUPS:
-        members = list_group_members(os.path.join(zarr_path, group))
+        members = members_of(group)
         if not members:
             continue
         name = segmentations or members[0]
@@ -387,6 +440,8 @@ def detect_elements(zarr_path, image=None, segmentations=None):
 
     # SpatialData convention places annotation table at tables/table
     table_name = 'table' if 'table' in tables else tables[0]
+    if sample is not None and f'{sample}_table' in tables:
+        table_name = f'{sample}_table'
 
     coordinate_system = (
         read_coordinate_system(os.path.join(zarr_path, *seg_path.split('/')))
@@ -524,6 +579,7 @@ def generate_config(
     segmentations=None,
     obs_type='cell',
     metrics=True,
+    sample=None,
 ):
     """
     Build Vitessce view-config for SpatialData store and write it to disk.
@@ -556,7 +612,9 @@ def generate_config(
     """
     name = os.path.basename(os.path.normpath(zarr_path))
     sdata_url = f'{serve_base.rstrip("/")}/{name}'
-    paths = detect_elements(zarr_path, image=image, segmentations=segmentations)
+    paths = detect_elements(
+        zarr_path, image=image, segmentations=segmentations, sample=sample
+    )
     if not metrics:
         paths['metric_cols'] = []
 
@@ -591,7 +649,7 @@ def generate_config(
     dataset = vc.add_dataset(name=name, uid=DATASET_UID).add_object(wrapper)
 
     # Cells keep table so spatial view can colour them by set or gene
-    primary_file_uid = region.replace('_boundaries', '')
+    primary_file_uid = file_uid_of(region, sample)
     dataset.add_object(
         SpatialDataWrapper(
             sdata_url=sdata_url,
@@ -656,7 +714,7 @@ def generate_config(
     # they must keep views' obsType to render at all
     extra_file_uids = []
     for seg_path in paths['other_segmentation_paths']:
-        extra_file_uid = seg_path.split('/')[-1].replace('_boundaries', '')
+        extra_file_uid = file_uid_of(seg_path.split('/')[-1], sample)
         extra_file_uids.append(extra_file_uid)
         dataset.add_object(
             SpatialDataWrapper(
@@ -1049,6 +1107,11 @@ def parse_args():
         default='cell',
         help='Observation label used across views (default: cell).',
     )
+    parser.add_argument(
+        '--sample',
+        default=None,
+        help='Sample key of multi-sample store (element name prefix).',
+    )
 
     return parser.parse_args()
 
@@ -1061,6 +1124,8 @@ if __name__ == '__main__':
     else:
         # Keep configs in own subfolder, separated from data stores
         stem = os.path.basename(os.path.splitext(zarr_path)[0])
+        if args.sample:
+            stem = f'{stem}_{args.sample}'
         out = os.path.join(
             os.path.dirname(zarr_path), 'vitessce_configs', stem + CONFIG_SUFFIX
         )
@@ -1077,4 +1142,5 @@ if __name__ == '__main__':
             segmentations=args.segmentations,
             obs_type=args.obs_type,
             metrics=metrics,
+            sample=args.sample,
         )
