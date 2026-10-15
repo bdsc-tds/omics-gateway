@@ -41,6 +41,12 @@
  * last Morton code, one after another. Same min/max sit in Parquet footer
  * statistics, already downloaded but unexposed by parquet-wasm, so they are
  * decoded here; Vitessce's own path runs whenever they are missing.
+ *
+ * Scale bar: beta spatial view reads one world unit as 1 µm, while gateway
+ * stores use image pixels, so length comes from config's
+ * gatewayOptions.micronsPerUnit (set by main.js) and bar is hidden without
+ * it. Viv draws bar light grey, unreadable on H&E; it is drawn black on
+ * translucent white box instead, readable on dark and light images alike.
  */
 
 import { createElement as h, useEffect, useRef } from 'react';
@@ -79,6 +85,62 @@ export function gatewayForgetOnReject(owner, key) {
     if (owner[key] === promise) owner[key] = undefined;
   });
   return promise;
+}
+
+// Microns per world unit of spatial view; null hides scale bar
+let micronsPerUnit = null;
+
+// Store config's microns per world unit; anything but positive number clears
+export function setGatewayMicronsPerUnit(value) {
+  micronsPerUnit = typeof value === 'number' && value > 0 ? value : null;
+}
+
+// Microns per world unit for scale bar, or null when config gives none
+export function gatewayMicronsPerUnit() {
+  return micronsPerUnit;
+}
+
+const SCALE_BAR_COLOUR = [0, 0, 0];
+const SCALE_BAR_BOX = [255, 255, 255, 110];
+// Box margin around bar and label, and label glyph size, in screen pixels
+const SCALE_BAR_PADDING = 8;
+const SCALE_BAR_LABEL_SIZE = 12;
+const SCALE_BAR_CHAR_WIDTH = 0.6 * SCALE_BAR_LABEL_SIZE;
+
+// Viv's scale bar layers (bar, two end ticks, label) redrawn dark on light
+// box. Box is copy of bar's line layer, as thick as box is tall, since patch
+// has no polygon layer class at hand; extents come from layers' own data
+export function gatewayScaleBarLayers(layers) {
+  const [bar, leftTick, rightTick, label] = layers;
+  // Label is sized in world units scaled by 2^-zoom: one screen pixel
+  const pixel = label.props.sizeScale;
+  const [[barLeft], [barRight]] = bar.props.data[0];
+  const tickTop = Math.min(...leftTick.props.data[0].map((point) => point[1]));
+  const { text, position } = label.props.data[0];
+  const halfText = (text.length * SCALE_BAR_CHAR_WIDTH * pixel) / 2;
+  const pad = SCALE_BAR_PADDING * pixel;
+  const left = Math.min(barLeft, position[0] - halfText) - pad;
+  const right = Math.max(barRight, position[0] + halfText) + pad;
+  const top = tickTop - pad;
+  const bottom = position[1] + (SCALE_BAR_LABEL_SIZE / 2) * pixel + pad;
+  const middle = (top + bottom) / 2;
+  return [
+    bar.clone({
+      id: `${bar.id}-box`,
+      data: [
+        [
+          [left, middle],
+          [right, middle],
+        ],
+      ],
+      getWidth: (bottom - top) / pixel,
+      getColor: SCALE_BAR_BOX,
+    }),
+    ...[bar, leftTick, rightTick].map((line) =>
+      line.clone({ getColor: SCALE_BAR_COLOUR }),
+    ),
+    label.clone({ getColor: [...SCALE_BAR_COLOUR, 255] }),
+  ];
 }
 
 // Vitessce's PALETTE (@vitessce/utils), indexed by gene position
