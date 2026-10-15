@@ -8,6 +8,7 @@ The gateway does not process data: it lists the datasets described in a table an
 .h5ad files from a single-cell pipeline ───────────────────────────┐
                                                                    ├─> generate_datasets_tsv.py ─> datasets.tsv
 Xenium Ranger output ─> convert_xenium.py ─> <sample>.zarr ────────┤
+Space Ranger output ─> convert_visium_hd.py ─> <study>.zarr        │
                                                    │               │
                                                    └─> generate_spatial_config.py ─> viewer configs
 QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py ─> thumbnails
@@ -17,6 +18,7 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | --- | --- | --- |
 | `generate_datasets_tsv.py` | `omics-gateway` | `datasets.tsv`, the table of datasets shown in the browser |
 | `convert_xenium.py` | `spatial` | a SpatialData `.zarr` store, from Xenium Ranger output |
+| `convert_visium_hd.py` | `spatial` | one sample of a multi-sample SpatialData store, from Space Ranger output |
 | `write_store_metadata.py` | `spatial` | the dataset's metadata inside an existing store |
 | `generate_spatial_config.py` | `spatial` | the viewer configs for a store |
 | `downscale_qc_figures.py` | `omics-gateway` | a lower-resolution copy of the QC figures |
@@ -141,6 +143,39 @@ conda run -n spatial python data_prep/write_store_metadata.py \
 ```
 
 Then regenerate the dataset table.
+
+## Adding a Visium HD study
+
+A Visium HD study becomes one SpatialData store holding all its samples, plus one viewer config per sample. Each sample is added by a separate run of `convert_visium_hd.py`. You need, per sample:
+
+- the **Space Ranger output folder** (`outs`, Space Ranger 4 or later, with its cell segmentation in `segmented_outputs/`);
+- the **H&E image** given to Space Ranger, as a pyramidal OME-TIFF;
+- an **RCTD result**: a CSV with `Barcode` (Space Ranger's cell ID), `spot_class` and `first_type` columns;
+- the **joint analysis export**: a CSV with one row per cell kept after quality control, and the columns `cell_id` (Space Ranger's cell ID), `sample` (the sample's ID in the joint analysis), `cluster`, `umap_1` and `umap_2`. Only the cells listed there are kept.
+
+The H&E images are large (several GB each at full resolution), so run the conversion where memory is plentiful, such as a cluster job with 16 GB or more. It takes a few minutes per sample and stays below 2.5 GB. Run the samples one after another, never in parallel, as they write into the same store:
+
+```bash
+conda run -n spatial python data_prep/convert_visium_hd.py \
+    --outs <space ranger outs> \
+    --he <he image>.ome.tif \
+    --sample-id <ID in the joint analysis> \
+    --key <short key, e.g. pso1> \
+    --rctd <rctd result>.csv \
+    --merged-umap <joint analysis export>.csv \
+    --out data/<study>.zarr
+```
+
+Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each.
+
+Then generate each sample's viewer configs:
+
+```bash
+conda run -n spatial python data_prep/generate_spatial_config.py \
+    --zarr data/<study>.zarr --sample <key>
+```
+
+They are written as `data/vitessce_configs/<study>_<key>.vitessce.json` and `.nometrics.vitessce.json`.
 
 ## Reference
 
