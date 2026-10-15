@@ -183,6 +183,52 @@ def read_image_shape(image_dir):
     return (shape[-1], shape[-2]) if shape and len(shape) >= 2 else None
 
 
+# Function to read size of viewer's world unit in microns
+def read_microns_per_unit(zarr_path, image, seg_path):
+    """
+    Read how many microns one unit of store's coordinate frame spans.
+
+    Viewer's scale bar needs it: frame unit is image pixel, not micron.
+    Image attribute 'microns_per_pixel' wins when present; otherwise shapes'
+    scale is used, as Xenium stores keep polygons in microns, scaled to
+    image pixels.
+
+    Parameters:
+    -----------
+    zarr_path: str
+      Path to SpatialData .zarr store on disk.
+    image: str
+      Image element name.
+    seg_path: str
+      Segmentation element path within store (e.g. 'shapes/cell_boundaries').
+
+    Returns:
+    --------
+    microns: float or None
+      Microns per unit, or None when store gives no way to tell.
+    """
+    meta_path = os.path.join(zarr_path, 'images', image, 'zarr.json')
+    if os.path.isfile(meta_path):
+        with open(meta_path) as handle:
+            attrs = json.load(handle).get('attributes', {})
+        if attrs.get('microns_per_pixel'):
+            return float(attrs['microns_per_pixel'])
+
+    if not seg_path.startswith('shapes/'):
+        return None
+    meta_path = os.path.join(zarr_path, *seg_path.split('/'), 'zarr.json')
+    if not os.path.isfile(meta_path):
+        return None
+    with open(meta_path) as handle:
+        attrs = json.load(handle).get('attributes', {})
+    for transform in attrs.get('coordinateTransformations', []):
+        scale = transform.get('scale')
+        if transform.get('type') == 'scale' and scale and scale[0] == scale[-1]:
+            return 1 / scale[0]
+
+    return None
+
+
 # Function to pick metric obs columns viewer can load
 def detect_metric_cols(obs_dir):
     """
@@ -304,10 +350,10 @@ def detect_elements(zarr_path, image=None, segmentations=None):
     Returns:
     --------
     paths: dict
-      Keys 'image_shape', 'image_path', 'obs_segmentations_path',
-      'other_segmentation_paths', 'table_path', 'obs_points_path',
-      'coordinate_system', 'obs_set_cols', 'obs_embeddings', 'centroids_path'
-      and 'metric_cols'.
+      Keys 'image_shape', 'image_path', 'microns_per_unit',
+      'obs_segmentations_path', 'other_segmentation_paths', 'table_path',
+      'obs_points_path', 'coordinate_system', 'obs_set_cols',
+      'obs_embeddings', 'centroids_path' and 'metric_cols'.
     """
     images = list_group_members(os.path.join(zarr_path, 'images'))
     tables = list_group_members(os.path.join(zarr_path, 'tables'))
@@ -355,6 +401,7 @@ def detect_elements(zarr_path, image=None, segmentations=None):
             os.path.join(zarr_path, 'images', image)
         ),
         'image_path': f'images/{image}',
+        'microns_per_unit': read_microns_per_unit(zarr_path, image, seg_path),
         'obs_segmentations_path': seg_path,
         'other_segmentation_paths': other_seg_paths,
         'table_path': f'tables/{table_name}',
@@ -933,6 +980,9 @@ def generate_config(
         view.set_xywh(x, y, w, h)
 
     config = vc.to_dict()
+    # Read by viewer's main.js, which removes it before Vitessce sees config
+    if paths['microns_per_unit']:
+        config['gatewayOptions'] = {'micronsPerUnit': paths['microns_per_unit']}
     drop_extra_segmentation_table_paths(config, extra_file_uids)
     # Violin plot had no grid slot: it joins dot plot's as tab
     nest_plot_tabs(config)
