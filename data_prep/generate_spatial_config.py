@@ -21,6 +21,7 @@ import json
 import math
 import os
 
+import pandas as pd
 import zarr
 from anndata.io import read_elem
 from vitessce import (
@@ -339,6 +340,40 @@ def write_metric_values(table_dir, metric_cols, out_path):
         )
 
     return out_path
+
+
+# Function to list each set column's values in Vitessce's palette order
+def read_set_order(table_dir, set_cols):
+    """
+    List values present in each set column, sorted as Vitessce sorts them.
+
+    Vitessce gives each set palette colour of its position among values
+    present in table, so set missing from one sample shifts later sets'
+    colours there. Read from merged table, this order lets viewer page give
+    each set same colour in every sample's config.
+
+    Parameters:
+    -----------
+    table_dir: str
+      Path to table element within store.
+    set_cols: list of str
+      obs columns shown as cell sets.
+
+    Returns:
+    --------
+    order: dict
+      Set names in palette order, keyed by hierarchy name.
+    """
+    order = {}
+    for col in set_cols:
+        values = read_elem(
+            zarr.open_group(os.path.join(table_dir, 'obs', col), mode='r')
+        )
+        # Missing values belong to no set in Vitessce
+        present = pd.Series(values).dropna().astype(str).unique()
+        order[col.replace('_', ' ').title()] = sorted(present)
+
+    return order
 
 
 # Function to compute zoom level that fits extent in viewport
@@ -1161,8 +1196,17 @@ def generate_config(
 
     config = vc.to_dict()
     # Read by viewer's main.js, which removes it before Vitessce sees config
+    options = {}
     if paths['microns_per_unit']:
-        config['gatewayOptions'] = {'micronsPerUnit': paths['microns_per_unit']}
+        options['micronsPerUnit'] = paths['microns_per_unit']
+    # Sample's sets take merged table's colours, same in every sample
+    merged_table_dir = os.path.join(zarr_path, 'tables', 'table')
+    if sample is not None and os.path.isdir(merged_table_dir):
+        options['setOrder'] = read_set_order(
+            merged_table_dir, paths['obs_set_cols']
+        )
+    if options:
+        config['gatewayOptions'] = options
     drop_extra_segmentation_table_paths(config, extra_file_uids)
     # Violin plot had no grid slot: it joins dot plot's as tab
     nest_plot_tabs(config)

@@ -57,6 +57,16 @@ const PATCHES = [
       '      float normalizedExpressionValue',
   },
   {
+    // Unassigned cells grey, darker than unselected ones; other sets take
+    // palette slot from config's set order (o: set node)
+    name: 'set colours',
+    find: 'const C = o.color ? o.color : Tl[l % Tl.length];',
+    replace:
+      'const C = o.color ? o.color : ' +
+      'o.name === "Unassigned" ? [128, 128, 128] : ' +
+      'Tl[gatewaySetColourIndex(A, o.name, l) % Tl.length];',
+  },
+  {
     // Dot plot height grows with genes (f: dot plot data)
     name: 'dot plot height',
     find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',
@@ -294,7 +304,7 @@ function patchVitessce() {
         'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours, ' +
         'GatewayGeneChips, gatewayGeneChipsHeight, GatewaySetButtons, ' +
         'gatewayNoteSoloClick, gatewayTakeSoloClick, gatewayRowGroupExtent, ' +
-        'gatewayMicronsPerUnit, gatewayScaleBarLayers';
+        'gatewayMicronsPerUnit, gatewayScaleBarLayers, gatewaySetColourIndex';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },
