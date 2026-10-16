@@ -5,9 +5,11 @@ Concatenates per-sample tables written by convert_visium_hd.py into
 'tables/table', which annotates every sample's cell boundaries and carries
 study metadata read by generate_datasets_tsv.py. Adds 'sample' and 'disease'
 columns. Keeps only joint analysis UMAP (X_umap): per-sample UMAPs and
-spatial coordinates each live in own sample's frame.
+spatial coordinates each live in own sample's frame. Also writes
+'tables/<key>_umap_all_cells' per sample: every cell's joint UMAP, for
+sample's Merged UMAP view.
 
-Run again after any sample is converted again: existing merged table is
+Run again after any sample is converted again: existing tables are
 replaced.
 
 Usage (cluster batch job, once every sample is converted):
@@ -23,6 +25,7 @@ import argparse
 import time
 
 import anndata as ad
+import numpy as np
 import pandas as pd
 
 # Import sibling scripts; data_prep/ is on sys.path when scripts run directly
@@ -41,6 +44,9 @@ MERGED_TABLE = 'table'
 
 # obs columns shown as cell sets; concat turns differing categories to object
 CATEGORICAL_COLUMNS = ['cell_type', 'cell_type_best_guess', 'cluster']
+
+# Per-sample table of all cells' merged UMAP, read by config generator
+ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
 
 
 # Function to concatenate per-sample tables into one
@@ -97,6 +103,37 @@ def merge_tables(sdata, samples):
     )
 
 
+# Function to build one sample's all-cells UMAP table
+def all_cells_umap(merged, key):
+    """
+    Build table of every cell's joint analysis UMAP, sample's cells last.
+
+    Sample's config draws Merged UMAP from it, so other samples' cells show
+    as background; points draw in row order, so sample's come last, on top.
+
+    Parameters:
+    -----------
+    merged: anndata.AnnData
+      Table built by merge_tables().
+    key: str
+      Sample key in store.
+
+    Returns:
+    --------
+    table: anndata.AnnData
+      Parsed table with obs index and X_umap only, annotating no region.
+    """
+    own = (merged.obs['region'] == f'{key}_cell_boundaries').to_numpy()
+    order = list(np.flatnonzero(~own)) + list(np.flatnonzero(own))
+    table = ad.AnnData(
+        obs=pd.DataFrame(index=pd.Index(merged.obs_names[order], dtype=object)),
+        obsm={'X_umap': merged.obsm['X_umap'][order]},
+    )
+    normalise_string_dtypes(table)
+
+    return TableModel.parse(table)
+
+
 # Function to parse command-line arguments
 def parse_args():
     """
@@ -133,7 +170,8 @@ if __name__ == '__main__':
     # Read first, so typo fails before store changes
     metadata = load_metadata(args.metadata) if args.metadata else None
 
-    remove_existing_elements(args.zarr, [MERGED_TABLE])
+    umap_tables = [f'{key}{ALL_CELLS_UMAP_SUFFIX}' for key, _, _ in args.sample]
+    remove_existing_elements(args.zarr, [MERGED_TABLE, *umap_tables])
     sdata = read_zarr(args.zarr)
     merged = merge_tables(sdata, args.sample)
     print(
@@ -145,6 +183,9 @@ if __name__ == '__main__':
 
     sdata[MERGED_TABLE] = merged
     sdata.write_element(MERGED_TABLE)
+    for (key, _, _), name in zip(args.sample, umap_tables):
+        sdata[name] = all_cells_umap(merged, key)
+        sdata.write_element(name)
     sdata.write_consolidated_metadata()
     if metadata:
         keys = write_store_metadata(args.zarr, metadata)

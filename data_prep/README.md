@@ -179,7 +179,7 @@ conda run -n spatial python data_prep/merge_visium_hd_tables.py \
     --metadata spatial_sources/<study>.metadata.yaml
 ```
 
-The table adds `sample` and `disease` columns to the per-sample tables' columns and keeps only the joint analysis UMAP, as each sample's own UMAP and coordinates are in that sample's frame.
+The table adds `sample` and `disease` columns to the per-sample tables' columns and keeps only the joint analysis UMAP, as each sample's own UMAP and coordinates are in that sample's frame. The script also writes one `<key>_umap_all_cells` table per sample, holding every cell's joint analysis UMAP with that sample's cells last: the sample's viewer draws its Merged UMAP from it, other samples' cells in grey behind its own. Regenerate the per-sample configs afterwards.
 
 Then generate each sample's viewer configs:
 
