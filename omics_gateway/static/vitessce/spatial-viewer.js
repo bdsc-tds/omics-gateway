@@ -18581,46 +18581,51 @@ function oe(e, t) {
 	return r;
 }
 var se = 2;
-function ce(e, t, n, i) {
-	let a = e?.tree?.[0];
-	if (!a || !n?.length) return null;
-	let o = /* @__PURE__ */ new Map();
-	(a.children || []).forEach((e) => {
+function ce(e, t, n, i, a) {
+	let o = e?.tree || [], s = o.filter((e) => a?.includes(e.name));
+	if (!s.length && o[0] && s.push(o[0]), !s.length || !n?.length) return null;
+	let c = s.find((e) => n.some((t) => t[0] === e.name)) || s[0], l = /* @__PURE__ */ new Map();
+	(c.children || []).forEach((e) => {
 		ae(e, /* @__PURE__ */ new Set()).forEach((t) => {
-			o.set(t, e.name);
+			l.set(t, e.name);
 		});
 	});
-	let s = r(e, t), c = (e) => {
+	let u = r(e, t), d = (e) => {
 		let t = /* @__PURE__ */ new Set();
 		return e.forEach((e) => {
-			let n = oe(s.tree, e);
+			let n = oe(u.tree, e);
 			n && ae(n, t);
 		}), t;
-	}, l = n.filter((e) => e[0] !== a.name), u = (l.length ? l.slice(0, se).map((e) => ({
+	}, f = n.filter((e) => e[0] !== c.name), p = f.length ? f.slice(0, se).map((e) => ({
 		label: e[e.length - 1],
-		ids: c([e])
+		ids: d([e])
 	})) : [{
 		label: "Selected cells",
-		ids: c(n)
-	}]).map(({ label: e, ids: t }) => {
-		let n = /* @__PURE__ */ new Map();
+		ids: d(n)
+	}], m = /* @__PURE__ */ new Set(), h = p.map(({ label: e, ids: t }) => {
+		let n = /* @__PURE__ */ new Map(), r = 0;
 		return t.forEach((e) => {
-			let t = o.get(e) ?? "Unassigned";
-			n.set(t, (n.get(t) || 0) + 1);
+			let t = l.get(e);
+			if (t === void 0) {
+				m.add(e);
+				return;
+			}
+			n.set(t, (n.get(t) || 0) + 1), r += 1;
 		}), {
 			label: e,
-			total: t.size,
+			total: r,
 			counts: n
 		};
-	}), d = (e) => i?.find((t) => t.path.length === 2 && t.path[0] === a.name && t.path[1] === e)?.color, f = u[0].counts, p = [...new Set(u.flatMap(({ counts: e }) => [...e.keys()]))].map((e) => ({
+	}), g = (e) => i?.find((t) => t.path.length === 2 && t.path[0] === c.name && t.path[1] === e)?.color, _ = h[0].counts, v = (c.children || []).map((e) => e.name).map((e) => ({
 		type: e,
-		colour: d(e)
-	})).sort((e, t) => (f.get(t.type) || 0) - (f.get(e.type) || 0) || e.type.localeCompare(t.type));
+		colour: g(e)
+	})).sort((e, t) => (_.get(t.type) || 0) - (_.get(e.type) || 0) || e.type.localeCompare(t.type));
 	return {
-		hierarchy: a.name,
-		columns: u,
-		rows: p,
-		hidden: Math.max(0, l.length - se)
+		hierarchy: c.name,
+		columns: h,
+		rows: v,
+		hidden: Math.max(0, f.length - se),
+		outside: m.size
 	};
 }
 var S = {
@@ -18671,30 +18676,37 @@ function fe(e) {
 			style: le
 		}, `${(n.get(e) || 0).toLocaleString("en")} (${i[r].toFixed(1)}%)`)), (0, x.createElement)("td", { style: S }, i.map((e, n) => (0, x.createElement)("div", { key: t[n].label }, de(e, r, ue[n])))));
 	});
-	return (0, x.createElement)("div", { style: { fontSize: 12 } }, e.hidden ? (0, x.createElement)("div", { style: { padding: "2px 6px" } }, `Showing first ${t.length} of ${t.length + e.hidden} selections.`) : null, (0, x.createElement)("table", { style: {
+	return (0, x.createElement)("div", { style: { fontSize: 12 } }, [e.hidden ? `Showing first ${t.length} of ${t.length + e.hidden} selections.` : null, e.outside ? `${e.outside.toLocaleString("en")} selected cells from other samples not counted.` : null].filter(Boolean).map((e) => (0, x.createElement)("div", {
+		key: e,
+		style: {
+			padding: "2px 6px",
+			fontSize: "inherit"
+		}
+	}, e)), (0, x.createElement)("table", { style: {
 		width: "100%",
 		borderCollapse: "collapse"
 	} }, (0, x.createElement)("thead", null, n), (0, x.createElement)("tbody", null, r)));
 }
 function pe(t) {
-	let { coordinationScopes: n, theme: r, removeGridComponent: i, closeButtonVisible: a, downloadButtonVisible: c, title: u = "Cell Types in Selection" } = t, d = p(), [{ dataset: f, obsType: m, obsSetSelection: h, obsSetColor: _, additionalObsSets: y }] = o(re, l(n)), [{ obsSets: b }, ee, te, ne] = s(d, f, !0, {}, {}, { obsType: m }), ie = e([ee]), ae = g([te]), oe = (0, x.useMemo)(() => ce(b, y, h, _), [
+	let { coordinationScopes: n, theme: r, removeGridComponent: i, closeButtonVisible: a, downloadButtonVisible: c, title: u = "Cell Types in Selection", rowHierarchies: d } = t, f = p(), [{ dataset: m, obsType: h, obsSetSelection: _, obsSetColor: y, additionalObsSets: b }] = o(re, l(n)), [{ obsSets: ee }, te, ne, ie] = s(f, m, !0, {}, {}, { obsType: h }), ae = e([te]), oe = g([ne]), se = (0, x.useMemo)(() => ce(ee, b, _, y, d), [
+		ee,
 		b,
+		_,
 		y,
-		h,
-		_
-	]), se = oe ? fe(oe) : (0, x.createElement)("span", null, "Draw a region with the lasso, or select cell sets, to see their cell types.");
+		d
+	]), S = se ? fe(se) : (0, x.createElement)("span", null, "Draw a region with the lasso, or select cell sets, to see their cell types.");
 	return (0, x.createElement)(v, {
 		title: u,
-		info: oe ? `${oe.columns.map(({ total: e }) => e.toLocaleString("en")).join(" vs ")} cells` : null,
+		info: se ? `${se.columns.map(({ total: e }) => e.toLocaleString("en")).join(" vs ")} cells` : null,
 		theme: r,
 		isScroll: !0,
 		closeButtonVisible: a,
 		downloadButtonVisible: c,
 		removeGridComponent: i,
-		isReady: ie,
-		urls: ae,
-		errors: [ne]
-	}, se);
+		isReady: ae,
+		urls: oe,
+		errors: [ie]
+	}, S);
 }
 var me = {
 	marginLeft: 8,

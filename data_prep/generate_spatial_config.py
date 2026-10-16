@@ -862,6 +862,15 @@ def generate_config(
     )
     # Gateway's own view: cell types of lasso regions or selected sets
     breakdown = vc.add_view('gatewayCellTypeCounts', dataset=dataset)
+    # Rows follow whichever cell-type list sets are ticked from, so its sets
+    # compare by own types; default is first set list only
+    cell_type_lists = [
+        c.replace('_', ' ').title()
+        for c in paths['obs_set_cols']
+        if c.startswith('cell_type')
+    ]
+    if len(cell_type_lists) > 1:
+        breakdown.set_props(rowHierarchies=cell_type_lists)
     description = vc.add_view('description', dataset=dataset)
     description.set_props(description=os.path.splitext(name)[0])
     # Metric list takes status panel's slot, least used one
