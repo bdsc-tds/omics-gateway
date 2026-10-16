@@ -5,7 +5,8 @@ for Vitessce spatial viewer.
 Each sample gets own coordinate system (named by --key) and elements
 prefixed by it: '<key>_he' (H&E pyramid), '<key>_cell_boundaries' and
 '<key>_nucleus_boundaries' (Space Ranger segmentation), '<key>_table'. Store
-is created on first sample and extended afterwards, element by element.
+is created on first sample and extended afterwards, element by element;
+converting sample again replaces its elements.
 'tables/table' is left free for study-wide merged table.
 
 Only cells passing analysts' QC are kept: those in merged Harmony object,
@@ -31,6 +32,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 import time
 
 import anndata as ad
@@ -258,10 +260,40 @@ def build_he_pyramid(he_path, downsample, key):
     )
 
 
+# Function to delete elements written by earlier run
+def remove_existing_elements(out_path, names):
+    """
+    Delete named elements from store on disk and consolidate metadata again.
+
+    SpatialData can neither overwrite nor delete element loaded from same
+    store, so sample being converted again is removed before store is read.
+
+    Parameters:
+    -----------
+    out_path: str
+      Existing .zarr store.
+    names: iterable of str
+      Element names to remove wherever found.
+    """
+    removed = []
+    for group in ('images', 'labels', 'points', 'shapes', 'tables'):
+        for name in names:
+            path = os.path.join(out_path, group, name)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+                removed.append(f'{group}/{name}')
+    if removed:
+        # Root metadata still lists removed elements, which read_zarr opens
+        zarr.consolidate_metadata(out_path)
+        print(f'  replacing {", ".join(removed)}', flush=True)
+
+
 # Function to write elements into new or existing store
 def write_elements(out_path, elements):
     """
     Write elements one by one into store, creating store if needed.
+
+    Elements already in store, from earlier run of same sample, are replaced.
 
     Parameters:
     -----------
@@ -276,6 +308,7 @@ def write_elements(out_path, elements):
       Store-backed object.
     """
     if os.path.isdir(out_path):
+        remove_existing_elements(out_path, elements)
         backed = read_zarr(out_path)
     else:
         backed = SpatialData()

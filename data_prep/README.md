@@ -166,7 +166,7 @@ conda run -n spatial python data_prep/convert_visium_hd.py \
     --out data/<study>.zarr
 ```
 
-Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each.
+Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each. Converting a sample again replaces its elements.
 
 Then generate each sample's viewer configs:
 
