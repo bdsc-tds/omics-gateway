@@ -802,16 +802,23 @@ def generate_config(
     # button removing gene from selection
     controller.set_props(layerPerFeatureForPoints=True)
     scatterplot = vc.add_view('scatterplot', dataset=dataset, mapping='UMAP')
+    # Titles replace "Scatterplot (<mapping>)"
+    scatterplot.set_props(title='UMAP')
     # Second scatterplot in same slot, joined to first as tab after to_dict
     umap_views = [scatterplot]
     if 'X_umap_sample' in paths['obs_embeddings']:
+        scatterplot.set_props(title='Merged UMAP')
         umap_views.append(
-            vc.add_view('scatterplot', dataset=dataset, mapping=SAMPLE_UMAP)
+            vc.add_view(
+                'scatterplot', dataset=dataset, mapping=SAMPLE_UMAP
+            ).set_props(title=SAMPLE_UMAP)
         )
     obs_sets = vc.add_view('obsSets', dataset=dataset)
     # Mean expression and fraction expressing per cell set, for selected genes
     # only; heatmap always drew all genes and loaded whole matrix
     dot_plot = vc.add_view('dotPlot', dataset=dataset)
+    # Worded like violin plot's "Expression by Cell Set"
+    dot_plot.set_props(title='Mean Expression by Cell Set')
     feature_list = vc.add_view('featureList', dataset=dataset)
     # Shift-click enables multi-gene selection with distinct transcript colours
     # Defaults false for single-select behavior and no deselection
