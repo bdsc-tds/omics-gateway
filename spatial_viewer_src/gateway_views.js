@@ -50,7 +50,11 @@ const COUNTS_COORDINATION_TYPES = [
 ];
 
 // Views offered as tabs; tab view needs union of their coordination types
-const TAB_VIEW_TYPES = ['dotPlot', 'obsSetFeatureValueDistribution'];
+const TAB_VIEW_TYPES = [
+  'dotPlot',
+  'obsSetFeatureValueDistribution',
+  'scatterplot',
+];
 
 // Cell ids of every leaf at or below node
 function collectIds(node, out) {

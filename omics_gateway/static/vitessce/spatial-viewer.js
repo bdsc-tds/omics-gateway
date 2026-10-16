@@ -18560,7 +18560,11 @@ var x = /* @__PURE__ */ n(i(), 1), ne = /* @__PURE__ */ n(_(), 1), re = [
 	"obsSetSelection",
 	"obsSetColor",
 	"additionalObsSets"
-], ie = ["dotPlot", "obsSetFeatureValueDistribution"];
+], ie = [
+	"dotPlot",
+	"obsSetFeatureValueDistribution",
+	"scatterplot"
+];
 function ae(e, t) {
 	return e.children ? e.children.forEach((e) => {
 		ae(e, t);
