@@ -40,6 +40,11 @@ div:has(> [class*='layerControllerGrid']):not([class*='layerControllerGrid']) {
   transform: translateY(-18px);
 }
 
+/* Footer hides overflow, so tall scrolling content squeezed it to sliver */
+[class*='infoText'] {
+  flex-shrink: 0;
+}
+
 /* Titles set ellipsis but never shrink, pushing buttons out of panel */
 [class*='titleLeft'] {
   overflow: hidden;
