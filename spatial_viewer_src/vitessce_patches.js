@@ -100,6 +100,22 @@ export function gatewayMicronsPerUnit() {
   return micronsPerUnit;
 }
 
+// Set names per hierarchy in palette order; null keeps Vitessce's own order
+let setOrder = null;
+
+// Store config's set order (hierarchy name to set names); else clears it
+export function setGatewaySetOrder(value) {
+  setOrder = value && typeof value === 'object' ? value : null;
+}
+
+// Palette slot of first-level set: its position in config's order if listed,
+// else Vitessce's index among sets present
+export function gatewaySetColourIndex(parentPath, name, index) {
+  const names = parentPath.length === 1 ? setOrder?.[parentPath[0]] : null;
+  const position = Array.isArray(names) ? names.indexOf(name) : -1;
+  return position >= 0 ? position : index;
+}
+
 const SCALE_BAR_COLOUR = [0, 0, 0];
 const SCALE_BAR_BOX = [255, 255, 255, 110];
 // Box margin around bar and label, and label glyph size, in screen pixels
