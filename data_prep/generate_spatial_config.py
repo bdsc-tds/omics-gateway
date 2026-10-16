@@ -78,6 +78,10 @@ EMBEDDING_NAMES = {
 # joint analysis's
 SAMPLE_UMAP = EMBEDDING_NAMES['X_umap_sample']
 
+# Table of every sample's cells holding joint UMAP, per sample of
+# multi-sample store (written by merge_visium_hd_tables.py)
+ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
+
 # obs columns that describe cells rather than annotate them
 NON_SET_OBS_COLS = {
     'cell_id',
@@ -394,7 +398,8 @@ def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
       Keys 'image_shape', 'image_path', 'microns_per_unit',
       'obs_segmentations_path', 'other_segmentation_paths', 'table_path',
       'obs_points_path', 'coordinate_system', 'obs_set_cols',
-      'obs_embeddings', 'centroids_path' and 'metric_cols'.
+      'obs_embeddings', 'centroids_path', 'metric_cols' and
+      'all_cells_umap_path'.
     """
 
     # Function to list group members, restricted to sample's elements
@@ -459,6 +464,7 @@ def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
     )
 
     table_dir = os.path.join(zarr_path, 'tables', table_name)
+    all_cells_umap = f'{sample}{ALL_CELLS_UMAP_SUFFIX}'
 
     return {
         'image_shape': read_image_shape(
@@ -489,6 +495,9 @@ def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
             else None
         ),
         'metric_cols': detect_metric_cols(os.path.join(table_dir, 'obs')),
+        'all_cells_umap_path': (
+            f'tables/{all_cells_umap}' if all_cells_umap in tables else None
+        ),
     }
 
 
@@ -594,7 +603,7 @@ def nest_plot_tabs(config):
 
 
 # Function to put merged and per-sample UMAPs in one panel, as tabs
-def nest_umap_tabs(config):
+def nest_umap_tabs(config, all_cells=False):
     """
     Put scatterplots of merged and sample UMAP in one panel, as tabs.
 
@@ -608,6 +617,10 @@ def nest_umap_tabs(config):
     -----------
     config: dict
       Vitessce config, modified in place.
+    all_cells: bool
+      Whether merged UMAP shows every sample's cells; its points are then
+      made opaque, as automatic opacity, set by point count, washed out
+      sample's colours over other samples' grey.
     """
     space = config['coordinationSpace']
     embedding_types = space.get('embeddingType', {})
@@ -631,6 +644,14 @@ def nest_umap_tabs(config):
         ):
             space.setdefault(name, {})[scope] = None
             view['coordinationScopes'][name] = scope
+    if all_cells:
+        scope = views[0]['coordinationScopes']['embeddingType']
+        for name, value in (
+            ('embeddingObsOpacityMode', 'manual'),
+            ('embeddingObsOpacity', 1.0),
+        ):
+            space.setdefault(name, {})[scope] = value
+            views[0]['coordinationScopes'][name] = scope
     replace_with_tabs(
         config, [(views[0], 'Merged UMAP'), (views[1], 'Sample UMAP')]
     )
@@ -686,6 +707,12 @@ def generate_config(
 
     table_path = paths['table_path']
     region = paths['obs_segmentations_path'].split('/')[-1]
+    # Merged UMAP of all cells replaces sample's own cells' copy
+    embeddings = [
+        e
+        for e in paths['obs_embeddings']
+        if not (paths['all_cells_umap_path'] and e == 'X_umap')
+    ]
 
     vc = VitessceConfig(schema_version='1.0.17', name=name)
     # Segmentations get own file defs below: each needs own fileUid, and one
@@ -702,17 +729,24 @@ def generate_config(
         obs_set_names=[
             c.replace('_', ' ').title() for c in paths['obs_set_cols']
         ],
-        obs_embedding_paths=[
-            f'{table_path}/obsm/{e}' for e in paths['obs_embeddings']
-        ],
-        obs_embedding_names=[
-            EMBEDDING_NAMES.get(e, e) for e in paths['obs_embeddings']
-        ],
+        obs_embedding_paths=[f'{table_path}/obsm/{e}' for e in embeddings],
+        obs_embedding_names=[EMBEDDING_NAMES.get(e, e) for e in embeddings],
         coordination_values={'obsType': obs_type},
     )
     # uid is fixed because layer scope names are derived from it, and viewer
     # skips its own auto-initialisation only when it finds those exact names
     dataset = vc.add_dataset(name=name, uid=DATASET_UID).add_object(wrapper)
+    # Other samples' cells have no sets or expression here, so they draw in
+    # default grey behind sample's, which their table lists last
+    if paths['all_cells_umap_path']:
+        dataset.add_object(
+            AnnDataWrapper(
+                adata_url=f'{sdata_url}/{paths["all_cells_umap_path"]}',
+                obs_embedding_paths=['obsm/X_umap'],
+                obs_embedding_names=[EMBEDDING_NAMES['X_umap']],
+                coordination_values={'obsType': obs_type},
+            )
+        )
 
     # Cells keep table so spatial view can colour them by set or gene
     primary_file_uid = file_uid_of(region, sample)
@@ -1123,7 +1157,7 @@ def generate_config(
     drop_extra_segmentation_table_paths(config, extra_file_uids)
     # Violin plot had no grid slot: it joins dot plot's as tab
     nest_plot_tabs(config)
-    nest_umap_tabs(config)
+    nest_umap_tabs(config, all_cells=bool(paths['all_cells_umap_path']))
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, 'w') as handle:
