@@ -51819,7 +51819,7 @@ function b3e({ instanceObsIndex: e, matrixObsIndex: t, expressionData: n }) {
 	return (0, U.useCallback)((e, { index: t }) => {
 		if (r && n && n[0]) {
 			let e = r[t];
-			return n[0][e];
+			return e === void 0 ? -1 : n[0][e];
 		}
 		return 0;
 	}, [r, n]);
@@ -138851,7 +138851,7 @@ uniform vec2 uColorScaleRange;
 uniform bool uIsExpressionMode;
 
 `,
-	inject: { "vs:DECKGL_FILTER_COLOR": "\n    if(uIsExpressionMode) {\n      float normalizedExpressionValue = expressionValue / 255.0;\n      float scaledExpressionValue = (normalizedExpressionValue - uColorScaleRange[0]) / max(0.005, (uColorScaleRange[1] - uColorScaleRange[0]));\n      color.rgb = COLORMAP_FUNC(clamp(scaledExpressionValue, 0.0, 1.0)).rgb;\n    }\n  " }
+	inject: { "vs:DECKGL_FILTER_COLOR": "\n    if(uIsExpressionMode && expressionValue >= 0.0) {\n      float normalizedExpressionValue = expressionValue / 255.0;\n      float scaledExpressionValue = (normalizedExpressionValue - uColorScaleRange[0]) / max(0.005, (uColorScaleRange[1] - uColorScaleRange[0]));\n      color.rgb = COLORMAP_FUNC(clamp(scaledExpressionValue, 0.0, 1.0)).rgb;\n    }\n  " }
 }, xfn = {
 	colormap: {
 		type: "string",
@@ -139331,9 +139331,9 @@ async function Fpn(e) {
 	if (!t) throw Error(`Unknown compression method identifier: ${e.Compression}`);
 	return new (await (t()))(e);
 }
-pI([void 0, 1], () => import("./raw-DHM7Wj2Y-BLtGDlJf.js").then((e) => e.default)), pI(5, () => import("./lzw-BdRDgMbg-BZqGvBLN.js").then((e) => e.default)), pI(6, () => {
+pI([void 0, 1], () => import("./raw-DHM7Wj2Y-BtoXPOo-.js").then((e) => e.default)), pI(5, () => import("./lzw-BdRDgMbg-CGcDkS89.js").then((e) => e.default)), pI(6, () => {
 	throw Error("old style JPEG compression is not supported.");
-}), pI(7, () => import("./jpeg-f5LgOrOW-_HNqgad2.js").then((e) => e.default)), pI([8, 32946], () => import("./deflate-CYVx5gI8-B4Jt8lBp.js").then((e) => e.default)), pI(32773, () => import("./packbits-rgkGAV4R-BhjUBh52.js").then((e) => e.default)), pI(34887, () => import("./lerc-CROxlfHv-DUQH_5WE.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), pI(50001, () => import("./webimage-BilIOhkt-CLIkcUsX.js").then((e) => e.default));
+}), pI(7, () => import("./jpeg-f5LgOrOW-BrpN-Vnm.js").then((e) => e.default)), pI([8, 32946], () => import("./deflate-CYVx5gI8-ByUq7eKR.js").then((e) => e.default)), pI(32773, () => import("./packbits-rgkGAV4R-BXpj_d-E.js").then((e) => e.default)), pI(34887, () => import("./lerc-CROxlfHv-DI9bx1En.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), pI(50001, () => import("./webimage-BilIOhkt-BavX1QQp.js").then((e) => e.default));
 function mI(e, t, n, r = 1) {
 	return new (Object.getPrototypeOf(e)).constructor(t * n * r);
 }
@@ -167471,7 +167471,7 @@ var ZIn = class extends U.Component {
 		return e ? n : t;
 	}
 }, QIn = U.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-C04NjukO-RKhLx0LE.js").then((e) => e.r).then((e) => e.a);
+	let { SpatialWrapper: e } = await import("./index-C04NjukO-DXD4m248.js").then((e) => e.r).then((e) => e.a);
 	return { default: e };
 }), $In = U.forwardRef((e, t) => (0, W.jsx)("div", {
 	ref: t,
@@ -167487,7 +167487,7 @@ var ZIn = class extends U.Component {
 		})
 	})
 })), eLn = U.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-CGX1h-xy.js");
+	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-DnDhtZu8.js");
 	return { default: e };
 }), tLn = U.forwardRef((e, t) => (0, W.jsx)("div", {
 	ref: t,
@@ -178772,7 +178772,7 @@ lHn({
 	config: fW.config
 }, { pluginType: "dataFetcher" });
 var RUn = U.lazy(async () => {
-	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-DbRZeM8U.js");
+	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-Bd8WZYj1.js");
 	return { default: e };
 }), mW = 800;
 function zUn(e, t) {
@@ -180862,7 +180862,7 @@ function eWn(e) {
 		parentClassName: t.neuroglancerWrapper
 	})] });
 }
-var tWn = U.lazy(() => import("./ReactNeuroglancer-BBJJpq73-LcatF2mr.js"));
+var tWn = U.lazy(() => import("./ReactNeuroglancer-BBJJpq73-BFYOOROy.js"));
 function nWn() {
 	let e = new YUn();
 	return e.AsyncComputationWorker = XUn, e;

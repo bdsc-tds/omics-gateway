@@ -19,6 +19,7 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | `generate_datasets_tsv.py` | `omics-gateway` | `datasets.tsv`, the table of datasets shown in the browser |
 | `convert_xenium.py` | `spatial` | a SpatialData `.zarr` store, from Xenium Ranger output |
 | `convert_visium_hd.py` | `spatial` | one sample of a multi-sample SpatialData store, from Space Ranger output |
+| `merge_visium_hd_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata |
 | `write_store_metadata.py` | `spatial` | the dataset's metadata inside an existing store |
 | `generate_spatial_config.py` | `spatial` | the viewer configs for a store |
 | `downscale_qc_figures.py` | `omics-gateway` | a lower-resolution copy of the QC figures |
@@ -166,7 +167,19 @@ conda run -n spatial python data_prep/convert_visium_hd.py \
     --out data/<study>.zarr
 ```
 
-Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each.
+Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each. Converting a sample again replaces its elements.
+
+Once every sample is in the store, build the all-samples table (`tables/table`), which is also where the dataset table reads the study's metadata. Give each sample's key, its display label and its disease, in display order; the metadata file has the same format as for Xenium. It takes under a minute and about 1.5 GB, and running it again replaces the table, so rerun it whenever a sample changes:
+
+```bash
+conda run -n spatial python data_prep/merge_visium_hd_tables.py \
+    --zarr data/<study>.zarr \
+    --sample <key> <label> <disease> \
+    --sample <key> <label> <disease> \
+    --metadata spatial_sources/<study>.metadata.yaml
+```
+
+The table adds `sample` and `disease` columns to the per-sample tables' columns and keeps only the joint analysis UMAP, as each sample's own UMAP and coordinates are in that sample's frame. The script also writes one `<key>_umap_all_cells` table per sample, holding every cell's joint analysis UMAP with that sample's cells last: the sample's viewer draws its Merged UMAP from it, other samples' cells in grey behind its own. Regenerate the per-sample configs afterwards.
 
 Then generate each sample's viewer configs:
 

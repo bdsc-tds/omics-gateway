@@ -1,10 +1,11 @@
 /**
  * Custom Vitessce views registered by main.js as plugin view types.
  *
- * Cell type counts: composition by first cell set hierarchy of up to two
- * selected sets outside it (lasso regions, other groupings), side by side,
- * or of whole selection; Vitessce shows this nowhere, as Cell Set Sizes
- * only plots whole sets.
+ * Cell type counts: composition by cell-type list (first hierarchy, or first
+ * of rowHierarchies prop with ticked sets) of up to two selected sets
+ * outside it (lasso regions, other groupings), side by side, or of whole
+ * selection, listing list's every type (absent ones as 0); Vitessce shows
+ * this nowhere, as Cell Set Sizes only plots whole sets.
  *
  * Tabs: two or more existing views sharing one grid slot, one shown at
  * once, switched by buttons after shown view's title. Grid passes every view
@@ -50,7 +51,11 @@ const COUNTS_COORDINATION_TYPES = [
 ];
 
 // Views offered as tabs; tab view needs union of their coordination types
-const TAB_VIEW_TYPES = ['dotPlot', 'obsSetFeatureValueDistribution'];
+const TAB_VIEW_TYPES = [
+  'dotPlot',
+  'obsSetFeatureValueDistribution',
+  'scatterplot',
+];
 
 // Cell ids of every leaf at or below node
 function collectIds(node, out) {
@@ -81,11 +86,22 @@ function findNode(tree, path) {
 // Selected sets compared side by side; more would crowd panel
 const MAX_COLUMNS = 2;
 
-// Cell counts per cell type (first hierarchy's sets), one column per selected
-// set outside it, else one for whole selection (cell types only match self)
-function countCellTypes(obsSets, additionalObsSets, selection, colours) {
-  const hierarchy = obsSets?.tree?.[0];
-  if (!hierarchy || !selection?.length) return null;
+// Counts per type of first cell-type list with ticked sets, one column per set
+// outside it, else whole selection; other samples' cells are skipped
+function countCellTypes(
+  obsSets,
+  additionalObsSets,
+  selection,
+  colours,
+  rowHierarchies,
+) {
+  const tree = obsSets?.tree || [];
+  const lists = tree.filter((node) => rowHierarchies?.includes(node.name));
+  if (!lists.length && tree[0]) lists.push(tree[0]);
+  if (!lists.length || !selection?.length) return null;
+  const hierarchy =
+    lists.find((list) => selection.some((path) => path[0] === list.name)) ||
+    lists[0];
   const typeOf = new Map();
   (hierarchy.children || []).forEach((type) => {
     collectIds(type, new Set()).forEach((id) => {
@@ -108,13 +124,20 @@ function countCellTypes(obsSets, additionalObsSets, selection, colours) {
         ids: idsOf([path]),
       }))
     : [{ label: 'Selected cells', ids: idsOf(selection) }];
+  const outside = new Set();
   const columns = sources.map(({ label, ids }) => {
     const counts = new Map();
+    let total = 0;
     ids.forEach((id) => {
-      const type = typeOf.get(id) ?? 'Unassigned';
+      const type = typeOf.get(id);
+      if (type === undefined) {
+        outside.add(id);
+        return;
+      }
       counts.set(type, (counts.get(type) || 0) + 1);
+      total += 1;
     });
-    return { label, total: ids.size, counts };
+    return { label, total, counts };
   });
   const colourOf = (type) =>
     colours?.find(
@@ -124,9 +147,8 @@ function countCellTypes(obsSets, additionalObsSets, selection, colours) {
         entry.path[1] === type,
     )?.color;
   const first = columns[0].counts;
-  const types = [
-    ...new Set(columns.flatMap(({ counts }) => [...counts.keys()])),
-  ];
+  // Every type of list, absent ones as 0, as when all types are ticked
+  const types = (hierarchy.children || []).map((type) => type.name);
   const rows = types
     .map((type) => ({ type, colour: colourOf(type) }))
     .sort(
@@ -139,6 +161,7 @@ function countCellTypes(obsSets, additionalObsSets, selection, colours) {
     columns,
     rows,
     hidden: Math.max(0, others.length - MAX_COLUMNS),
+    outside: outside.size,
   };
 }
 
@@ -230,18 +253,29 @@ function countsTable(result) {
       ),
     );
   });
-  const note = result.hidden
-    ? h(
+  const notes = [
+    result.hidden
+      ? `Showing first ${columns.length} of ` +
+        `${columns.length + result.hidden} selections.`
+      : null,
+    result.outside
+      ? `${result.outside.toLocaleString('en')} selected cells from other ` +
+        'samples not counted.'
+      : null,
+  ]
+    .filter(Boolean)
+    // Card's own div rule otherwise sets 16px, above table's size
+    .map((text) =>
+      h(
         'div',
-        { style: { padding: '2px 6px' } },
-        `Showing first ${columns.length} of ` +
-          `${columns.length + result.hidden} selections.`,
-      )
-    : null;
+        { key: text, style: { padding: '2px 6px', fontSize: 'inherit' } },
+        text,
+      ),
+    );
   return h(
     'div',
     { style: { fontSize: 12 } },
-    note,
+    notes,
     h(
       'table',
       { style: { width: '100%', borderCollapse: 'collapse' } },
@@ -260,6 +294,7 @@ function CellTypeCounts(props) {
     closeButtonVisible,
     downloadButtonVisible,
     title = 'Cell Types in Selection',
+    rowHierarchies,
   } = props;
   const loaders = gatewayUseLoaders();
   const scopes = useCoordinationScopes(rawScopes);
@@ -278,8 +313,14 @@ function CellTypeCounts(props) {
   const allUrls = gatewayUseUrls([urls]);
   const result = useMemo(
     () =>
-      countCellTypes(obsSets, additionalObsSets, obsSetSelection, obsSetColor),
-    [obsSets, additionalObsSets, obsSetSelection, obsSetColor],
+      countCellTypes(
+        obsSets,
+        additionalObsSets,
+        obsSetSelection,
+        obsSetColor,
+        rowHierarchies,
+      ),
+    [obsSets, additionalObsSets, obsSetSelection, obsSetColor, rowHierarchies],
   );
   const body = result
     ? countsTable(result)

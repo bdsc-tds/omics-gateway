@@ -42,6 +42,21 @@ const PATCHES = [
     replace: 'Vir = gatewayGeneMappingUrl()',
   },
   {
+    // Embedding cells absent from matrix (other samples' in sample's Merged
+    // UMAP) get -1, kept from colormap below (i: matrix row per point)
+    name: 'missing expression',
+    find: 'const s = i[A];\n      return n[0][s];',
+    replace: 'const s = i[A];\n      return s === void 0 ? -1 : n[0][s];',
+  },
+  {
+    // Points without expression keep own colour, default grey for them
+    name: 'missing expression colour',
+    find: '    if(uIsExpressionMode) {\n      float normalizedExpressionValue',
+    replace:
+      '    if(uIsExpressionMode && expressionValue >= 0.0) {\n' +
+      '      float normalizedExpressionValue',
+  },
+  {
     // Dot plot height grows with genes (f: dot plot data)
     name: 'dot plot height',
     find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',

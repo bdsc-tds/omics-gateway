@@ -504,8 +504,11 @@
     }
 
     // File name part from panel title: "Scatterplot (UMAP)" gives umap,
-    // "Dot Plot" dot_plot; violin's title names its gene, so it is replaced
-    const FILE_NAMES = { 'Expression by Cell Set': 'violin_plot' };
+    // "Merged UMAP" merged_umap; plot titles give plot type
+    const FILE_NAMES = {
+      'Expression by Cell Set': 'violin_plot',
+      'Mean Expression by Cell Set': 'dot_plot',
+    };
     function slugOf(panel) {
       const title =
         panel?.querySelector('[class*="titleLeft"]')?.textContent.trim() || '';
