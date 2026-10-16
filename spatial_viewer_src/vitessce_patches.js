@@ -108,6 +108,18 @@ export function setGatewaySetOrder(value) {
   setOrder = value && typeof value === 'object' ? value : null;
 }
 
+// Add loader's colours for sets absent from config's colour list, e.g. sets
+// new to sample switched to; Vitessce fills only empty list
+export function gatewayCompleteSetColours(type, current, loaded, setter) {
+  if (type !== 'obsSetColor' || !Array.isArray(current)) return;
+  if (!Array.isArray(loaded)) return;
+  const known = new Set(current.map((entry) => JSON.stringify(entry.path)));
+  const missing = loaded.filter(
+    (entry) => !known.has(JSON.stringify(entry.path)),
+  );
+  if (missing.length) setter([...current, ...missing]);
+}
+
 // Palette slot of first-level set: its position in config's order if listed,
 // else Vitessce's index among sets present
 export function gatewaySetColourIndex(parentPath, name, index) {

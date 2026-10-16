@@ -471,10 +471,15 @@
   // Download menu (PNG, SVG) in title bar of deck.gl views (canvas as on
   // screen plus its legends) and Vega plots (whole plot SVG)
   function addExportButtons(root, configUrl) {
-    const stem = (configUrl.split('/').pop() || 'view').replace(
-      /(\.nometrics)?\.vitessce\.json$/,
-      '',
-    );
+    // Read at export time: sample switch replaces ?config=
+    function stem() {
+      const url =
+        new URLSearchParams(window.location.search).get('config') || configUrl;
+      return (url.split('/').pop() || 'view').replace(
+        /(\.nometrics)?\.vitessce\.json$/,
+        '',
+      );
+    }
     // Exported pixels per CSS pixel of panel
     const EXPORT_SCALE = 4;
     const views = new Map();
@@ -884,7 +889,7 @@
       if (!blob) throw new Error('canvas could not be encoded');
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `${stem}_${view.slug}.${format}`;
+      link.download = `${stem()}_${view.slug}.${format}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
