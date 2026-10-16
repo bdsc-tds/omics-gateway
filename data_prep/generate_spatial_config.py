@@ -67,7 +67,16 @@ METRIC_VALUES_SUFFIX = '.metrics.json'
 UNLOADABLE_DTYPES = {'int64', 'uint64'}
 
 # Display names for obsm keys conventionally used for embeddings
-EMBEDDING_NAMES = {'X_umap': 'UMAP', 'X_pca': 'PCA', 'X_tsne': 't-SNE'}
+EMBEDDING_NAMES = {
+    'X_umap': 'UMAP',
+    'X_umap_sample': 'Sample UMAP',
+    'X_pca': 'PCA',
+    'X_tsne': 't-SNE',
+}
+
+# Embedding type of per-sample UMAP in multi-sample stores, whose X_umap is
+# joint analysis's
+SAMPLE_UMAP = EMBEDDING_NAMES['X_umap_sample']
 
 # obs columns that describe cells rather than annotate them
 NON_SET_OBS_COLS = {
@@ -522,52 +531,109 @@ def drop_extra_segmentation_table_paths(config, extra_file_uids):
     return n_stripped
 
 
+# Function to replace layout views by one tabs view in first one's slot
+def replace_with_tabs(config, labelled_views):
+    """
+    Replace given layout entries with one gatewayTabs view, in first's slot.
+
+    Tabs view is gateway's own plugin (spatial_viewer_src/gateway_views.js).
+    Each tab keeps its view's coordination scopes and props, which viewer
+    applies over tabs view's auto-initialised scopes.
+
+    Parameters:
+    -----------
+    config: dict
+      Vitessce config, modified in place.
+    labelled_views: list of tuple
+      (layout entry, tab label) pairs, in tab order.
+    """
+    first = labelled_views[0][0]
+    tabs = {
+        'component': 'gatewayTabs',
+        **{key: first[key] for key in ('x', 'y', 'w', 'h')},
+        'coordinationScopes': {},
+        'props': {
+            'tabs': [
+                {
+                    'label': label,
+                    'component': view['component'],
+                    'coordinationScopes': view['coordinationScopes'],
+                    'props': view.get('props', {}),
+                }
+                for view, label in labelled_views
+            ]
+        },
+    }
+    nested = [id(view) for view, _ in labelled_views]
+    config['layout'] = [
+        view for view in config['layout'] if id(view) not in nested
+    ] + [tabs]
+
+
 # Function to put dot plot and violin plot in one panel, as tabs
 def nest_plot_tabs(config):
     """
-    Replace dot plot and violin plot layout entries with one gatewayTabs view.
+    Put dot plot and violin plot in dot plot's slot, as tabs.
 
-    Tabs view is gateway's own plugin (spatial_viewer_src/gateway_views.js)
-    and takes dot plot's slot. Each tab keeps its view's coordination scopes
-    and props, which viewer applies over tabs view's auto-initialised scopes,
-    so dot plot's aggregation strategy stays unshared.
+    Each tab keeping its own scopes is what leaves dot plot's aggregation
+    strategy unshared.
 
     Parameters:
     -----------
     config: dict
       Vitessce config, modified in place.
     """
-    labels = {
-        'dotPlot': 'Dot plot',
-        'obsSetFeatureValueDistribution': 'Violin plot',
-    }
-    views = {
-        view['component']: view
+    views = {view['component']: view for view in config['layout']}
+    replace_with_tabs(
+        config,
+        [
+            (views['dotPlot'], 'Dot plot'),
+            (views['obsSetFeatureValueDistribution'], 'Violin plot'),
+        ],
+    )
+
+
+# Function to put merged and per-sample UMAPs in one panel, as tabs
+def nest_umap_tabs(config):
+    """
+    Put scatterplots of merged and sample UMAP in one panel, as tabs.
+
+    Views are told apart by embedding type, as vitessce-python gives views
+    no uid. Each tab gets own pan and zoom scopes, left null so it fits its
+    embedding on first show; tabs view's single auto-initialised ones would
+    open one embedding on other's framing. Configs without sample UMAP are
+    left unchanged.
+
+    Parameters:
+    -----------
+    config: dict
+      Vitessce config, modified in place.
+    """
+    space = config['coordinationSpace']
+    embedding_types = space.get('embeddingType', {})
+    by_type = {
+        embedding_types.get(
+            view['coordinationScopes'].get('embeddingType')
+        ): view
         for view in config['layout']
-        if view['component'] in labels
+        if view['component'] == 'scatterplot'
     }
-    dot_plot = views['dotPlot']
-    tabs = {
-        'component': 'gatewayTabs',
-        **{key: dot_plot[key] for key in ('x', 'y', 'w', 'h')},
-        'coordinationScopes': {},
-        'props': {
-            'tabs': [
-                {
-                    'label': label,
-                    'component': component,
-                    'coordinationScopes': views[component][
-                        'coordinationScopes'
-                    ],
-                    'props': views[component].get('props', {}),
-                }
-                for component, label in labels.items()
-            ]
-        },
-    }
-    config['layout'] = [
-        view for view in config['layout'] if view['component'] not in labels
-    ] + [tabs]
+    if SAMPLE_UMAP not in by_type:
+        return
+    views = [by_type['UMAP'], by_type[SAMPLE_UMAP]]
+    for view in views:
+        scope = view['coordinationScopes']['embeddingType']
+        for name in (
+            'embeddingZoom',
+            'embeddingTargetX',
+            'embeddingTargetY',
+            'embeddingTargetZ',
+        ):
+            space.setdefault(name, {})[scope] = None
+            view['coordinationScopes'][name] = scope
+    replace_with_tabs(
+        config, [(views[0], 'Merged UMAP'), (views[1], 'Sample UMAP')]
+    )
 
 
 # Function to build and write Vitessce config for SpatialData store
@@ -736,6 +802,12 @@ def generate_config(
     # button removing gene from selection
     controller.set_props(layerPerFeatureForPoints=True)
     scatterplot = vc.add_view('scatterplot', dataset=dataset, mapping='UMAP')
+    # Second scatterplot in same slot, joined to first as tab after to_dict
+    umap_views = [scatterplot]
+    if 'X_umap_sample' in paths['obs_embeddings']:
+        umap_views.append(
+            vc.add_view('scatterplot', dataset=dataset, mapping=SAMPLE_UMAP)
+        )
     obs_sets = vc.add_view('obsSets', dataset=dataset)
     # Mean expression and fraction expressing per cell set, for selected genes
     # only; heatmap always drew all genes and loaded whole matrix
@@ -765,7 +837,7 @@ def generate_config(
         [
             spatial,
             controller,
-            scatterplot,
+            *umap_views,
             obs_sets,
             dot_plot,
             feature_list,
@@ -808,7 +880,7 @@ def generate_config(
     for view in (
         spatial,
         controller,
-        scatterplot,
+        *umap_views,
         obs_sets,
         feature_list,
         distribution,
@@ -1029,7 +1101,7 @@ def generate_config(
         (upper, (0, 4, 3, 1)),
         (lower, (0, 5, 3, 1)),
         (spatial, (3, 0, 4, 4)),
-        (scatterplot, (7, 0, 3, 4)),
+        *((view, (7, 0, 3, 4)) for view in umap_views),
         (feature_list, (10, 0, 2, 2)),
         (obs_sets, (10, 2, 2, 2)),
         (dot_plot, (3, 4, 5, 2)),
@@ -1044,6 +1116,7 @@ def generate_config(
     drop_extra_segmentation_table_paths(config, extra_file_uids)
     # Violin plot had no grid slot: it joins dot plot's as tab
     nest_plot_tabs(config)
+    nest_umap_tabs(config)
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, 'w') as handle:
