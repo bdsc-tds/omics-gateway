@@ -92,6 +92,13 @@ const PATCHES = [
       '    hideTools: t.hideTools,',
   },
   {
+    // Tooltip stacking offset moved crosshair drawn for other views' hover
+    // below cell (f: hovered view, e: this view, O: cell's y)
+    name: 'crosshair position',
+    find: 'y: O + (R += 20 + 15 * Object.keys(G).length),',
+    replace: 'y: f === e ? O + (R += 20 + 15 * Object.keys(G).length) : O,',
+  },
+  {
     // Dot plot height grows with genes (f: dot plot data)
     name: 'dot plot height',
     find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',
