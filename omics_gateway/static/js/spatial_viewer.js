@@ -427,11 +427,22 @@
     function fitSwatchLegends() {
       const legends = root.querySelectorAll('[class*="legend"]');
       for (let i = 0; i < legends.length; i++) {
-        const svg = legends[i].querySelector(':scope > svg');
-        if (!svg || legends[i].querySelector('img, image')) continue;
-        const rects = svg.querySelectorAll('rect');
-        if (!rects.length) continue;
-        if (Array.from(rects).some((rect) => rect.getBBox().width > 8)) {
+        const legend = legends[i];
+        const svg = legend.querySelector(':scope > svg');
+        if (!svg) continue;
+        const rects = Array.from(svg.querySelectorAll('rect'));
+        const swatchesOnly =
+          !legend.querySelector('img, image') &&
+          rects.length > 0 &&
+          rects.every((rect) => rect.getBBox().width <= 8);
+        // Same legend turns into colour bar on gene selection; React does
+        // not set its width again, so restore bundle's own
+        if (!swatchesOnly) {
+          if (legend.dataset.gatewayWidth) {
+            svg.style.width = legend.dataset.gatewayWidth;
+            legend.style.width = legend.dataset.gatewayWidth;
+            delete legend.dataset.gatewayWidth;
+          }
           continue;
         }
         let right = 0;
@@ -441,8 +452,11 @@
         });
         const width = `${Math.ceil(right) + 4}px`;
         if (svg.style.width === width) continue;
+        if (!legend.dataset.gatewayWidth) {
+          legend.dataset.gatewayWidth = legend.style.width;
+        }
         svg.style.width = width;
-        legends[i].style.width = width;
+        legend.style.width = width;
       }
     }
 
