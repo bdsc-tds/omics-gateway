@@ -902,6 +902,8 @@ def generate_config(
             other_segmentation_paths=[],
             obs_points_path=None,
             centroids_path=None,
+            # No spatial view for metrics to colour
+            metric_cols=[],
         )
     config_label, sample_configs = (
         read_sample_configs(store_samples, os.path.basename(out_path), sample)
