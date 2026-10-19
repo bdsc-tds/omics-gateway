@@ -13,10 +13,6 @@
   const configUrl =
     new URLSearchParams(window.location.search).get('config') || '';
 
-  // Bundle fetches same config, so this comes from browser cache
-  const config = fetch(configUrl).then((response) => response.json());
-  const extraTypes = config.then(extraChannelTypes).catch(() => []);
-
   // Extra segmentations' obsType differs from their layer's, so their data is
   // not found; Metric's featureType does resolve
   function extraChannelTypes(config) {
@@ -70,24 +66,37 @@
       });
       observer.disconnect();
       patchSpatialLegends(root);
-      config
-        .then((json) => {
-          patchMetricTooltips(json, configUrl);
-        })
-        .catch(() => {});
+      patchMetricTooltips();
       orderLayerRows(root);
       limitLassoToCells(root);
       addExportButtons(root, configUrl);
-      extraTypes.then((types) => {
-        constrainExtraEncodings(root, types);
-      });
+      constrainExtraEncodings(root);
     }
   }).observe(root, { childList: true, subtree: true });
 
   // Extra segmentations only get fixed colour: menu keeps Static Color alone
-  function constrainExtraEncodings(root, extraTypes) {
-    if (!extraTypes.length) return;
+  function constrainExtraEncodings(root) {
+    // By config: sample switch replaces ?config= without reloading page
+    const typesByConfig = {};
     let openedFor = null;
+
+    // Current config's extra segmentation types; empty until fetched
+    function currentTypes() {
+      const url = new URLSearchParams(window.location.search).get('config');
+      if (!url) return [];
+      if (!typesByConfig[url]) {
+        typesByConfig[url] = [];
+        // Bundle fetched same config, so this comes from browser cache
+        fetch(url)
+          .then((response) => response.json())
+          .then((json) => {
+            typesByConfig[url] = extraChannelTypes(json);
+            constrain();
+          })
+          .catch(() => {});
+      }
+      return typesByConfig[url];
+    }
     // Portalled menu is outside its row, so get its channel from opener
     root.addEventListener(
       'click',
@@ -104,8 +113,9 @@
       true,
     );
 
-    new MutationObserver(() => {
-      if (extraTypes.indexOf(openedFor) === -1) return;
+    // Also runs on viewer's remount after switch, so types arrive before menu
+    function constrain() {
+      if (currentTypes().indexOf(openedFor) === -1) return;
       const options = document.querySelectorAll(
         'select[aria-label="Color encoding selector"] ' +
           'option:not([value="spatialChannelColor"])',
@@ -125,20 +135,38 @@
         const item = labels[j].closest('li') || labels[j].parentElement;
         item.style.display = 'none';
       }
-    }).observe(document.body, { childList: true, subtree: true });
+    }
+    new MutationObserver(constrain).observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   // Vitessce tooltips list only ids and sets: add selected metric from
   // generator's sidecar, fetched on first hover, while Metric layer is on
-  function patchMetricTooltips(config, configUrl) {
-    const featureTypes = config.coordinationSpace?.featureType || {};
-    const hasMetrics = Object.keys(featureTypes).some(
-      (scope) => featureTypes[scope] === 'metric',
-    );
-    const valuesUrl = configUrl.replace(/\.vitessce\.json$/, '.metrics.json');
-    if (!hasMetrics || valuesUrl === configUrl) return;
-    let values = null;
-    let loaded = null;
+  function patchMetricTooltips() {
+    // By sidecar URL: sample switch replaces ?config= without reloading page
+    const sidecars = {};
+
+    // Values of current config's sidecar; null until fetched
+    function currentValues() {
+      const url = new URLSearchParams(window.location.search).get('config');
+      const valuesUrl = (url || '').replace(
+        /\.vitessce\.json$/,
+        '.metrics.json',
+      );
+      if (!url || valuesUrl === url) return null;
+      if (!sidecars[valuesUrl]) {
+        sidecars[valuesUrl] = { values: null };
+        fetch(valuesUrl)
+          .then((response) => response.json())
+          .then((json) => {
+            sidecars[valuesUrl].values = json;
+            patch();
+          });
+      }
+      return sidecars[valuesUrl].values;
+    }
 
     function format(value) {
       if (value === null) return 'n/a';
@@ -159,7 +187,7 @@
     }
 
     // Metric list checks its selected row's hidden checkbox
-    function selectedMetric() {
+    function selectedMetric(values) {
       return values.columns.findIndex((column) => {
         const input = document.querySelector(
           `input[type="checkbox"][value="${column}"]`,
@@ -183,26 +211,18 @@
         } else if (th.textContent !== 'Cell ID') {
           continue;
         }
-        if (!values) {
-          loaded =
-            loaded ||
-            fetch(valuesUrl)
-              .then((response) => response.json())
-              .then((json) => {
-                values = json;
-                patch();
-              });
-          continue;
-        }
+        // Configs without metrics have no Metric row, so never fetch
+        const values = metricLayerVisible() ? currentValues() : null;
         const cellId = th.nextElementSibling.textContent;
-        const metric = metricLayerVisible() ? selectedMetric() : -1;
+        const metric = values ? selectedMetric(values) : -1;
         const key = `${cellId}|${metric}`;
         if (tbody.dataset.metricCell === key) continue;
         tbody.dataset.metricCell = key;
         const old = tbody.querySelector('tr[data-metric-row]');
         if (old) old.remove();
+        if (metric < 0) continue;
         const cellValues = values.cells[cellId];
-        if (metric < 0 || !cellValues) continue;
+        if (!cellValues) continue;
         const row = document.createElement('tr');
         row.dataset.metricRow = '';
         const name = document.createElement('th');
