@@ -1,4 +1,4 @@
-import { i as e } from "./index-C04NjukO-CVNH5WPi.js";
+import { i as e } from "./index-C04NjukO-DZn58Pvp.js";
 //#region node_modules/vitessce/dist/xrStore-BC7o4upD.js
 var t = e().createXRStore({
 	handTracking: !0,

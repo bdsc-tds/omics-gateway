@@ -1,6 +1,6 @@
-import { _t as e } from "./index-CDVgyDq2-BCGrmrGb.js";
-import { i as t } from "./index-C04NjukO-CVNH5WPi.js";
-import { t as n } from "./xrStore-BC7o4upD-Bv11KGk0.js";
+import { _t as e } from "./index-CDVgyDq2-DtGrGYYQ.js";
+import { i as t } from "./index-C04NjukO-DZn58Pvp.js";
+import { t as n } from "./xrStore-BC7o4upD-DQ6QIeGd.js";
 //#region node_modules/vitessce/dist/XRWrapper-B9IIMYL-.js
 var r = e(), { XR: i } = t();
 function a({ children: e }) {

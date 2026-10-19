@@ -143,11 +143,30 @@ const CARRIED_TYPES = [
   'additionalObsSets',
 ];
 
+// Top-level set names next config can show: its tables' hierarchies plus
+// live saved sets ('My Selections'), which are carried too
+function knownHierarchies(live, next) {
+  const names = new Set();
+  for (const dataset of next.datasets || []) {
+    for (const file of dataset.files || []) {
+      for (const set of file.options?.obsSets?.obsSets || []) {
+        names.add(set.name);
+      }
+    }
+  }
+  const saved = live.coordinationSpace?.additionalObsSets || {};
+  for (const value of Object.values(saved)) {
+    for (const node of value?.tree || []) names.add(node.name);
+  }
+  return names;
+}
+
 // Copy live values into next sample's config, whose scope names match; saved
 // sets' scopes, auto-initialised, are taken from live views by component
 function carrySelections(live, next) {
   if (!live) return;
   const space = next.coordinationSpace;
+  const known = knownHierarchies(live, next);
   for (const type of CARRIED_TYPES) {
     const values = live.coordinationSpace?.[type];
     if (!values) continue;
@@ -172,16 +191,22 @@ function carrySelections(live, next) {
     }
     for (const view of next.layout) {
       const scope = view.coordinationScopes?.[type];
-      if (typeof scope === 'string' && scope in values) {
-        space[type][scope] = values[scope];
+      // Null left for loader would replace next config's own value
+      if (typeof scope !== 'string' || values[scope] == null) continue;
+      let value = values[scope];
+      if (type === 'obsSetSelection') {
+        // Sets of hierarchy next table lacks (Sample, Disease) select nothing
+        value = value.filter((path) => known.has(path[0]));
+        if (!value.length && values[scope].length) continue;
       }
+      space[type][scope] = value;
     }
   }
 }
 
-// Sample drop-down between Spatial panel's title and its buttons: inside
+// Sample drop-down between named panel's title and its buttons: inside
 // title, option text would join export file names
-function SampleSwitch({ current, samples, busy, onSwitch }) {
+function SampleSwitch({ title, current, samples, busy, onSwitch }) {
   const holder = React.useRef(null);
   if (!holder.current) {
     holder.current = document.createElement('span');
@@ -191,10 +216,10 @@ function SampleSwitch({ current, samples, busy, onSwitch }) {
     const rootEl = document.getElementById('root');
     // Panel remounts on switch and Restore, so title bar is found again
     const attach = () => {
-      const title = Array.from(
+      const titleEl = Array.from(
         rootEl.querySelectorAll('[class*="titleLeft"]'),
-      ).find((el) => el.textContent.trim() === 'Spatial');
-      const buttons = title?.parentElement?.querySelector(
+      ).find((el) => el.textContent.trim() === title);
+      const buttons = titleEl?.parentElement?.querySelector(
         ':scope > [class*="titleButtons"]',
       );
       if (buttons && holder.current.nextSibling !== buttons) {
@@ -208,7 +233,7 @@ function SampleSwitch({ current, samples, busy, onSwitch }) {
       observer.disconnect();
       holder.current.remove();
     };
-  }, []);
+  }, [title]);
   return createPortal(
     React.createElement(
       'select',
@@ -281,6 +306,8 @@ function Viewer({ initial }) {
   }
 
   async function switchSample(name) {
+    // Thumbnails stay clickable while drop-down is disabled
+    if (switching) return;
     const target = new URL(name, new URL(url, window.location.origin));
     const nextUrl =
       target.origin === window.location.origin ? target.pathname : target.href;
@@ -305,6 +332,15 @@ function Viewer({ initial }) {
     }
   }
 
+  // Thumbnail clicks arrive as events; ref keeps listener on latest state
+  const switchRef = React.useRef(switchSample);
+  switchRef.current = switchSample;
+  React.useEffect(() => {
+    const onEvent = (event) => switchRef.current(event.detail);
+    window.addEventListener('gateway-switch-sample', onEvent);
+    return () => window.removeEventListener('gateway-switch-sample', onEvent);
+  }, []);
+
   const samples = Array.isArray(options.samples) ? options.samples : [];
   const current = samples.find((sample) => sample.label === options.sample);
   return React.createElement(
@@ -321,7 +357,9 @@ function Viewer({ initial }) {
     }),
     current &&
       samples.length > 1 &&
+      options.switchTitle &&
       React.createElement(SampleSwitch, {
+        title: options.switchTitle,
         current: current.config,
         samples,
         busy: switching,

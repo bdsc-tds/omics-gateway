@@ -147,7 +147,7 @@ Then regenerate the dataset table.
 
 ## Adding a Visium HD study
 
-A Visium HD study becomes one SpatialData store holding all its samples, plus one viewer config per sample. Each sample is added by a separate run of `convert_visium_hd.py`. You need, per sample:
+A Visium HD study becomes one SpatialData store holding all its samples, plus one viewer config per sample and one for the whole study. Each sample is added by a separate run of `convert_visium_hd.py`. You need, per sample:
 
 - the **Space Ranger output folder** (`outs`, Space Ranger 4 or later, with its cell segmentation in `segmented_outputs/`);
 - the **H&E image** given to Space Ranger, as a pyramidal OME-TIFF;
@@ -189,6 +189,8 @@ conda run -n spatial python data_prep/generate_spatial_config.py \
 ```
 
 They are written as `data/vitessce_configs/<study>_<key>.vitessce.json` and `.nometrics.vitessce.json`. Each lists every sample of the store, in the all-samples table's order, for the drop-down in the viewer's Spatial panel, which switches samples keeping the selected genes and cell sets.
+
+Without `--sample`, the script writes the study's own config, `<study>.vitessce.json` (and `.nometrics.vitessce.json`), which the dataset table links to. It shows the all-samples table: the UMAP coloured by sample, then a larger copy coloured by the selected cell sets or genes (the two pan and zoom together; lasso selections are drawn on the larger one), the gene and cell set lists, the plots and the cell type breakdown. Instead of a spatial view, it shows a thumbnail of each sample's H&E; clicking one opens that sample. The thumbnails are written beside the config as `<study>_<key>.thumbnail.jpg`, from the smallest level of each H&E pyramid. Its drop-down sits in the UMAP panel, and every sample's drop-down starts with an "All samples" entry leading back to it.
 
 ## Reference
 

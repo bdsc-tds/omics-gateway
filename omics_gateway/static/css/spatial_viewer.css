@@ -146,7 +146,7 @@ circles; move them clear */
   content: attr(data-gateway-label);
 }
 
-/* Sample switch between Spatial panel's title and its buttons */
+/* Sample switch between named panel's title and its buttons */
 .gateway-sample-switch {
   display: inline-flex;
   align-items: center;
@@ -158,4 +158,46 @@ circles; move them clear */
   font-size: 13px;
   padding: 0 2px;
   cursor: pointer;
+}
+
+/* Sample thumbnails of study config: two columns of clickable cards */
+.gateway-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 13px;
+}
+
+.gateway-thumbnail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gateway-thumbnail:hover,
+.gateway-thumbnail:focus-visible {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0.5);
+}
+
+.gateway-thumbnail img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.gateway-thumbnail-label {
+  font-weight: bold;
+}
+
+.gateway-thumbnail-disease {
+  opacity: 0.7;
 }
