@@ -13,10 +13,6 @@
   const configUrl =
     new URLSearchParams(window.location.search).get('config') || '';
 
-  // Bundle fetches same config, so this comes from browser cache
-  const config = fetch(configUrl).then((response) => response.json());
-  const extraTypes = config.then(extraChannelTypes).catch(() => []);
-
   // Extra segmentations' obsType differs from their layer's, so their data is
   // not found; Metric's featureType does resolve
   function extraChannelTypes(config) {
@@ -74,16 +70,33 @@
       orderLayerRows(root);
       limitLassoToCells(root);
       addExportButtons(root, configUrl);
-      extraTypes.then((types) => {
-        constrainExtraEncodings(root, types);
-      });
+      constrainExtraEncodings(root);
     }
   }).observe(root, { childList: true, subtree: true });
 
   // Extra segmentations only get fixed colour: menu keeps Static Color alone
-  function constrainExtraEncodings(root, extraTypes) {
-    if (!extraTypes.length) return;
+  function constrainExtraEncodings(root) {
+    // By config: sample switch replaces ?config= without reloading page
+    const typesByConfig = {};
     let openedFor = null;
+
+    // Current config's extra segmentation types; empty until fetched
+    function currentTypes() {
+      const url = new URLSearchParams(window.location.search).get('config');
+      if (!url) return [];
+      if (!typesByConfig[url]) {
+        typesByConfig[url] = [];
+        // Bundle fetched same config, so this comes from browser cache
+        fetch(url)
+          .then((response) => response.json())
+          .then((json) => {
+            typesByConfig[url] = extraChannelTypes(json);
+            constrain();
+          })
+          .catch(() => {});
+      }
+      return typesByConfig[url];
+    }
     // Portalled menu is outside its row, so get its channel from opener
     root.addEventListener(
       'click',
@@ -100,8 +113,9 @@
       true,
     );
 
-    new MutationObserver(() => {
-      if (extraTypes.indexOf(openedFor) === -1) return;
+    // Also runs on viewer's remount after switch, so types arrive before menu
+    function constrain() {
+      if (currentTypes().indexOf(openedFor) === -1) return;
       const options = document.querySelectorAll(
         'select[aria-label="Color encoding selector"] ' +
           'option:not([value="spatialChannelColor"])',
@@ -121,7 +135,11 @@
         const item = labels[j].closest('li') || labels[j].parentElement;
         item.style.display = 'none';
       }
-    }).observe(document.body, { childList: true, subtree: true });
+    }
+    new MutationObserver(constrain).observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   // Vitessce tooltips list only ids and sets: add selected metric from
