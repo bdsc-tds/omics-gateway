@@ -58,10 +58,12 @@ div:has(> [class*='layerControllerGrid']):not([class*='layerControllerGrid']) {
   overflow: auto !important;
 }
 
-/* Legends stack in reverse of spatial layer order; flip to match panel */
+/* Legends stack in reverse of spatial layer order; flip to match panel.
+Right-aligned, as set legends shrink to their labels */
 [class*='multiLegend'] {
   display: flex;
   flex-direction: column-reverse;
+  align-items: flex-end;
 }
 
 /* Dot plot's 5px set colour bars straddle axis, under largest bottom-row

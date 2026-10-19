@@ -422,6 +422,30 @@
       }
     }
 
+    // Bundle draws every legend 100 px wide; shrink those without colour bar
+    // (set and fixed-colour legends) to their widest label
+    function fitSwatchLegends() {
+      const legends = root.querySelectorAll('[class*="legend"]');
+      for (let i = 0; i < legends.length; i++) {
+        const svg = legends[i].querySelector(':scope > svg');
+        if (!svg || legends[i].querySelector('img, image')) continue;
+        const rects = svg.querySelectorAll('rect');
+        if (!rects.length) continue;
+        if (Array.from(rects).some((rect) => rect.getBBox().width > 8)) {
+          continue;
+        }
+        let right = 0;
+        svg.querySelectorAll('text, rect').forEach((el) => {
+          const box = el.getBBox();
+          right = Math.max(right, box.x + box.width);
+        });
+        const width = `${Math.ceil(right) + 4}px`;
+        if (svg.style.width === width) continue;
+        svg.style.width = width;
+        legends[i].style.width = width;
+      }
+    }
+
     // List Metric legend after Cell's, as in layer controller; extras matched
     // by title, since Cell's varies (set name when set-coloured)
     function orderLegends() {
@@ -459,6 +483,7 @@
       rename();
       recolourSwatches();
       fitLiftedTitles();
+      fitSwatchLegends();
       orderLegends();
     }
     patch();
