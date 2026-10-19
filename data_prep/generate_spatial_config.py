@@ -1178,6 +1178,16 @@ def generate_config(
         feature_selection, obs_set_selection, obs_set_color
     )
     breakdown.use_coordination(obs_set_selection, obs_set_color)
+    if store_samples:
+        # Saved sets declared, so sample switch carries them by scope name;
+        # auto-init gave views absent from other layout their own empty scope
+        (saved_sets,) = vc.add_coordination('additionalObsSets')
+        saved_sets.set_value(None)
+        # Spatial view only: layer controller shows no sets
+        set_views = [*spatial_views[:1], *umap_views, obs_sets, dot_plot]
+        set_views += [distribution, breakdown]
+        for view in set_views + ([by_sample] if study else []):
+            view.use_coordination(saved_sets)
     if study:
         # Created after shared scopes, which so keep sample configs' names
         # for selections carried by sample switch
