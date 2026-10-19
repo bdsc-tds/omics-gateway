@@ -376,6 +376,57 @@ def read_set_order(table_dir, set_cols):
     return order
 
 
+# Function to list samples of multi-sample store with their configs' names
+def read_sample_configs(table_dir, config_name, sample):
+    """
+    List store's samples in display order, each with its config's file name.
+
+    Labels and their order come from merged table's sample column, keys from
+    its region column ('<key>_cell_boundaries'). Other samples' config names
+    replace sample key in this config's name, so metrics variant is kept.
+
+    Parameters:
+    -----------
+    table_dir: str
+      Path to merged table element within store.
+    config_name: str
+      File name of this sample's config (e.g. 'study_pso1.vitessce.json').
+    sample: str
+      Sample key of this config.
+
+    Returns:
+    --------
+    label: str or None
+      Display label of this sample; None when config name lacks its key.
+    samples: list of dict
+      'label' and 'config' (file name beside this config) per sample.
+    """
+    marker = f'_{sample}.'
+    if marker not in config_name:
+        return None, []
+    obs = zarr.open_group(os.path.join(table_dir, 'obs'), mode='r')
+    pairs = pd.DataFrame({
+        'label': read_elem(obs['sample']),
+        'key': read_elem(obs['region']),
+    }).drop_duplicates()
+    # Categories hold display order given to merge script
+    pairs = pairs.sort_values('label')
+    samples = [
+        {
+            'label': str(label),
+            'config': config_name.replace(
+                marker, f'_{str(key).removesuffix("_cell_boundaries")}.', 1
+            ),
+        }
+        for label, key in zip(pairs['label'], pairs['key'])
+    ]
+    label = next(
+        (s['label'] for s in samples if s['config'] == config_name), None
+    )
+
+    return label, samples
+
+
 # Function to compute zoom level that fits extent in viewport
 def fit_zoom(image_shape, viewport=(800, 450)):
     """
@@ -1205,6 +1256,13 @@ def generate_config(
         options['setOrder'] = read_set_order(
             merged_table_dir, paths['obs_set_cols']
         )
+        # Viewer's sample switch lists every sample
+        label, samples = read_sample_configs(
+            merged_table_dir, os.path.basename(out_path), sample
+        )
+        if label is not None:
+            options['sample'] = label
+            options['samples'] = samples
     if options:
         config['gatewayOptions'] = options
     drop_extra_segmentation_table_paths(config, extra_file_uids)

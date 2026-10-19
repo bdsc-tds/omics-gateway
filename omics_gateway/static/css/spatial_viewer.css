@@ -145,3 +145,17 @@ circles; move them clear */
 .gateway-tab-switch::after {
   content: attr(data-gateway-label);
 }
+
+/* Sample switch between Spatial panel's title and its buttons */
+.gateway-sample-switch {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 8px;
+}
+
+.gateway-sample-switch select {
+  font: inherit;
+  font-size: 13px;
+  padding: 0 2px;
+  cursor: pointer;
+}

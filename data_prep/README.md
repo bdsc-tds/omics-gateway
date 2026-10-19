@@ -188,7 +188,7 @@ conda run -n spatial python data_prep/generate_spatial_config.py \
     --zarr data/<study>.zarr --sample <key>
 ```
 
-They are written as `data/vitessce_configs/<study>_<key>.vitessce.json` and `.nometrics.vitessce.json`.
+They are written as `data/vitessce_configs/<study>_<key>.vitessce.json` and `.nometrics.vitessce.json`. Each lists every sample of the store, in the all-samples table's order, for the drop-down in the viewer's Spatial panel, which switches samples keeping the selected genes and cell sets.
 
 ## Reference
 

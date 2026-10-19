@@ -67,6 +67,15 @@ const PATCHES = [
       'Tl[gatewaySetColourIndex(A, o.name, l) % Tl.length];',
   },
   {
+    // Carried set colours completed by loader's for sets they lack (i:
+    // coordination type, n: current values, r: loader's value)
+    name: 'set colours complete',
+    find: '(n && n[i]) === null && A && A(r);',
+    replace:
+      '(n && n[i]) === null ? A && A(r) : ' +
+      'A && gatewayCompleteSetColours(i, n && n[i], r, A);',
+  },
+  {
     // Dot plot height grows with genes (f: dot plot data)
     name: 'dot plot height',
     find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',
@@ -304,7 +313,8 @@ function patchVitessce() {
         'gatewayGeneMappingUrl, gatewayParquetWasmUrl, useGatewayPointColours, ' +
         'GatewayGeneChips, gatewayGeneChipsHeight, GatewaySetButtons, ' +
         'gatewayNoteSoloClick, gatewayTakeSoloClick, gatewayRowGroupExtent, ' +
-        'gatewayMicronsPerUnit, gatewayScaleBarLayers, gatewaySetColourIndex';
+        'gatewayMicronsPerUnit, gatewayScaleBarLayers, gatewaySetColourIndex, ' +
+        'gatewayCompleteSetColours';
       const header = `import { ${names} } from ${JSON.stringify(PATCH_MODULE)};\n`;
       return { code: header + patched, map: null };
     },

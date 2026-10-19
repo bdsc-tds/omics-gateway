@@ -1,5 +1,5 @@
-import { B as e, Ct as t, Et as n, G as r, Ot as i, St as a, Tt as o, W as s, _ as c, _t as l, dt as u, f as d, i as f, pt as p, v as m, vt as h, wt as g, x as _, yt as v, z as y } from "./index-CDVgyDq2-DHHSeBk5.js";
-import { t as b } from "./scheduler-BhVGRmwB.js";
+import { B as e, Ct as t, Et as n, G as r, Ot as i, St as a, Tt as o, W as s, _ as c, _t as l, dt as u, f as d, i as f, pt as p, v as m, vt as h, wt as g, x as _, yt as v, z as y } from "./index-CDVgyDq2-BCGrmrGb.js";
+import { t as b } from "./scheduler-OPlFFwXf.js";
 //#region node_modules/react-dom/cjs/react-dom-client.production.js
 var ee = /* @__PURE__ */ n(((e) => {
 	g();
@@ -110,7 +110,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 		}
 		return null;
 	}
-	var h = Object.assign, _ = Symbol.for("react.element"), v = Symbol.for("react.transitional.element"), y = Symbol.for("react.portal"), ee = Symbol.for("react.fragment"), te = Symbol.for("react.strict_mode"), ne = Symbol.for("react.profiler"), x = Symbol.for("react.consumer"), re = Symbol.for("react.context"), ie = Symbol.for("react.forward_ref"), ae = Symbol.for("react.suspense"), oe = Symbol.for("react.suspense_list"), se = Symbol.for("react.memo"), ce = Symbol.for("react.lazy"), S = Symbol.for("react.activity"), le = Symbol.for("react.memo_cache_sentinel"), ue = Symbol.iterator;
+	var h = Object.assign, _ = Symbol.for("react.element"), v = Symbol.for("react.transitional.element"), y = Symbol.for("react.portal"), ee = Symbol.for("react.fragment"), te = Symbol.for("react.strict_mode"), ne = Symbol.for("react.profiler"), re = Symbol.for("react.consumer"), ie = Symbol.for("react.context"), x = Symbol.for("react.forward_ref"), ae = Symbol.for("react.suspense"), oe = Symbol.for("react.suspense_list"), se = Symbol.for("react.memo"), ce = Symbol.for("react.lazy"), S = Symbol.for("react.activity"), le = Symbol.for("react.memo_cache_sentinel"), ue = Symbol.iterator;
 	function de(e) {
 		return typeof e != "object" || !e ? null : (e = ue && e[ue] || e["@@iterator"], typeof e == "function" ? e : null);
 	}
@@ -129,9 +129,9 @@ var ee = /* @__PURE__ */ n(((e) => {
 		}
 		if (typeof e == "object") switch (e.$$typeof) {
 			case y: return "Portal";
-			case re: return e.displayName || "Context";
-			case x: return (e._context.displayName || "Context") + ".Consumer";
-			case ie:
+			case ie: return e.displayName || "Context";
+			case re: return (e._context.displayName || "Context") + ".Consumer";
+			case x:
 				var t = e.render;
 				return e = e.displayName, e ||= (e = t.displayName || t.name || "", e === "" ? "ForwardRef" : "ForwardRef(" + e + ")"), e;
 			case se: return t = e.displayName || null, t === null ? pe(e.type) || "Memo" : t;
@@ -1417,13 +1417,13 @@ var ee = /* @__PURE__ */ n(((e) => {
 			case oe: return e = xi(19, n, t, i), e.elementType = oe, e.lanes = a, e;
 			default:
 				if (typeof e == "object" && e) switch (e.$$typeof) {
-					case re:
+					case ie:
 						o = 10;
 						break a;
-					case x:
+					case re:
 						o = 9;
 						break a;
-					case ie:
+					case x:
 						o = 11;
 						break a;
 					case se:
@@ -1688,7 +1688,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 			});
 		};
 	}, va = n.unstable_scheduleCallback, ya = n.unstable_NormalPriority, ba = {
-		$$typeof: re,
+		$$typeof: ie,
 		Consumer: null,
 		Provider: null,
 		_currentValue: null,
@@ -1871,7 +1871,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 				}
 				if (me(t) || de(t)) return t = Ei(t, e.mode, n, null), t.return = e, t;
 				if (typeof t.then == "function") return f(e, Wa(t), n);
-				if (t.$$typeof === re) return f(e, ha(e, t), n);
+				if (t.$$typeof === ie) return f(e, ha(e, t), n);
 				Ka(e, t);
 			}
 			return null;
@@ -1887,7 +1887,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 				}
 				if (me(n) || de(n)) return i === null ? d(e, t, n, r, null) : null;
 				if (typeof n.then == "function") return p(e, t, Wa(n), r);
-				if (n.$$typeof === re) return p(e, t, ha(e, n), r);
+				if (n.$$typeof === ie) return p(e, t, ha(e, n), r);
 				Ka(e, n);
 			}
 			return null;
@@ -1902,7 +1902,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 				}
 				if (me(r) || de(r)) return e = e.get(n) || null, d(t, e, r, i, null);
 				if (typeof r.then == "function") return m(e, t, n, Wa(r), i);
-				if (r.$$typeof === re) return m(e, t, n, ha(t, r), i);
+				if (r.$$typeof === ie) return m(e, t, n, ha(t, r), i);
 				Ka(t, r);
 			}
 			return null;
@@ -1996,7 +1996,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 					return a = l.call(a), g(e, r, a, c);
 				}
 				if (typeof a.then == "function") return _(e, r, Wa(a), c);
-				if (a.$$typeof === re) return _(e, r, ha(e, a), c);
+				if (a.$$typeof === ie) return _(e, r, ha(e, a), c);
 				Ka(e, a);
 			}
 			return typeof a == "string" && a !== "" || typeof a == "number" || typeof a == "bigint" ? (a = "" + a, r !== null && r.tag === 6 ? (n(e, r.sibling), c = i(r, a), c.return = e, e = c) : (n(e, r), c = Di(a, e.mode, c), c.return = e, e = c), o(e)) : n(e, r);
@@ -2308,7 +2308,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 	function Ko(e) {
 		if (typeof e == "object" && e) {
 			if (typeof e.then == "function") return Go(e);
-			if (e.$$typeof === re) return ma(e);
+			if (e.$$typeof === ie) return ma(e);
 		}
 		throw Error(s(438, String(e)));
 	}
@@ -3558,7 +3558,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 					else {
 						if (e != null) {
 							var i = e.$$typeof;
-							if (i === ie) {
+							if (i === x) {
 								t.tag = 11, t = vc(null, t, e, r, n);
 								break a;
 							} else if (i === se) {
@@ -6944,7 +6944,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 		}
 	}
 	var pp = {
-		$$typeof: re,
+		$$typeof: ie,
 		Provider: null,
 		Consumer: null,
 		_currentValue: he,
@@ -7464,17 +7464,17 @@ var ee = /* @__PURE__ */ n(((e) => {
 			}
 			return null;
 		}
-		function x(e) {
+		function re(e) {
 			if (e.tag === 31) {
 				var t = e.memoizedState;
 				if (t === null && (e = e.alternate, e !== null && (t = e.memoizedState)), t !== null) return t.dehydrated;
 			}
 			return null;
 		}
-		function re(e) {
+		function ie(e) {
 			if (te(e) !== e) throw Error("Unable to find node on an unmounted component.");
 		}
-		function ie(e) {
+		function x(e) {
 			var t = e.alternate;
 			if (!t) {
 				if (t = te(e), t === null) throw Error("Unable to find node on an unmounted component.");
@@ -7493,8 +7493,8 @@ var ee = /* @__PURE__ */ n(((e) => {
 				}
 				if (i.child === a.child) {
 					for (a = i.child; a;) {
-						if (a === n) return re(i), e;
-						if (a === r) return re(i), t;
+						if (a === n) return ie(i), e;
+						if (a === r) return ie(i), t;
 						a = a.sibling;
 					}
 					throw Error("Unable to find node on an unmounted component.");
@@ -16116,7 +16116,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 						if (e = ne(t), e !== null) return e;
 						e = null;
 					} else if (n === 31) {
-						if (e = x(t), e !== null) return e;
+						if (e = re(t), e !== null) return e;
 						e = null;
 					} else if (n === 3) {
 						if (t.stateNode.current.memoizedState.isDehydrated) return t.tag === 3 ? t.stateNode.containerInfo : null;
@@ -16266,7 +16266,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 							return;
 						}
 					} else if (t === 31) {
-						if (t = x(n), t !== null) {
+						if (t = re(n), t !== null) {
 							e.blockedOn = t, Qe(e.priority, function() {
 								cf(n);
 							});
@@ -18513,7 +18513,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 		})(), typeof Map == "function" && Map.prototype != null && typeof Map.prototype.forEach == "function" && typeof Set == "function" && Set.prototype != null && typeof Set.prototype.clear == "function" && typeof Set.prototype.forEach == "function" || console.error("React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://react.dev/link/react-polyfills"), B.findDOMNode = function(e) {
 			var t = e._reactInternals;
 			if (t === void 0) throw typeof e.render == "function" ? Error("Unable to find node on an unmounted component.") : (e = Object.keys(e).join(","), Error("Argument appears to not be a ReactComponent. Keys: " + e));
-			return e = ie(t), e = e === null ? null : ae(e), e = e === null ? null : e.stateNode, e;
+			return e = x(t), e = e === null ? null : ae(e), e = e === null ? null : e.stateNode, e;
 		}, !(function() {
 			var e = {
 				bundleType: 1,
@@ -18539,7 +18539,7 @@ var ee = /* @__PURE__ */ n(((e) => {
 			return n != null && (!0 === n.unstable_strictMode && (r = !0), n.identifierPrefix !== void 0 && (i = n.identifierPrefix), n.onUncaughtError !== void 0 && (a = n.onUncaughtError), n.onCaughtError !== void 0 && (o = n.onCaughtError), n.onRecoverableError !== void 0 && (s = n.onRecoverableError), n.formState !== void 0 && (c = n.formState)), t = tf(e, 1, !0, t, n ?? null, r, i, c, a, o, s, Ef), t.context = nf(null), n = t.current, r = al(n), r = qe(r), i = aa(r), i.callback = null, oa(n, i, r), mi(r, "hydrateRoot()", null), n = r, t.current.lanes = n, He(t, n), N(t), e[Xp] = t.current, pu(e), new Of(t);
 		}, e.version = "19.2.8", typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ < "u" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop == "function" && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(Error());
 	})();
-})), ne = /* @__PURE__ */ i((/* @__PURE__ */ n(((e, t) => {
+})), ne = /* @__PURE__ */ n(((e, t) => {
 	g();
 	function n() {
 		if (!(typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ > "u" || typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE != "function")) {
@@ -18552,27 +18552,27 @@ var ee = /* @__PURE__ */ n(((e) => {
 		}
 	}
 	o.env.NODE_ENV === "production" ? (n(), t.exports = ee()) : t.exports = te();
-})))(), 1);
+})), re = /* @__PURE__ */ i(a(), 1), ie = /* @__PURE__ */ i(ne(), 1);
 l();
-var x = /* @__PURE__ */ i(t(), 1), re = /* @__PURE__ */ i(a(), 1), ie = [
+var x = /* @__PURE__ */ i(t(), 1), ae = [
 	"dataset",
 	"obsType",
 	"obsSetSelection",
 	"obsSetColor",
 	"additionalObsSets"
-], ae = [
+], oe = [
 	"dotPlot",
 	"obsSetFeatureValueDistribution",
 	"scatterplot"
 ];
-function oe(e, t) {
+function se(e, t) {
 	return e.children ? e.children.forEach((e) => {
-		oe(e, t);
+		se(e, t);
 	}) : (e.set || []).forEach(([e]) => {
 		t.add(e);
 	}), t;
 }
-function se(e, t) {
+function ce(e, t) {
 	let n = e, r = null;
 	for (let e of t) {
 		if (r = (n || []).find((t) => t.name === e), !r) return null;
@@ -18580,23 +18580,23 @@ function se(e, t) {
 	}
 	return r;
 }
-var ce = 2;
-function S(e, t, n, i, a) {
+var S = 2;
+function le(e, t, n, i, a) {
 	let o = e?.tree || [], s = o.filter((e) => a?.includes(e.name));
 	if (!s.length && o[0] && s.push(o[0]), !s.length || !n?.length) return null;
 	let c = s.find((e) => n.some((t) => t[0] === e.name)) || s[0], l = /* @__PURE__ */ new Map();
 	(c.children || []).forEach((e) => {
-		oe(e, /* @__PURE__ */ new Set()).forEach((t) => {
+		se(e, /* @__PURE__ */ new Set()).forEach((t) => {
 			l.set(t, e.name);
 		});
 	});
 	let u = r(e, t), d = (e) => {
 		let t = /* @__PURE__ */ new Set();
 		return e.forEach((e) => {
-			let n = se(u.tree, e);
-			n && oe(n, t);
+			let n = ce(u.tree, e);
+			n && se(n, t);
 		}), t;
-	}, f = n.filter((e) => e[0] !== c.name), p = f.length ? f.slice(0, ce).map((e) => ({
+	}, f = n.filter((e) => e[0] !== c.name), p = f.length ? f.slice(0, S).map((e) => ({
 		label: e[e.length - 1],
 		ids: d([e])
 	})) : [{
@@ -18624,18 +18624,18 @@ function S(e, t, n, i, a) {
 		hierarchy: c.name,
 		columns: h,
 		rows: v,
-		hidden: Math.max(0, f.length - ce),
+		hidden: Math.max(0, f.length - S),
 		outside: m.size
 	};
 }
-var le = {
+var ue = {
 	padding: "1px 6px",
 	whiteSpace: "nowrap"
-}, ue = {
-	...le,
+}, de = {
+	...ue,
 	textAlign: "right"
-}, de = [.85, .4];
-function fe(e, t, n) {
+}, fe = [.85, .4];
+function pe(e, t, n) {
 	return (0, x.createElement)("div", { style: {
 		width: `${e}%`,
 		height: 5,
@@ -18644,13 +18644,13 @@ function fe(e, t, n) {
 		opacity: n
 	} });
 }
-function pe(e) {
+function me(e) {
 	let { columns: t } = e, n = (0, x.createElement)("tr", null, (0, x.createElement)("th", { style: {
-		...le,
+		...ue,
 		textAlign: "left"
 	} }, e.hierarchy), t.map((e, n) => (0, x.createElement)("th", {
 		key: e.label,
-		style: ue,
+		style: de,
 		title: e.label
 	}, t.length > 1 ? (0, x.createElement)("span", { style: {
 		display: "inline-block",
@@ -18659,13 +18659,13 @@ function pe(e) {
 		marginRight: 4,
 		verticalAlign: "middle",
 		background: "currentColor",
-		opacity: de[n]
+		opacity: fe[n]
 	} }) : null, e.label)), (0, x.createElement)("th", { style: {
-		...le,
+		...ue,
 		width: "35%"
 	} })), r = e.rows.map(({ type: e, colour: n }) => {
 		let r = n ? `rgb(${n.join(",")})` : "currentColor", i = t.map(({ counts: t, total: n }) => 100 * (t.get(e) || 0) / (n || 1));
-		return (0, x.createElement)("tr", { key: e }, (0, x.createElement)("td", { style: le }, (0, x.createElement)("span", { style: {
+		return (0, x.createElement)("tr", { key: e }, (0, x.createElement)("td", { style: ue }, (0, x.createElement)("span", { style: {
 			display: "inline-block",
 			width: 10,
 			height: 10,
@@ -18673,8 +18673,8 @@ function pe(e) {
 			background: r
 		} }), e), t.map(({ label: t, counts: n }, r) => (0, x.createElement)("td", {
 			key: t,
-			style: ue
-		}, `${(n.get(e) || 0).toLocaleString("en")} (${i[r].toFixed(1)}%)`)), (0, x.createElement)("td", { style: le }, i.map((e, n) => (0, x.createElement)("div", { key: t[n].label }, fe(e, r, de[n])))));
+			style: de
+		}, `${(n.get(e) || 0).toLocaleString("en")} (${i[r].toFixed(1)}%)`)), (0, x.createElement)("td", { style: ue }, i.map((e, n) => (0, x.createElement)("div", { key: t[n].label }, pe(e, r, fe[n])))));
 	});
 	return (0, x.createElement)("div", { style: { fontSize: 12 } }, [e.hidden ? `Showing first ${t.length} of ${t.length + e.hidden} selections.` : null, e.outside ? `${e.outside.toLocaleString("en")} selected cells from other samples not counted.` : null].filter(Boolean).map((e) => (0, x.createElement)("div", {
 		key: e,
@@ -18687,14 +18687,14 @@ function pe(e) {
 		borderCollapse: "collapse"
 	} }, (0, x.createElement)("thead", null, n), (0, x.createElement)("tbody", null, r)));
 }
-function me(t) {
-	let { coordinationScopes: n, theme: r, removeGridComponent: i, closeButtonVisible: a, downloadButtonVisible: o, title: l = "Cell Types in Selection", rowHierarchies: d } = t, f = m(), [{ dataset: p, obsType: h, obsSetSelection: g, obsSetColor: v, additionalObsSets: b }] = s(ie, u(n)), [{ obsSets: ee }, te, ne, re] = c(f, p, !0, {}, {}, { obsType: h }), ae = e([te]), oe = _([ne]), se = (0, x.useMemo)(() => S(ee, b, g, v, d), [
+function C(t) {
+	let { coordinationScopes: n, theme: r, removeGridComponent: i, closeButtonVisible: a, downloadButtonVisible: o, title: l = "Cell Types in Selection", rowHierarchies: d } = t, f = m(), [{ dataset: p, obsType: h, obsSetSelection: g, obsSetColor: v, additionalObsSets: b }] = s(ae, u(n)), [{ obsSets: ee }, te, ne, re] = c(f, p, !0, {}, {}, { obsType: h }), ie = e([te]), oe = _([ne]), se = (0, x.useMemo)(() => le(ee, b, g, v, d), [
 		ee,
 		b,
 		g,
 		v,
 		d
-	]), ce = se ? pe(se) : (0, x.createElement)("span", null, "Draw a region with the lasso, or select cell sets, to see their cell types.");
+	]), ce = se ? me(se) : (0, x.createElement)("span", null, "Draw a region with the lasso, or select cell sets, to see their cell types.");
 	return (0, x.createElement)(y, {
 		title: l,
 		info: se ? `${se.columns.map(({ total: e }) => e.toLocaleString("en")).join(" vs ")} cells` : null,
@@ -18703,12 +18703,12 @@ function me(t) {
 		closeButtonVisible: a,
 		downloadButtonVisible: o,
 		removeGridComponent: i,
-		isReady: ae,
+		isReady: ie,
 		urls: oe,
 		errors: [re]
 	}, ce);
 }
-var C = {
+var w = {
 	marginLeft: 8,
 	padding: "0 8px",
 	border: "1px solid currentColor",
@@ -18722,7 +18722,7 @@ var C = {
 	cursor: "pointer",
 	verticalAlign: "middle"
 };
-function w(e) {
+function he(e) {
 	let { tabs: t = [], viewTypes: n, uuid: r, coordinationScopes: i, coordinationScopesBy: a, ...o } = e, [s, c] = (0, x.useState)(0), l = (0, x.useRef)(null), u = (0, x.useRef)(null);
 	u.current ||= document.createElement("span"), (0, x.useLayoutEffect)(() => {
 		let e = l.current?.querySelector("[class*=\"titleLeft\"]");
@@ -18742,7 +18742,7 @@ function w(e) {
 	})).filter(({ index: e }) => e !== s).map(({ other: e, index: t }) => (0, x.createElement)("button", {
 		key: e.label,
 		type: "button",
-		style: C,
+		style: w,
 		title: `Show ${e.label}`,
 		"aria-label": `Show ${e.label}`,
 		"data-gateway-label": e.label,
@@ -18770,84 +18770,190 @@ function w(e) {
 		}
 	}, m, (0, re.createPortal)(p, u.current));
 }
-var he = [...new Set(ae.flatMap((e) => p[e] || []))], ge = [new d("gatewayCellTypeCounts", me, ie), new d("gatewayTabs", w, he)], _e = new URLSearchParams(window.location.search).get("config") || "", ve = (0, ne.createRoot)(document.getElementById("root"));
-function ye(e) {
-	ve.render(x.createElement("div", { id: "message" }, e));
-}
+var ge = [...new Set(oe.flatMap((e) => p[e] || []))], _e = [new d("gatewayCellTypeCounts", C, ae), new d("gatewayTabs", he, ge)], ve = new URLSearchParams(window.location.search).get("config") || "", ye = (0, ie.createRoot)(document.getElementById("root"));
 function T(e) {
-	if (Array.isArray(e)) e.forEach(T);
+	ye.render(x.createElement("div", { id: "message" }, e));
+}
+function be(e) {
+	if (Array.isArray(e)) e.forEach(be);
 	else if (e && typeof e == "object") for (let t of Object.keys(e)) {
 		let n = e[t];
-		t === "url" && typeof n == "string" && n.startsWith("/") ? e[t] = window.location.origin + n : T(n);
+		t === "url" && typeof n == "string" && n.startsWith("/") ? e[t] = window.location.origin + n : be(n);
 	}
 }
-var be = [
+var xe = [
 	/^\/spatial-data\/.*\/\.(zattrs|zarray|zgroup)$/,
 	/^\/spatial-data\/.*\/points\/[^/]+\/points\.parquet$/,
 	/^\/spatial-data\/.*\/shapes\/[^/]+\/shapes\.parquet\/part\.\d+\.parquet$/
-], xe = window.fetch.bind(window);
+], Se = window.fetch.bind(window);
 window.fetch = (e, t) => {
 	let n = new URL(e instanceof Request ? e.url : e, window.location.origin);
-	return n.origin === window.location.origin && be.some((e) => e.test(n.pathname)) ? Promise.resolve(new Response(null, { status: 404 })) : xe(e, t);
+	return n.origin === window.location.origin && xe.some((e) => e.test(n.pathname)) ? Promise.resolve(new Response(null, { status: 404 })) : Se(e, t);
 };
-var Se = 10, Ce = 5, we = 12, Te = [12, 44], E = [800, 450], Ee = .95;
-function De(e, t, n) {
+var Ce = 10, we = 5, Te = 12, E = [12, 44], Ee = [800, 450], De = .95;
+function Oe(e, t, n) {
 	let r = e.layout || [], i = r.find((e) => e.component === "spatialBeta"), a = e.coordinationSpace || {}, o = i?.coordinationScopes || {}, s = a.spatialZoom || {}, c = a.spatialTargetX || {}, l = a.spatialTargetY || {}, u = s[o.spatialZoom], d = 2 * c[o.spatialTargetX], f = 2 * l[o.spatialTargetY];
 	if (typeof u != "number" || !(d > 0) || !(f > 0)) return;
-	let p = Math.log2(Math.min(E[0] / d, E[1] / f));
+	let p = Math.log2(Math.min(Ee[0] / d, Ee[1] / f));
 	if (Math.abs(u - p) > 1e-6) return;
-	let m = Math.max(...r.map((e) => e.y + e.h)), h = (t - 2 * Se - (we - 1) * Ce) / we, g = (n - 2 * Se - (m - 1) * Ce) / m, _ = i.w * h + (i.w - 1) * Ce - Te[0], v = i.h * g + (i.h - 1) * Ce - Te[1];
-	!(_ > 0) || !(v > 0) || (s[o.spatialZoom] = Math.log2(Ee * Math.min(_ / d, v / f)));
+	let m = Math.max(...r.map((e) => e.y + e.h)), h = (t - 2 * Ce - (Te - 1) * we) / Te, g = (n - 2 * Ce - (m - 1) * we) / m, _ = i.w * h + (i.w - 1) * we - E[0], v = i.h * g + (i.h - 1) * we - E[1];
+	!(_ > 0) || !(v > 0) || (s[o.spatialZoom] = Math.log2(De * Math.min(_ / d, v / f)));
 }
-function Oe({ config: e }) {
-	let [t, n] = x.useState(e), [r, i] = x.useState(0), a = x.useRef(null), o = x.useRef(null), s = x.useRef(0), c = x.useCallback((e) => {
-		a.current ||= e, o.current = e;
+async function ke(e) {
+	let t = await fetch(e);
+	if (!t.ok) throw Error(`${t.status} ${t.statusText}`);
+	let { gatewayOptions: n = {}, ...r } = await t.json();
+	return be(r), Oe(r, window.innerWidth, window.innerHeight), {
+		config: r,
+		options: n
+	};
+}
+function Ae(e) {
+	h(e.micronsPerUnit), v(e.setOrder);
+}
+var je = [
+	"featureSelection",
+	"obsSetSelection",
+	"obsSetColor",
+	"additionalObsSets"
+];
+function Me(e, t) {
+	if (!e) return;
+	let n = t.coordinationSpace;
+	for (let r of je) {
+		let i = e.coordinationSpace?.[r];
+		if (i) {
+			if (!n[r]) {
+				let i = /* @__PURE__ */ new Map();
+				for (let t of e.layout) {
+					let e = t.coordinationScopes?.[r];
+					typeof e == "string" && !i.has(t.component) && i.set(t.component, e);
+				}
+				for (let e of t.layout) {
+					let t = i.get(e.component);
+					t && (e.coordinationScopes = {
+						...e.coordinationScopes,
+						[r]: t
+					});
+				}
+				n[r] = {};
+			}
+			for (let e of t.layout) {
+				let t = e.coordinationScopes?.[r];
+				typeof t == "string" && t in i && (n[r][t] = i[t]);
+			}
+		}
+	}
+}
+function Ne({ current: e, samples: t, busy: n, onSwitch: r }) {
+	let i = x.useRef(null);
+	return i.current || (i.current = document.createElement("span"), i.current.className = "gateway-sample-switch"), x.useEffect(() => {
+		let e = document.getElementById("root"), t = () => {
+			let t = Array.from(e.querySelectorAll("[class*=\"titleLeft\"]")).find((e) => e.textContent.trim() === "Spatial")?.parentElement?.querySelector(":scope > [class*=\"titleButtons\"]");
+			t && i.current.nextSibling !== t && t.before(i.current);
+		};
+		t();
+		let n = new MutationObserver(t);
+		return n.observe(e, {
+			childList: !0,
+			subtree: !0
+		}), () => {
+			n.disconnect(), i.current.remove();
+		};
+	}, []), (0, re.createPortal)(x.createElement("select", {
+		value: e,
+		disabled: n,
+		"aria-label": "Sample",
+		title: "Show another sample; genes and selections are kept",
+		onMouseDown: (e) => e.stopPropagation(),
+		onChange: (e) => r(e.target.value)
+	}, t.map((e) => x.createElement("option", {
+		key: e.config,
+		value: e.config
+	}, e.label))), i.current);
+}
+function Pe({ initial: e }) {
+	let [t, n] = x.useState({
+		...e,
+		validate: !0
+	}), [r, i] = x.useState(0), [a, o] = x.useState(!1), s = x.useRef(null), c = x.useRef(null), l = x.useRef(0), { config: u, options: d, url: p, validate: m } = t, h = x.useCallback((e) => {
+		s.current ||= e, c.current = e;
 		let t = new Set(e.layout.map((e) => e.uid));
-		i(a.current.layout.filter((e) => !t.has(e.uid)).length);
+		i(s.current.layout.filter((e) => !t.has(e.uid)).length);
 	}, []);
-	function l() {
-		let e = o.current, t = a.current, r = new Map(e.layout.map((e) => [e.uid, e])), c = t.layout.map((e) => ({
-			...r.get(e.uid) || e,
+	function g() {
+		let e = c.current, r = s.current, a = new Map(e.layout.map((e) => [e.uid, e])), o = r.layout.map((e) => ({
+			...a.get(e.uid) || e,
 			x: e.x,
 			y: e.y,
 			w: e.w,
 			h: e.h
 		}));
-		s.current += 1;
-		let l = {
+		l.current += 1;
+		let u = {
 			...e,
-			layout: c,
-			uid: `${t.uid}-restored-${s.current}`
+			layout: o,
+			uid: `${r.uid}-restored-${l.current}`
 		};
-		o.current = l, i(0), n(l);
+		c.current = u, i(0), n({
+			...t,
+			config: u,
+			validate: !1
+		});
 	}
+	async function _(e) {
+		let t = new URL(e, new URL(p, window.location.origin)), r = t.origin === window.location.origin ? t.pathname : t.href;
+		o(!0);
+		try {
+			let e = await ke(r);
+			Me(c.current, e.config), l.current += 1, e.config.uid = `sample-${l.current}`, Ae(e.options), s.current = null, c.current = null, i(0);
+			let t = new URLSearchParams(window.location.search);
+			t.set("config", r), window.history.replaceState(null, "", `?${t}`), n({
+				...e,
+				url: r,
+				validate: !0
+			});
+		} catch (e) {
+			console.error(`Sample switch failed for ${r}`, e);
+		} finally {
+			o(!1);
+		}
+	}
+	let v = Array.isArray(d.samples) ? d.samples : [], y = v.find((e) => e.label === d.sample);
 	return x.createElement(x.Fragment, null, x.createElement(f, {
-		config: t,
-		validateConfig: t === e,
-		onConfigChange: c,
-		pluginViewTypes: ge,
+		config: u,
+		validateConfig: m,
+		onConfigChange: h,
+		pluginViewTypes: _e,
 		theme: "light",
 		height: window.innerHeight
+	}), y && v.length > 1 && x.createElement(Ne, {
+		current: y.config,
+		samples: v,
+		busy: a,
+		onSwitch: _
 	}), r > 0 && x.createElement("button", {
 		type: "button",
 		className: "gateway-restore-panels",
 		title: "Reopen closed panels; selections are kept, data reloads",
-		onClick: l
+		onClick: g
 	}, r === 1 ? "Restore closed panel" : `Restore ${r} closed panels`));
 }
-async function ke() {
-	if (!_e) {
-		ye("No config specified. Use ?config=<url>.");
+async function Fe() {
+	if (!ve) {
+		T("No config specified. Use ?config=<url>.");
 		return;
 	}
 	try {
-		let e = await fetch(_e);
-		if (!e.ok) throw Error(`${e.status} ${e.statusText}`);
-		let { gatewayOptions: t = {}, ...n } = await e.json();
-		h(t.micronsPerUnit), v(t.setOrder), T(n), De(n, window.innerWidth, window.innerHeight), ve.render(x.createElement(Oe, { config: n }));
+		let { config: e, options: t } = await ke(ve);
+		Ae(t), ye.render(x.createElement(Pe, { initial: {
+			config: e,
+			options: t,
+			url: ve
+		} }));
 	} catch (e) {
-		ye(`Failed to load config from ${_e}: ${e}`);
+		T(`Failed to load config from ${ve}: ${e}`);
 	}
 }
-ke();
+Fe();
 //#endregion

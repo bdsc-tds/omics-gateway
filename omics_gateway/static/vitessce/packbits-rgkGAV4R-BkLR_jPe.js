@@ -1,4 +1,4 @@
-import { S as e } from "./index-CDVgyDq2-DHHSeBk5.js";
+import { S as e } from "./index-CDVgyDq2-BCGrmrGb.js";
 //#region node_modules/vitessce/dist/packbits-rgkGAV4R.js
 var t = class extends e {
 	decodeBlock(e) {
