@@ -29,7 +29,8 @@ CONDA_ENV_BIN="$CONDA_ROOT/envs/$CONDA_ENV/bin"
 # Cellxgene variables
 export PATH="$CONDA_ENV_BIN:$PATH"
 export CELLXGENE_LOCATION=${CELLXGENE_LOCATION:-$CONDA_ENV_BIN/cellxgene}
-export GATEWAY_DATA=${GATEWAY_DATA:-$SCRIPT_DIR/data}
+export GATEWAY_DATA=${GATEWAY_DATA:-$SCRIPT_DIR/data/scrna}
+export SPATIAL_DATA=${SPATIAL_DATA:-$SCRIPT_DIR/data/spatial}
 export QC_DATA=${QC_DATA:-$SCRIPT_DIR/analysis_qc}
 export GATEWAY_LOG_LEVEL=${GATEWAY_LOG_LEVEL:-INFO}
 export GATEWAY_IP=${GATEWAY_IP:-127.0.0.1}
@@ -51,7 +52,7 @@ fi
 # Check data directory exists: gateway only checks it is set, on first request
 if [ ! -d "$GATEWAY_DATA" ]; then
     echo "Error: data directory not found at $GATEWAY_DATA"
-    echo "Set GATEWAY_DATA, or create $SCRIPT_DIR/data (deploy/setup.sh does)"
+    echo "Set GATEWAY_DATA, or create $SCRIPT_DIR/data/scrna (deploy/setup.sh does)"
     exit 1
 fi
 
@@ -84,6 +85,7 @@ echo "Starting Omics Gateway with Gunicorn..."
 echo "Configuration:"
 echo "  Cellxgene executable: ${CELLXGENE_LOCATION}"
 echo "  Data source: ${GATEWAY_DATA}"
+echo "  Spatial data: ${SPATIAL_DATA}"
 echo "  QC data: ${QC_DATA}"
 echo "  Branding: ${GATEWAY_BRANDING:-default}"
 echo "  Binding to: $BIND"

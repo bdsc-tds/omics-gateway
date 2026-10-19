@@ -217,7 +217,8 @@ class TestSpatialMetricsFlag(EnvReloadCase):
         with tempfile.TemporaryDirectory() as tmp:
             tsv_path = os.path.join(tmp, 'datasets.tsv')
             with open(tsv_path, 'w', newline='') as tsv:
-                tsv.write('dataset_id\tfile_path\nx\tsample.zarr\n')
+                # Stores sit in type folders; configs share one folder
+                tsv.write('dataset_id\tfile_path\nx\txenium/sample.zarr\n')
             datasets = dml.load_dataset_metadata_tsv(tsv_path, data_dir=tmp)[0]
 
         return datasets[0]['spatial_config']
@@ -252,9 +253,9 @@ class TestDataPathRoutes(EnvReloadCase):
 
     def setUp(self):
         """
-        Create data directory (dataset, spatial store and its config), QC
-        directory with one figure, and files outside data directory that no
-        route may serve, then point environment at both directories.
+        Create data directory (one dataset), spatial directory (store and
+        its config), QC directory with one figure, and files outside them that
+        no route may serve, then point environment at all three directories.
 
         Returns:
         --------
@@ -271,8 +272,8 @@ class TestDataPathRoutes(EnvReloadCase):
         with open(os.path.join(self.qc_dir, 'plot.png'), 'wb') as png:
             png.write(b'not really a png')
         for path in (
-            'data/store.zarr/zarr.json',
-            'data/vitessce_configs/store.vitessce.json',
+            'spatial/xenium/store.zarr/zarr.json',
+            'spatial/vitessce_configs/store.vitessce.json',
             'secret.txt',
             'secret.h5ad',
         ):
@@ -282,6 +283,7 @@ class TestDataPathRoutes(EnvReloadCase):
                 file.write(b'0123456789')
         self.reload_env(
             GATEWAY_DATA=self.data_dir,
+            SPATIAL_DATA=os.path.join(self.tmp.name, 'spatial'),
             QC_DATA=os.path.join(self.tmp.name, 'analysis_qc'),
         )
 
@@ -389,10 +391,10 @@ class TestDataPathRoutes(EnvReloadCase):
 
     def test_GIVEN_existing_file_THEN_spatial_data_serves_byte_ranges(self):
         """
-        Test that /spatial-data serves files from data directory, and answers
-        range requests with 206, which Vitessce needs to stream chunks.
+        Test that /spatial-data serves files from spatial directory, and
+        answers range requests with 206, which Vitessce needs to stream chunks.
         """
-        path = 'store.zarr/zarr.json'
+        path = 'xenium/store.zarr/zarr.json'
         self.assertEqual(200, self.request_status(gateway.spatial_data, path))
         self.assertEqual(
             206,
@@ -403,14 +405,16 @@ class TestDataPathRoutes(EnvReloadCase):
 
     def test_GIVEN_unsafe_path_THEN_spatial_data_refuses_it(self):
         """
-        Test that /spatial-data never serves file outside data directory, by
-        traversal or absolute path, and reports missing files as 404.
+        Test that /spatial-data never serves file outside spatial directory,
+        by traversal or absolute path, nor .h5ad files from data directory, and
+        reports missing files as 404.
         """
         for subpath, status in (
             ('../secret.txt', 400),
-            ('store.zarr/../../secret.txt', 400),
+            ('xenium/store.zarr/../../../secret.txt', 400),
             (os.path.join(self.tmp.name, 'secret.txt'), 404),
-            ('store.zarr/absent', 404),
+            ('sample.h5ad', 404),
+            ('xenium/store.zarr/absent', 404),
         ):
             with self.subTest(subpath=subpath):
                 self.assertEqual(
@@ -419,7 +423,7 @@ class TestDataPathRoutes(EnvReloadCase):
 
     def test_GIVEN_config_THEN_spatial_viewer_checks_it(self):
         """
-        Test that /spatial-viewer opens config hosted in data directory, and
+        Test that /spatial-viewer opens config hosted in spatial directory, and
         refuses missing, foreign, escaping or absent configs.
         """
         prefix = '/spatial-viewer?config='
@@ -438,6 +442,23 @@ class TestDataPathRoutes(EnvReloadCase):
                         gateway.spatial_viewer, url=prefix + config
                     ),
                 )
+
+    def test_GIVEN_no_spatial_directory_THEN_spatial_routes_return_404(self):
+        """
+        Test that spatial routes serve nothing when SPATIAL_DATA is unset,
+        rather than falling back to data directory.
+        """
+        self.reload_env(GATEWAY_DATA=self.data_dir, unset=['SPATIAL_DATA'])
+        self.assertEqual(
+            404, self.request_status(gateway.spatial_data, 'sample.h5ad')
+        )
+        config = '/spatial-data/vitessce_configs/store.vitessce.json'
+        self.assertEqual(
+            404,
+            self.request_status(
+                gateway.spatial_viewer, url=f'/spatial-viewer?config={config}'
+            ),
+        )
 
     def test_GIVEN_cellxgene_state_THEN_view_static_proxies_to_loaded(self):
         """
