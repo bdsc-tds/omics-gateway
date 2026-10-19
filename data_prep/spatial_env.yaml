@@ -23,3 +23,5 @@ dependencies:
       # helpers; without it Morton-sort import fails
       - negspy==0.3.2
       - zarr==3.2.1
+      # Study config's sample thumbnails (generate_spatial_config.py)
+      - pillow==12.3.0

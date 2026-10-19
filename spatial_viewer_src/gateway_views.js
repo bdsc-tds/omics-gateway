@@ -13,6 +13,10 @@
  * Each tab keeps own coordination scopes, from view's props, over tab view's
  * auto-initialised ones.
  *
+ * Sample thumbnails: study config's samples as static H&E images made by
+ * config generator (live spatial views would load every sample at once);
+ * clicking one switches to that sample's config.
+ *
  * Data hooks, TitleInfo and coordination type lists are not exported by
  * 'vitessce'; 'gateway-vitessce-internals' is Vitessce's own chunk with
  * them re-exported (see vite.config.js). @vitessce/* packages cannot stand
@@ -449,6 +453,63 @@ function Tabs(props) {
   );
 }
 
+// Static H&E thumbnail per sample of study config; click asks main.js to
+// switch, as sample drop-down does
+function SampleThumbnails(props) {
+  const {
+    theme,
+    removeGridComponent,
+    closeButtonVisible,
+    title = 'Samples',
+    samples = [],
+  } = props;
+  // Thumbnails and configs are named relative to current config
+  const base = new URL(
+    new URLSearchParams(window.location.search).get('config') || '',
+    window.location.origin,
+  );
+  const cards = samples.map((sample) =>
+    h(
+      'button',
+      {
+        key: sample.config,
+        type: 'button',
+        className: 'gateway-thumbnail',
+        title: `Show ${sample.label}; genes and selections are kept`,
+        onClick: () =>
+          window.dispatchEvent(
+            new CustomEvent('gateway-switch-sample', { detail: sample.config }),
+          ),
+      },
+      h('img', {
+        src: new URL(sample.thumbnail, base).href,
+        alt: `H&E of ${sample.label}`,
+        loading: 'lazy',
+      }),
+      h('span', { className: 'gateway-thumbnail-label' }, sample.label),
+      sample.disease
+        ? h('span', { className: 'gateway-thumbnail-disease' }, sample.disease)
+        : null,
+    ),
+  );
+  return h(
+    GatewayTitleInfo,
+    {
+      title,
+      info: `${samples.length} samples`,
+      theme,
+      isScroll: true,
+      closeButtonVisible,
+      downloadButtonVisible: false,
+      removeGridComponent,
+      isReady: true,
+      urls: [],
+      errors: [],
+    },
+    h('div', { className: 'gateway-thumbnails' }, cards),
+  );
+}
+
 const tabCoordinationTypes = [
   ...new Set(
     TAB_VIEW_TYPES.flatMap(
@@ -464,4 +525,5 @@ export const GATEWAY_VIEW_TYPES = [
     COUNTS_COORDINATION_TYPES,
   ),
   new PluginViewType('gatewayTabs', Tabs, tabCoordinationTypes),
+  new PluginViewType('gatewaySampleThumbnails', SampleThumbnails, ['dataset']),
 ];

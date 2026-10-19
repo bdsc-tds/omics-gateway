@@ -76,6 +76,22 @@ const PATCHES = [
       'A && gatewayCompleteSetColours(i, n && n[i], r, A);',
   },
   {
+    // Scatterplot legend lists set colours too, as spatial view's does; it
+    // was given no colours, so set-coloured UMAPs had none (w: obsSetColor)
+    name: 'scatterplot set legend',
+    find: '    obsSetSelection: W,\n    extent: Gs,',
+    replace: '    obsSetSelection: W,\n    obsSetColor: w,\n    extent: Gs,',
+  },
+  {
+    // View prop hiding pointer and lasso tools, which scatterplot does not
+    // pass on (t: view props)
+    name: 'scatterplot hide tools',
+    find: 'children: [_(SSe, {\n    ref: bt,\n    uuid: e,',
+    replace:
+      'children: [_(SSe, {\n    ref: bt,\n    uuid: e,\n' +
+      '    hideTools: t.hideTools,',
+  },
+  {
     // Dot plot height grows with genes (f: dot plot data)
     name: 'dot plot height',
     find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',

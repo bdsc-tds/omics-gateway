@@ -208,7 +208,7 @@ Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript applicati
 * `main.js`: the entry point, which reads the page's `?config=` parameter, fetches that Vitessce config and mounts the viewer
 * `vite.config.js`: build settings (output directory, browser shims for Node globals) and the build-time patches to Vitessce (see below)
 * `vitessce_patches.js`: the code those patches call
-* `gateway_views.js`: the gateway's own views, registered as Vitessce plugins: a cell type breakdown of the selected cells, and tabs showing several views in one panel
+* `gateway_views.js`: the gateway's own views, registered as Vitessce plugins: a cell type breakdown of the selected cells, tabs showing several views in one panel, and the clickable sample thumbnails of a multi-sample study
 * `package.json` and `package-lock.json`: the npm packages, pinned to exact versions
 * `viewer_build_env.yaml`: the conda environment providing Node
 
@@ -230,6 +230,8 @@ The build patches Vitessce's prebuilt code as it reads it. Each patch in `vite.c
 * **gene mapping**: Vitessce fetches a table mapping Ensembl gene IDs to gene symbols from `data-1.vitessce.io`; the patch loads the copy vendored in `omics_gateway/static/vendor/vitessce-data-<date>/` instead.
 * **dot plot height**: the dot plot grows taller with each selected gene, so its circles no longer overlap.
 * **set colours**: cell sets named `Unassigned` are drawn mid grey instead of taking a palette colour, darker than the light grey of unselected cells. In a sample of a multi-sample store, the other sets take their colours from the order of the all-samples table, which `data_prep/generate_spatial_config.py` writes into the config's `gatewayOptions.setOrder`, so a cell type or cluster keeps its colour in every sample even when another sample lacks some sets. **set colours complete**: when a config already holds set colours (the viewer carries them over on a sample switch), sets missing from them get Vitessce's colours instead of none.
+* **scatterplot set legend**: UMAPs coloured by cell sets show a legend of those sets, as the spatial view does; Vitessce gave the scatterplot's legend no set colours, so it showed only gene colour bars.
+* **scatterplot hide tools**: a scatterplot's `hideTools` prop hides its pointer and lasso buttons, as for spatial views; the study config's UMAP by Sample uses it, since a lasso there would replace its sample colouring.
 * **auto-fill**: cells are filled when they switch to gene colouring and back to outlines when they switch away; ticking *Filled* by hand still works in between.
 * **matrix retry**: a failed download of the expression matrix is forgotten, so the next gene selection downloads it again instead of failing until the page is reloaded.
 * **point colours**: transcripts are coloured per gene in *Feature Color* mode, whose colour squares can be edited; each gene gets its palette colour when first selected, so configs store no colour list.

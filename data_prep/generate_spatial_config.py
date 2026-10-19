@@ -21,9 +21,11 @@ import json
 import math
 import os
 
+import numpy as np
 import pandas as pd
 import zarr
 from anndata.io import read_elem
+from PIL import Image
 from vitessce import (
     AnnDataWrapper,
     SpatialDataWrapper,
@@ -82,6 +84,13 @@ SAMPLE_UMAP = EMBEDDING_NAMES['X_umap_sample']
 # Table of every sample's cells holding joint UMAP, per sample of
 # multi-sample store (written by merge_visium_hd_tables.py)
 ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
+
+# Sample switch entry and title of study-wide config of multi-sample store
+ALL_SAMPLES_LABEL = 'All samples'
+
+# Sample thumbnails beside study config: H&E's smallest level, longest side
+THUMBNAIL_SUFFIX = '.thumbnail.jpg'
+THUMBNAIL_SIZE = 320
 
 # obs columns that describe cells rather than annotate them
 NON_SET_OBS_COLS = {
@@ -376,55 +385,142 @@ def read_set_order(table_dir, set_cols):
     return order
 
 
-# Function to list samples of multi-sample store with their configs' names
-def read_sample_configs(table_dir, config_name, sample):
+# Function to list samples of multi-sample store
+def read_store_samples(zarr_path):
     """
-    List store's samples in display order, each with its config's file name.
+    List samples of multi-sample store in display order, from merged table.
 
-    Labels and their order come from merged table's sample column, keys from
-    its region column ('<key>_cell_boundaries'). Other samples' config names
-    replace sample key in this config's name, so metrics variant is kept.
+    Store counts as multi-sample only when merged table has sample column
+    and every sample has own '<key>_table', so single-sample stores (Xenium)
+    never get study-wide config.
 
     Parameters:
     -----------
-    table_dir: str
-      Path to merged table element within store.
-    config_name: str
-      File name of this sample's config (e.g. 'study_pso1.vitessce.json').
-    sample: str
-      Sample key of this config.
+    zarr_path: str
+      Path to SpatialData .zarr store on disk.
 
     Returns:
     --------
-    label: str or None
-      Display label of this sample; None when config name lacks its key.
     samples: list of dict
-      'label' and 'config' (file name beside this config) per sample.
+      'key', 'label' and 'disease' (None when column absent) per sample;
+      empty for single-sample stores.
     """
-    marker = f'_{sample}.'
-    if marker not in config_name:
-        return None, []
-    obs = zarr.open_group(os.path.join(table_dir, 'obs'), mode='r')
+    obs_dir = os.path.join(zarr_path, 'tables', 'table', 'obs')
+    if not os.path.isdir(os.path.join(obs_dir, 'sample')):
+        return []
+    obs = zarr.open_group(obs_dir, mode='r')
     pairs = pd.DataFrame({
         'label': read_elem(obs['sample']),
-        'key': read_elem(obs['region']),
+        'key': read_elem(obs['region']).astype(str),
+        'disease': (
+            read_elem(obs['disease']).astype(str) if 'disease' in obs else None
+        ),
     }).drop_duplicates()
     # Categories hold display order given to merge script
     pairs = pairs.sort_values('label')
     samples = [
         {
+            'key': key.removesuffix('_cell_boundaries'),
             'label': str(label),
-            'config': config_name.replace(
-                marker, f'_{str(key).removesuffix("_cell_boundaries")}.', 1
-            ),
+            'disease': disease,
         }
-        for label, key in zip(pairs['label'], pairs['key'])
+        for label, key, disease in zip(
+            pairs['label'], pairs['key'], pairs['disease']
+        )
+    ]
+    tables = list_group_members(os.path.join(zarr_path, 'tables'))
+    if not all(f'{s["key"]}_table' in tables for s in samples):
+        return []
+
+    return samples
+
+
+# Function to list samples of multi-sample store with their configs' names
+def read_sample_configs(store_samples, config_name, sample):
+    """
+    List study-wide config, then store's samples, each with config's name.
+
+    Config names derive from this config's name, swapping or dropping
+    sample key, so metrics variant is kept.
+
+    Parameters:
+    -----------
+    store_samples: list of dict
+      Samples from read_store_samples().
+    config_name: str
+      File name of this config (e.g. 'study_pso1.vitessce.json').
+    sample: str or None
+      Sample key of this config; None for study-wide config.
+
+    Returns:
+    --------
+    label: str or None
+      Display label of this config; None when config name lacks its key.
+    samples: list of dict
+      'label' and 'config' (file name beside this config) per entry.
+    """
+    if sample is None:
+        study_config = config_name
+    else:
+        marker = f'_{sample}.'
+        if marker not in config_name:
+            return None, []
+        study_config = config_name.replace(marker, '.', 1)
+    # Store names hold no dot, so first one ends study stem
+    stem, rest = study_config.split('.', 1)
+    samples = [{'label': ALL_SAMPLES_LABEL, 'config': study_config}] + [
+        {'label': s['label'], 'config': f'{stem}_{s["key"]}.{rest}'}
+        for s in store_samples
     ]
     label = next(
         (s['label'] for s in samples if s['config'] == config_name), None
     )
 
     return label, samples
+
+
+# Function to name sample's thumbnail after study config
+def thumbnail_name(config_path, key):
+    """
+    Name sample's thumbnail file, shared by both metrics variants.
+
+    Parameters:
+    -----------
+    config_path: str
+      Path of study-wide config.
+    key: str
+      Sample key in store.
+
+    Returns:
+    --------
+    name: str
+      File name beside config.
+    """
+    stem = os.path.basename(config_path).split('.', 1)[0]
+
+    return f'{stem}_{key}{THUMBNAIL_SUFFIX}'
+
+
+# Function to write H&E thumbnail of one sample
+def write_thumbnail(image_dir, out_path):
+    """
+    Save smallest pyramid level of RGB image as JPEG thumbnail.
+
+    Parameters:
+    -----------
+    image_dir: str
+      Path to image element directory within store.
+    out_path: str
+      Destination .jpg path.
+    """
+    with open(os.path.join(image_dir, 'zarr.json')) as handle:
+        attrs = json.load(handle)['attributes']
+    level = attrs['ome']['multiscales'][0]['datasets'][-1]['path']
+    pixels = zarr.open_array(os.path.join(image_dir, level), mode='r')[:]
+    # Axes are cyx; PIL wants yxc
+    image = Image.fromarray(np.moveaxis(pixels, 0, -1))
+    image.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE))
+    image.save(out_path, quality=85)
 
 
 # Function to compute zoom level that fits extent in viewport
@@ -761,6 +857,11 @@ def generate_config(
     controller on left, and scatterplot, cell sets, expression dot plot and gene
     list alongside: https://vitessce.io/#?dataset=codeluppi-2018
 
+    Whole multi-sample store (no sample) gets study layout on same grid:
+    sample thumbnails, written beside config, in controller's slot, then
+    merged table's UMAP coloured by sample and same UMAP coloured by
+    selection, swapping widths of spatial view and UMAP.
+
     Parameters:
     -----------
     zarr_path: str
@@ -777,6 +878,8 @@ def generate_config(
       Label used for observations throughout views.
     metrics: bool
       Whether to add Metric layer and its list, which replaces Status panel.
+    sample: str or None
+      Sample key of multi-sample store; None for whole store.
 
     Returns:
     --------
@@ -790,6 +893,21 @@ def generate_config(
     )
     if not metrics:
         paths['metric_cols'] = []
+    store_samples = read_store_samples(zarr_path)
+    # Whole multi-sample store: merged table's UMAPs, plots and sample
+    # thumbnails, no spatial view, as detected elements are first sample's
+    study = sample is None and bool(store_samples)
+    if study:
+        paths.update(
+            other_segmentation_paths=[],
+            obs_points_path=None,
+            centroids_path=None,
+        )
+    config_label, sample_configs = (
+        read_sample_configs(store_samples, os.path.basename(out_path), sample)
+        if store_samples
+        else (None, [])
+    )
 
     table_path = paths['table_path']
     region = paths['obs_segmentations_path'].split('/')[-1]
@@ -805,7 +923,7 @@ def generate_config(
     # set here would apply to image and table views too, blanking image
     wrapper = SpatialDataWrapper(
         sdata_url=sdata_url,
-        image_path=paths['image_path'],
+        image_path=None if study else paths['image_path'],
         table_path=table_path,
         coordinate_system=paths['coordinate_system'],
         # Table-derived views are inherited from AnnDataWrapper, so their paths
@@ -836,19 +954,20 @@ def generate_config(
 
     # Cells keep table so spatial view can colour them by set or gene
     primary_file_uid = file_uid_of(region, sample)
-    dataset.add_object(
-        SpatialDataWrapper(
-            sdata_url=sdata_url,
-            obs_segmentations_path=paths['obs_segmentations_path'],
-            table_path=table_path,
-            coordinate_system=paths['coordinate_system'],
-            region=region,
-            coordination_values={
-                'obsType': obs_type,
-                'fileUid': primary_file_uid,
-            },
+    if not study:
+        dataset.add_object(
+            SpatialDataWrapper(
+                sdata_url=sdata_url,
+                obs_segmentations_path=paths['obs_segmentations_path'],
+                table_path=table_path,
+                coordinate_system=paths['coordinate_system'],
+                region=region,
+                coordination_values={
+                    'obsType': obs_type,
+                    'fileUid': primary_file_uid,
+                },
+            )
         )
-    )
 
     # Transcripts get their own file def and obsType. Sharing cells' file def
     # made viewer label point layer 'Cell', since layer name comes from obsType
@@ -916,17 +1035,41 @@ def generate_config(
             )
         )
 
-    spatial = vc.add_view('spatialBeta', dataset=dataset)
-    controller = vc.add_view('layerControllerBeta', dataset=dataset)
-    # Sub-row per selected gene under Transcript row, with colour picker and
-    # button removing gene from selection
-    controller.set_props(layerPerFeatureForPoints=True)
+    if study:
+        # Gateway's own view: clicking sample opens its config
+        thumbnails = vc.add_view('gatewaySampleThumbnails', dataset=dataset)
+        thumbnails.set_props(
+            samples=[
+                {
+                    'label': s['label'],
+                    'disease': s['disease'],
+                    'config': entry['config'],
+                    'thumbnail': thumbnail_name(out_path, s['key']),
+                }
+                # First entry is this config
+                for s, entry in zip(store_samples, sample_configs[1:])
+            ]
+        )
+        spatial_views = []
+    else:
+        spatial = vc.add_view('spatialBeta', dataset=dataset)
+        controller = vc.add_view('layerControllerBeta', dataset=dataset)
+        # Sub-row per selected gene under Transcript row, with colour picker
+        # and button removing gene from selection
+        controller.set_props(layerPerFeatureForPoints=True)
+        spatial_views = [spatial, controller]
     scatterplot = vc.add_view('scatterplot', dataset=dataset, mapping='UMAP')
     # Titles replace "Scatterplot (<mapping>)"
     scatterplot.set_props(title='UMAP')
     # Second scatterplot in same slot, joined to first as tab after to_dict
     umap_views = [scatterplot]
-    if 'X_umap_sample' in paths['obs_embeddings']:
+    if study:
+        # Same embedding beside it, coloured by sample whatever is selected;
+        # no lasso, which would replace that colouring for good
+        by_sample = vc.add_view(
+            'scatterplot', dataset=dataset, mapping='UMAP'
+        ).set_props(title='UMAP by Sample', hideTools=True)
+    elif 'X_umap_sample' in paths['obs_embeddings']:
         scatterplot.set_props(title='Merged UMAP')
         umap_views.append(
             vc.add_view(
@@ -971,9 +1114,9 @@ def generate_config(
     # Every view shares one obsType, or they will not select each other's cells
     vc.link_views(
         [
-            spatial,
-            controller,
+            *spatial_views,
             *umap_views,
+            *([by_sample] if study else []),
             obs_sets,
             dot_plot,
             feature_list,
@@ -1014,8 +1157,7 @@ def generate_config(
     aggregation_strategy.set_value('mean')
 
     for view in (
-        spatial,
-        controller,
+        *spatial_views,
         *umap_views,
         obs_sets,
         feature_list,
@@ -1036,6 +1178,25 @@ def generate_config(
         feature_selection, obs_set_selection, obs_set_color
     )
     breakdown.use_coordination(obs_set_selection, obs_set_color)
+    if study:
+        # Created after shared scopes, which so keep sample configs' names
+        # for selections carried by sample switch
+        sample_encoding, sample_selection = vc.add_coordination(
+            'obsColorEncoding', 'obsSetSelection'
+        )
+        sample_encoding.set_value('cellSetSelection')
+        sample_selection.set_value([
+            ['Sample', s['label']] for s in store_samples
+        ])
+        by_sample.use_coordination(
+            sample_encoding, sample_selection, obs_set_color, obs_highlight
+        )
+        # Pan and zoom together; null so first view fits embedding
+        vc.link_views(
+            [scatterplot, by_sample],
+            ['embeddingZoom', 'embeddingTargetX', 'embeddingTargetY'],
+            [None, None, None],
+        )
 
     # Cells are annotated, so their channel reuses shared selection scopes;
     # extra segmentations have no table and only carry fixed colour
@@ -1160,13 +1321,14 @@ def generate_config(
 
     # Image layer left to viewer's own initialisation, which derives contrast
     # windows from pixel statistics this script cannot read without pyramid
-    vc.link_views_by_dict(
-        [spatial, controller],
-        {'segmentationLayer': CL(segmentation_layers)},
-        scope_prefix=get_initial_coordination_scope_prefix(
-            DATASET_UID, 'obsSegmentations'
-        ),
-    )
+    if not study:
+        vc.link_views_by_dict(
+            [spatial, controller],
+            {'segmentationLayer': CL(segmentation_layers)},
+            scope_prefix=get_initial_coordination_scope_prefix(
+                DATASET_UID, 'obsSegmentations'
+            ),
+        )
 
     # Transcripts are off by default: 13.5M points obscure everything beneath
     # and are only meaningful once genes are selected
@@ -1206,16 +1368,21 @@ def generate_config(
 
     # Channel names read horizontally, like rest of controller; only this
     # property is set, so viewer still initialises channels and contrast
-    vc.link_views_by_dict(
-        [spatial, controller],
-        {'imageLayer': CL([{'spatialChannelLabelsOrientation': 'horizontal'}])},
-        scope_prefix=get_initial_coordination_scope_prefix(
-            DATASET_UID, 'image'
-        ),
-    )
+    if not study:
+        vc.link_views_by_dict(
+            [spatial, controller],
+            {
+                'imageLayer': CL([
+                    {'spatialChannelLabelsOrientation': 'horizontal'}
+                ])
+            },
+            scope_prefix=get_initial_coordination_scope_prefix(
+                DATASET_UID, 'image'
+            ),
+        )
 
     # Vitessce otherwise opens zoomed too far out
-    zoom = fit_zoom(paths['image_shape'])
+    zoom = None if study else fit_zoom(paths['image_shape'])
     if zoom is not None:
         width, height = paths['image_shape']
         vc.link_views(
@@ -1232,12 +1399,25 @@ def generate_config(
     )
     # Grid mirrors codeluppi-2018 (vc.layout() only makes equal panels);
     # scatterplot fills both its embedding slots, Xenium having one embedding
+    top = (
+        # Study: thumbnails, then UMAP by sample beside them and UMAP beside
+        # set lists, which colour it
+        (
+            (thumbnails, (0, 0, 3, 4)),
+            (by_sample, (3, 0, 3, 4)),
+            (scatterplot, (6, 0, 4, 4)),
+        )
+        if study
+        else (
+            (controller, (0, 0, 3, 4)),
+            (spatial, (3, 0, 4, 4)),
+            *((view, (7, 0, 3, 4)) for view in umap_views),
+        )
+    )
     for view, (x, y, w, h) in (
-        (controller, (0, 0, 3, 4)),
+        *top,
         (upper, (0, 4, 3, 1)),
         (lower, (0, 5, 3, 1)),
-        (spatial, (3, 0, 4, 4)),
-        *((view, (7, 0, 3, 4)) for view in umap_views),
         (feature_list, (10, 0, 2, 2)),
         (obs_sets, (10, 2, 2, 2)),
         (dot_plot, (3, 4, 5, 2)),
@@ -1248,21 +1428,19 @@ def generate_config(
     config = vc.to_dict()
     # Read by viewer's main.js, which removes it before Vitessce sees config
     options = {}
-    if paths['microns_per_unit']:
+    if paths['microns_per_unit'] and not study:
         options['micronsPerUnit'] = paths['microns_per_unit']
-    # Sample's sets take merged table's colours, same in every sample
-    merged_table_dir = os.path.join(zarr_path, 'tables', 'table')
-    if sample is not None and os.path.isdir(merged_table_dir):
+    # Sets take merged table's colours, same in every sample
+    if store_samples:
         options['setOrder'] = read_set_order(
-            merged_table_dir, paths['obs_set_cols']
+            os.path.join(zarr_path, 'tables', 'table'), paths['obs_set_cols']
         )
-        # Viewer's sample switch lists every sample
-        label, samples = read_sample_configs(
-            merged_table_dir, os.path.basename(out_path), sample
-        )
-        if label is not None:
-            options['sample'] = label
-            options['samples'] = samples
+        # Viewer's sample switch lists study config and every sample, in
+        # title bar of panel named here
+        if config_label is not None:
+            options['sample'] = config_label
+            options['samples'] = sample_configs
+            options['switchTitle'] = 'UMAP' if study else 'Spatial'
     if options:
         config['gatewayOptions'] = options
     drop_extra_segmentation_table_paths(config, extra_file_uids)
@@ -1273,6 +1451,17 @@ def generate_config(
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, 'w') as handle:
         json.dump(config, handle, indent=2)
+    if study:
+        images = list_group_members(os.path.join(zarr_path, 'images'))
+        for s in store_samples:
+            image_name = next(i for i in images if i.startswith(f'{s["key"]}_'))
+            write_thumbnail(
+                os.path.join(zarr_path, 'images', image_name),
+                os.path.join(
+                    os.path.dirname(os.path.abspath(out_path)),
+                    thumbnail_name(out_path, s['key']),
+                ),
+            )
     if paths['metric_cols']:
         write_metric_values(
             os.path.join(zarr_path, table_path),
@@ -1280,13 +1469,19 @@ def generate_config(
             out_path.removesuffix(CONFIG_SUFFIX) + METRIC_VALUES_SUFFIX,
         )
 
-    print(
-        f'Wrote {out_path} (image={paths["image_path"]}, '
-        f'segmentations={paths["obs_segmentations_path"]}, '
-        f'points={paths["obs_points_path"]}, '
-        f'metrics={paths["metric_cols"]}, '
-        f'coordinate_system={paths["coordinate_system"]})'
-    )
+    if study:
+        print(
+            f'Wrote {out_path} ({len(store_samples)} samples, '
+            f'table={table_path}, thumbnails beside it)'
+        )
+    else:
+        print(
+            f'Wrote {out_path} (image={paths["image_path"]}, '
+            f'segmentations={paths["obs_segmentations_path"]}, '
+            f'points={paths["obs_points_path"]}, '
+            f'metrics={paths["metric_cols"]}, '
+            f'coordinate_system={paths["coordinate_system"]})'
+        )
 
     return out_path
 

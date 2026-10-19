@@ -1,5 +1,5 @@
-import { B as e, Ct as t, Et as n, G as r, Ot as i, St as a, Tt as o, W as s, _ as c, _t as l, dt as u, f as d, i as f, pt as p, v as m, vt as h, wt as g, x as _, yt as v, z as y } from "./index-CDVgyDq2-BCGrmrGb.js";
-import { t as b } from "./scheduler-OPlFFwXf.js";
+import { B as e, Ct as t, Et as n, G as r, Ot as i, St as a, Tt as o, W as s, _ as c, _t as l, dt as u, f as d, i as f, pt as p, v as m, vt as h, wt as g, x as _, yt as v, z as y } from "./index-CDVgyDq2-DtGrGYYQ.js";
+import { t as b } from "./scheduler-Ciz7-ls-.js";
 //#region node_modules/react-dom/cjs/react-dom-client.production.js
 var ee = /* @__PURE__ */ n(((e) => {
 	g();
@@ -18770,109 +18770,147 @@ function he(e) {
 		}
 	}, m, (0, re.createPortal)(p, u.current));
 }
-var ge = [...new Set(oe.flatMap((e) => p[e] || []))], _e = [new d("gatewayCellTypeCounts", C, ae), new d("gatewayTabs", he, ge)], ve = new URLSearchParams(window.location.search).get("config") || "", ye = (0, ie.createRoot)(document.getElementById("root"));
-function T(e) {
-	ye.render(x.createElement("div", { id: "message" }, e));
+function ge(e) {
+	let { theme: t, removeGridComponent: n, closeButtonVisible: r, title: i = "Samples", samples: a = [] } = e, o = new URL(new URLSearchParams(window.location.search).get("config") || "", window.location.origin), s = a.map((e) => (0, x.createElement)("button", {
+		key: e.config,
+		type: "button",
+		className: "gateway-thumbnail",
+		title: `Show ${e.label}; genes and selections are kept`,
+		onClick: () => window.dispatchEvent(new CustomEvent("gateway-switch-sample", { detail: e.config }))
+	}, (0, x.createElement)("img", {
+		src: new URL(e.thumbnail, o).href,
+		alt: `H&E of ${e.label}`,
+		loading: "lazy"
+	}), (0, x.createElement)("span", { className: "gateway-thumbnail-label" }, e.label), e.disease ? (0, x.createElement)("span", { className: "gateway-thumbnail-disease" }, e.disease) : null));
+	return (0, x.createElement)(y, {
+		title: i,
+		info: `${a.length} samples`,
+		theme: t,
+		isScroll: !0,
+		closeButtonVisible: r,
+		downloadButtonVisible: !1,
+		removeGridComponent: n,
+		isReady: !0,
+		urls: [],
+		errors: []
+	}, (0, x.createElement)("div", { className: "gateway-thumbnails" }, s));
 }
+var _e = [...new Set(oe.flatMap((e) => p[e] || []))], ve = [
+	new d("gatewayCellTypeCounts", C, ae),
+	new d("gatewayTabs", he, _e),
+	new d("gatewaySampleThumbnails", ge, ["dataset"])
+], ye = new URLSearchParams(window.location.search).get("config") || "", T = (0, ie.createRoot)(document.getElementById("root"));
 function be(e) {
-	if (Array.isArray(e)) e.forEach(be);
+	T.render(x.createElement("div", { id: "message" }, e));
+}
+function xe(e) {
+	if (Array.isArray(e)) e.forEach(xe);
 	else if (e && typeof e == "object") for (let t of Object.keys(e)) {
 		let n = e[t];
-		t === "url" && typeof n == "string" && n.startsWith("/") ? e[t] = window.location.origin + n : be(n);
+		t === "url" && typeof n == "string" && n.startsWith("/") ? e[t] = window.location.origin + n : xe(n);
 	}
 }
-var xe = [
+var Se = [
 	/^\/spatial-data\/.*\/\.(zattrs|zarray|zgroup)$/,
 	/^\/spatial-data\/.*\/points\/[^/]+\/points\.parquet$/,
 	/^\/spatial-data\/.*\/shapes\/[^/]+\/shapes\.parquet\/part\.\d+\.parquet$/
-], Se = window.fetch.bind(window);
+], Ce = window.fetch.bind(window);
 window.fetch = (e, t) => {
 	let n = new URL(e instanceof Request ? e.url : e, window.location.origin);
-	return n.origin === window.location.origin && xe.some((e) => e.test(n.pathname)) ? Promise.resolve(new Response(null, { status: 404 })) : Se(e, t);
+	return n.origin === window.location.origin && Se.some((e) => e.test(n.pathname)) ? Promise.resolve(new Response(null, { status: 404 })) : Ce(e, t);
 };
-var Ce = 10, we = 5, Te = 12, E = [12, 44], Ee = [800, 450], De = .95;
-function Oe(e, t, n) {
+var we = 10, Te = 5, E = 12, Ee = [12, 44], De = [800, 450], Oe = .95;
+function ke(e, t, n) {
 	let r = e.layout || [], i = r.find((e) => e.component === "spatialBeta"), a = e.coordinationSpace || {}, o = i?.coordinationScopes || {}, s = a.spatialZoom || {}, c = a.spatialTargetX || {}, l = a.spatialTargetY || {}, u = s[o.spatialZoom], d = 2 * c[o.spatialTargetX], f = 2 * l[o.spatialTargetY];
 	if (typeof u != "number" || !(d > 0) || !(f > 0)) return;
-	let p = Math.log2(Math.min(Ee[0] / d, Ee[1] / f));
+	let p = Math.log2(Math.min(De[0] / d, De[1] / f));
 	if (Math.abs(u - p) > 1e-6) return;
-	let m = Math.max(...r.map((e) => e.y + e.h)), h = (t - 2 * Ce - (Te - 1) * we) / Te, g = (n - 2 * Ce - (m - 1) * we) / m, _ = i.w * h + (i.w - 1) * we - E[0], v = i.h * g + (i.h - 1) * we - E[1];
-	!(_ > 0) || !(v > 0) || (s[o.spatialZoom] = Math.log2(De * Math.min(_ / d, v / f)));
+	let m = Math.max(...r.map((e) => e.y + e.h)), h = (t - 2 * we - (E - 1) * Te) / E, g = (n - 2 * we - (m - 1) * Te) / m, _ = i.w * h + (i.w - 1) * Te - Ee[0], v = i.h * g + (i.h - 1) * Te - Ee[1];
+	!(_ > 0) || !(v > 0) || (s[o.spatialZoom] = Math.log2(Oe * Math.min(_ / d, v / f)));
 }
-async function ke(e) {
+async function Ae(e) {
 	let t = await fetch(e);
 	if (!t.ok) throw Error(`${t.status} ${t.statusText}`);
 	let { gatewayOptions: n = {}, ...r } = await t.json();
-	return be(r), Oe(r, window.innerWidth, window.innerHeight), {
+	return xe(r), ke(r, window.innerWidth, window.innerHeight), {
 		config: r,
 		options: n
 	};
 }
-function Ae(e) {
+function je(e) {
 	h(e.micronsPerUnit), v(e.setOrder);
 }
-var je = [
+var Me = [
 	"featureSelection",
 	"obsSetSelection",
 	"obsSetColor",
 	"additionalObsSets"
 ];
-function Me(e, t) {
+function Ne(e, t) {
+	let n = /* @__PURE__ */ new Set();
+	for (let e of t.datasets || []) for (let t of e.files || []) for (let e of t.options?.obsSets?.obsSets || []) n.add(e.name);
+	let r = e.coordinationSpace?.additionalObsSets || {};
+	for (let e of Object.values(r)) for (let t of e?.tree || []) n.add(t.name);
+	return n;
+}
+function Pe(e, t) {
 	if (!e) return;
-	let n = t.coordinationSpace;
-	for (let r of je) {
-		let i = e.coordinationSpace?.[r];
-		if (i) {
-			if (!n[r]) {
-				let i = /* @__PURE__ */ new Map();
+	let n = t.coordinationSpace, r = Ne(e, t);
+	for (let i of Me) {
+		let a = e.coordinationSpace?.[i];
+		if (a) {
+			if (!n[i]) {
+				let r = /* @__PURE__ */ new Map();
 				for (let t of e.layout) {
-					let e = t.coordinationScopes?.[r];
-					typeof e == "string" && !i.has(t.component) && i.set(t.component, e);
+					let e = t.coordinationScopes?.[i];
+					typeof e == "string" && !r.has(t.component) && r.set(t.component, e);
 				}
 				for (let e of t.layout) {
-					let t = i.get(e.component);
+					let t = r.get(e.component);
 					t && (e.coordinationScopes = {
 						...e.coordinationScopes,
-						[r]: t
+						[i]: t
 					});
 				}
-				n[r] = {};
+				n[i] = {};
 			}
 			for (let e of t.layout) {
-				let t = e.coordinationScopes?.[r];
-				typeof t == "string" && t in i && (n[r][t] = i[t]);
+				let t = e.coordinationScopes?.[i];
+				if (typeof t != "string" || a[t] == null) continue;
+				let o = a[t];
+				i === "obsSetSelection" && (o = o.filter((e) => r.has(e[0])), !o.length && a[t].length) || (n[i][t] = o);
 			}
 		}
 	}
 }
-function Ne({ current: e, samples: t, busy: n, onSwitch: r }) {
-	let i = x.useRef(null);
-	return i.current || (i.current = document.createElement("span"), i.current.className = "gateway-sample-switch"), x.useEffect(() => {
-		let e = document.getElementById("root"), t = () => {
-			let t = Array.from(e.querySelectorAll("[class*=\"titleLeft\"]")).find((e) => e.textContent.trim() === "Spatial")?.parentElement?.querySelector(":scope > [class*=\"titleButtons\"]");
-			t && i.current.nextSibling !== t && t.before(i.current);
+function Fe({ title: e, current: t, samples: n, busy: r, onSwitch: i }) {
+	let a = x.useRef(null);
+	return a.current || (a.current = document.createElement("span"), a.current.className = "gateway-sample-switch"), x.useEffect(() => {
+		let t = document.getElementById("root"), n = () => {
+			let n = Array.from(t.querySelectorAll("[class*=\"titleLeft\"]")).find((t) => t.textContent.trim() === e)?.parentElement?.querySelector(":scope > [class*=\"titleButtons\"]");
+			n && a.current.nextSibling !== n && n.before(a.current);
 		};
-		t();
-		let n = new MutationObserver(t);
-		return n.observe(e, {
+		n();
+		let r = new MutationObserver(n);
+		return r.observe(t, {
 			childList: !0,
 			subtree: !0
 		}), () => {
-			n.disconnect(), i.current.remove();
+			r.disconnect(), a.current.remove();
 		};
-	}, []), (0, re.createPortal)(x.createElement("select", {
-		value: e,
-		disabled: n,
+	}, [e]), (0, re.createPortal)(x.createElement("select", {
+		value: t,
+		disabled: r,
 		"aria-label": "Sample",
 		title: "Show another sample; genes and selections are kept",
 		onMouseDown: (e) => e.stopPropagation(),
-		onChange: (e) => r(e.target.value)
-	}, t.map((e) => x.createElement("option", {
+		onChange: (e) => i(e.target.value)
+	}, n.map((e) => x.createElement("option", {
 		key: e.config,
 		value: e.config
-	}, e.label))), i.current);
+	}, e.label))), a.current);
 }
-function Pe({ initial: e }) {
+function Ie({ initial: e }) {
 	let [t, n] = x.useState({
 		...e,
 		validate: !0
@@ -18902,11 +18940,12 @@ function Pe({ initial: e }) {
 		});
 	}
 	async function _(e) {
+		if (a) return;
 		let t = new URL(e, new URL(p, window.location.origin)), r = t.origin === window.location.origin ? t.pathname : t.href;
 		o(!0);
 		try {
-			let e = await ke(r);
-			Me(c.current, e.config), l.current += 1, e.config.uid = `sample-${l.current}`, Ae(e.options), s.current = null, c.current = null, i(0);
+			let e = await Ae(r);
+			Pe(c.current, e.config), l.current += 1, e.config.uid = `sample-${l.current}`, je(e.options), s.current = null, c.current = null, i(0);
 			let t = new URLSearchParams(window.location.search);
 			t.set("config", r), window.history.replaceState(null, "", `?${t}`), n({
 				...e,
@@ -18919,17 +18958,23 @@ function Pe({ initial: e }) {
 			o(!1);
 		}
 	}
-	let v = Array.isArray(d.samples) ? d.samples : [], y = v.find((e) => e.label === d.sample);
+	let v = x.useRef(_);
+	v.current = _, x.useEffect(() => {
+		let e = (e) => v.current(e.detail);
+		return window.addEventListener("gateway-switch-sample", e), () => window.removeEventListener("gateway-switch-sample", e);
+	}, []);
+	let y = Array.isArray(d.samples) ? d.samples : [], b = y.find((e) => e.label === d.sample);
 	return x.createElement(x.Fragment, null, x.createElement(f, {
 		config: u,
 		validateConfig: m,
 		onConfigChange: h,
-		pluginViewTypes: _e,
+		pluginViewTypes: ve,
 		theme: "light",
 		height: window.innerHeight
-	}), y && v.length > 1 && x.createElement(Ne, {
-		current: y.config,
-		samples: v,
+	}), b && y.length > 1 && d.switchTitle && x.createElement(Fe, {
+		title: d.switchTitle,
+		current: b.config,
+		samples: y,
 		busy: a,
 		onSwitch: _
 	}), r > 0 && x.createElement("button", {
@@ -18939,21 +18984,21 @@ function Pe({ initial: e }) {
 		onClick: g
 	}, r === 1 ? "Restore closed panel" : `Restore ${r} closed panels`));
 }
-async function Fe() {
-	if (!ve) {
-		T("No config specified. Use ?config=<url>.");
+async function Le() {
+	if (!ye) {
+		be("No config specified. Use ?config=<url>.");
 		return;
 	}
 	try {
-		let { config: e, options: t } = await ke(ve);
-		Ae(t), ye.render(x.createElement(Pe, { initial: {
+		let { config: e, options: t } = await Ae(ye);
+		je(t), T.render(x.createElement(Ie, { initial: {
 			config: e,
 			options: t,
-			url: ve
+			url: ye
 		} }));
 	} catch (e) {
-		T(`Failed to load config from ${ve}: ${e}`);
+		be(`Failed to load config from ${ye}: ${e}`);
 	}
 }
-Fe();
+Le();
 //#endregion
