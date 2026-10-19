@@ -1443,10 +1443,10 @@ def download_file(filename):
 @app.route('/spatial-data/<path:subpath>')
 def spatial_data(subpath):
     """
-    Serve file from spatial data directory (SpatialData .zarr stores and
-    generated Vitessce config JSON). send_from_directory safe-joins path and
-    inherits HTTP range-request support, which Vitessce viewer relies on when
-    streaming Zarr chunks.
+    Serve file from spatial data directory (SPATIAL_DATA: SpatialData .zarr
+    stores and generated Vitessce config JSON). send_from_directory safe-joins
+    path and inherits HTTP range-request support, which Vitessce viewer relies
+    on when streaming Zarr chunks.
 
     Parameters:
     -----------
@@ -1462,10 +1462,12 @@ def spatial_data(subpath):
     """
     if '..' in subpath:
         raise CacheException('Invalid spatial path.', 400)
+    if env.spatial_data is None:
+        raise CacheException('Spatial data is not served here.', 404)
 
-    # env.gateway_data is already absolute: Flask resolves relative directory
+    # env.spatial_data is already absolute: Flask resolves relative directory
     # against app.root_path (package dir), not configured data dir
-    return send_from_directory(env.gateway_data, subpath)
+    return send_from_directory(env.spatial_data, subpath)
 
 
 @app.route('/spatial-viewer')
@@ -1511,7 +1513,9 @@ def spatial_viewer():
     subpath = config_url[len(prefix) :]
 
     # safe_join returns None on traversal, same guard send_from_directory uses
-    full_path = safe_join(env.gateway_data, subpath)
+    full_path = (
+        safe_join(env.spatial_data, subpath) if env.spatial_data else None
+    )
     if full_path is None or not os.path.isfile(full_path):
         # Report dataset name rather than config file serving it
         dataset_name = os.path.basename(subpath).removesuffix('.vitessce.json')

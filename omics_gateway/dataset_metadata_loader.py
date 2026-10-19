@@ -150,9 +150,10 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
                 fp = row.get('file_path', '')
                 row['is_spatial'] = fp.endswith('.zarr')
                 if row['is_spatial']:
-                    stem = fp[: -len('.zarr')]
-                    # Configs live under data dir to stay reachable via
-                    # /spatial-data/; generator also writes no-Metric variant
+                    # Path is relative to SPATIAL_DATA, whose one config
+                    # folder holds every store's configs, named after store
+                    stem = os.path.basename(fp)[: -len('.zarr')]
+                    # Generator also writes no-Metric variant
                     suffix = (
                         'vitessce.json'
                         if env.spatial_metrics
