@@ -50,12 +50,13 @@ Keep the two separate: the spatial packages are large and pin their own versions
 ## Adding a single-cell dataset
 
 1. Make sure the `.h5ad` file carries the metadata keys listed under [Dataset table](#dataset-table) in its `uns`. Missing keys leave the matching columns empty.
-2. Copy it into the data directory, in a subfolder if you like.
+2. Copy it into the data directory (`data/scrna/`), in a subfolder if you like.
 3. Regenerate the dataset table:
 
     ```bash
     conda run -n omics-gateway python data_prep/generate_datasets_tsv.py \
-        --data-dir data \
+        --data-dir data/scrna \
+        --spatial-dir data/spatial \
         --output datasets.tsv
     ```
 
@@ -95,7 +96,7 @@ article_authors: A. Thiebaut
 systemd-run --user --scope -p MemoryMax=5G -p MemorySwapMax=0 \
     conda run -n spatial python data_prep/convert_xenium.py \
         --xenium-dir spatial_sources/<sample> \
-        --out data/<sample>.zarr \
+        --out data/spatial/xenium/<sample>.zarr \
         --cell-types spatial_sources/<sample>_cell_types.csv \
         --metadata spatial_sources/<sample>.metadata.yaml
 ```
@@ -114,10 +115,10 @@ What the script does to the data is described under [What the conversion does](#
 
 ```bash
 conda run -n spatial python data_prep/generate_spatial_config.py \
-    --zarr data/<sample>.zarr
+    --zarr data/spatial/xenium/<sample>.zarr
 ```
 
-This writes three files into `data/vitessce_configs/`:
+This writes three files into `data/spatial/vitessce_configs/`, the one config folder shared by every store:
 
 - `<sample>.vitessce.json`, the viewer config with a Metric layer, which colours cells by measurements such as cell area or transcript count;
 - `<sample>.nometrics.vitessce.json`, the same config without it;
@@ -139,7 +140,7 @@ To change a store's metadata without converting it again, edit the YAML file and
 
 ```bash
 conda run -n spatial python data_prep/write_store_metadata.py \
-    --zarr data/<sample>.zarr \
+    --zarr data/spatial/xenium/<sample>.zarr \
     --metadata spatial_sources/<sample>.metadata.yaml
 ```
 
@@ -164,7 +165,7 @@ conda run -n spatial python data_prep/convert_visium_hd.py \
     --key <short key, e.g. pso1> \
     --rctd <rctd result>.csv \
     --merged-umap <joint analysis export>.csv \
-    --out data/<study>.zarr
+    --out data/spatial/visium_hd/<study>.zarr
 ```
 
 Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each. Converting a sample again replaces its elements.
@@ -173,7 +174,7 @@ Once every sample is in the store, build the all-samples table (`tables/table`),
 
 ```bash
 conda run -n spatial python data_prep/merge_visium_hd_tables.py \
-    --zarr data/<study>.zarr \
+    --zarr data/spatial/visium_hd/<study>.zarr \
     --sample <key> <label> <disease> \
     --sample <key> <label> <disease> \
     --metadata spatial_sources/<study>.metadata.yaml
@@ -185,10 +186,10 @@ Then generate each sample's viewer configs:
 
 ```bash
 conda run -n spatial python data_prep/generate_spatial_config.py \
-    --zarr data/<study>.zarr --sample <key>
+    --zarr data/spatial/visium_hd/<study>.zarr --sample <key>
 ```
 
-They are written as `data/vitessce_configs/<study>_<key>.vitessce.json` and `.nometrics.vitessce.json`. Each lists every sample of the store, in the all-samples table's order, for the drop-down in the viewer's Spatial panel, which switches samples keeping the selected genes and cell sets.
+They are written as `data/spatial/vitessce_configs/<study>_<key>.vitessce.json` and `.nometrics.vitessce.json`. Each lists every sample of the store, in the all-samples table's order, for the drop-down in the viewer's Spatial panel, which switches samples keeping the selected genes and cell sets.
 
 Without `--sample`, the script writes the study's own config, `<study>.vitessce.json` (and `.nometrics.vitessce.json`), which the dataset table links to. It shows the all-samples table: the UMAP coloured by sample, then a larger copy coloured by the selected cell sets or genes (the two pan and zoom together; lasso selections are drawn on the larger one), the gene and cell set lists, the plots and the cell type breakdown. Instead of a spatial view, it shows a thumbnail of each sample's H&E; clicking one opens that sample. The thumbnails are written beside the config as `<study>_<key>.thumbnail.jpg`, from the smallest level of each H&E pyramid. Its drop-down sits in the UMAP panel, and every sample's drop-down starts with an "All samples" entry leading back to it.
 
@@ -196,7 +197,7 @@ Without `--sample`, the script writes the study's own config, `<study>.vitessce.
 
 ### Dataset table
 
-`generate_datasets_tsv.py` searches the data directory, subfolders included, for `.h5ad` files and SpatialData stores, and writes one row per dataset from the `uns` metadata of its cell table:
+`generate_datasets_tsv.py` searches the data directory for `.h5ad` files and the spatial data directory for SpatialData stores, subfolders included, and writes one row per dataset from the `uns` metadata of its cell table:
 
 | Column | `uns` key |
 | --- | --- |
@@ -209,7 +210,7 @@ Without `--sample`, the script writes the study's own config, `<study>.vitessce.
 | `authors`, `journal`, `doi` | `article_authors`, `article_journal`, `article_doi` |
 | `default_color` | same name |
 
-Values are cleaned on the way: `healthy` is removed from `disease`, NA values from `tissue` and `sex`, and fields holding several values are sorted with NA values last. Rows come in this order: `.h5ad` files, then the merged meta-analysis file if one is given, then the stores. A store without `dataset_name_short` is skipped, which keeps reference or scratch stores under `data/` out of the browser.
+Values are cleaned on the way: `healthy` is removed from `disease`, NA values from `tissue` and `sex`, and fields holding several values are sorted with NA values last. Rows come in this order: `.h5ad` files, then the merged meta-analysis file if one is given, then the stores. A store without `dataset_name_short` is skipped, which keeps reference or scratch stores under `data/spatial/` out of the browser.
 
 The script reads only these metadata keys and the size of each table, never the tables themselves, so it stays light even for very large files.
 
@@ -217,9 +218,10 @@ Our team also publishes a merged meta-analysis file, whose row can have fields r
 
 ```bash
 conda run -n omics-gateway python data_prep/generate_datasets_tsv.py \
-    --data-dir data \
+    --data-dir data/scrna \
+    --spatial-dir data/spatial \
     --output datasets.tsv \
-    --merged-file data/meta_analysis_all_final_label_transfer_swapped.h5ad \
+    --merged-file data/scrna/meta_analysis_all_final_label_transfer_swapped.h5ad \
     --merged-config data_prep/meta_analysis_config.yaml
 ```
 

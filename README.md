@@ -18,11 +18,11 @@ cd omics-gateway
 ./deploy/setup.sh
 ```
 
-`deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
+`deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/scrna/`, `data/spatial/vitessce_configs/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
 Only editable installs are supported: the gateway serves its templates, static files and default branding straight from the repository, so a regular `pip install .` would give a package that cannot start.
 
-Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/` afterwards.
+Datasets are not tracked in git, so copy the files listed in `datasets.tsv` into `data/scrna/` (`.h5ad` files) and `data/spatial/` (`.zarr` stores and their configs) afterwards.
 
 ## Configuring
 
@@ -33,6 +33,7 @@ The gateway is configured through environment variables:
 Omics Gateway is designed to make it easy to add additional data sources, please see the source code for gateway.py and the ItemSource interface in items/item_source.py
 
 Optional environment variables:
+* `SPATIAL_DATA`: the directory holding SpatialData `.zarr` stores and their viewer configs, served at `/spatial-data/`. No default; when unset, spatial datasets cannot be opened. Keep it separate from `GATEWAY_DATA`: `/spatial-data/` serves every file in it to anyone who knows its path
 * `CELLXGENE_ARGS`: catch-all variable that can be used to pass additional command line args to cellxgene server
 * `EXTERNAL_HOST`: the hostname and port from the perspective of the web browser, typically `localhost:5005` if running locally. Defaults to "localhost:{GATEWAY_PORT}"
 * `EXTERNAL_PROTOCOL`: typically http when running locally, can be https when deployed if the gateway is behind a load balancer or reverse proxy that performs https termination. No default; when unset, the gateway does not override the scheme and Flask infers it from the incoming request
@@ -64,16 +65,17 @@ The homepage's dataset and cell counts are computed from the dataset table on ev
 
 ## Data layout
 
-The gateway reads datasets from three places, none of them tracked in git: the data directory (`GATEWAY_DATA`, `data/` with `start_gunicorn.sh`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
+The gateway reads datasets from four places, none of them tracked in git: the data directory (`GATEWAY_DATA`, `data/scrna/` with `start_gunicorn.sh`), the spatial data directory (`SPATIAL_DATA`, `data/spatial/`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
 
 ```
-data/
+data/scrna/
     <dataset>.h5ad                          single-cell dataset, opened in cellxgene
     <dataset>_annotations/                  optional, next to its .h5ad
         <name>.csv                          cell annotations, loadable in cellxgene
         <name>_gene_sets.csv                gene sets, offered for download only
-    <sample>.zarr/                          SpatialData store, opened in the spatial viewer
-    vitessce_configs/
+data/spatial/
+    <technology>/<sample>.zarr/             SpatialData store, e.g. xenium/, visium_hd/
+    vitessce_configs/                       configs of every store, whatever its folder
         <sample>.vitessce.json              viewer config, with the Metric layer
         <sample>.nometrics.vitessce.json    viewer config, without it
         <sample>.metrics.json               per-cell values shown in cell tooltips
@@ -91,7 +93,7 @@ analysis_qc/
 
 * `dataset_id`: short identifier, also the name of the dataset's QC folder
 * `name`, `description`: shown in the dataset browser
-* `file_path`: path of the `.h5ad` file or `.zarr` store, relative to the data directory. A `.zarr` row is shown as spatial and opens its viewer config
+* `file_path`: path of the `.h5ad` file relative to the data directory, or of the `.zarr` store relative to the spatial data directory. A `.zarr` row is shown as spatial and opens its viewer config
 * `assay`, `disease`, `tissue`, `sex`: semicolon-separated values, used as filters
 * `patients`, `cell_count`, `gene_count`, `year`: numbers, used for display and as range filters
 * `authors`, `journal`, `doi`: publication details
@@ -99,7 +101,7 @@ analysis_qc/
 
 ### Spatial datasets
 
-A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generated for it. The configs must live in `data/vitessce_configs/` and be named after the store, because the viewer loads them, like the store itself, through `/spatial-data/`, the only route that serves byte ranges. `SPATIAL_METRICS` picks which of the two configs the dataset browser links to.
+A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generated for it. The configs must live in `data/spatial/vitessce_configs/` and be named after the store, because the viewer loads them, like the store itself, through `/spatial-data/`, the only route that serves byte ranges. Shared viewer links name only the config, so stores can move between technology folders without breaking them, provided their configs are regenerated. `SPATIAL_METRICS` picks which of the two configs the dataset browser links to.
 
 ### QC reports
 
