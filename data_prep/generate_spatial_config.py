@@ -2,17 +2,16 @@
 Script to generate Vitessce view-config JSON for SpatialData .zarr store.
 
 Config references store through gateway's Zarr-serving route (default
-/spatial-data/<name>), so URLs are relative and resolve same-origin when viewer
-page is served by gateway.
+/spatial-data/<path under spatial root>), so URLs are relative and resolve
+same-origin when viewer page is served by gateway.
 
 Run in `spatial` conda env, which holds both spatialdata (for conversion) and
 vitessce (for this script).
 
 Usage:
     python data_prep/generate_spatial_config.py \
-        --zarr data/xenium_D1903482.zarr \
-        --serve-base /spatial-data \
-        --out data/vitessce_configs/xenium_D1903482.vitessce.json
+        --zarr data/spatial/xenium/xenium_D1903482.zarr \
+        --spatial-root data/spatial
 """
 
 # Import utility modules
@@ -867,7 +866,7 @@ def generate_config(
     zarr_path: str
       Path to SpatialData .zarr store on disk.
     serve_base: str
-      URL prefix under which store is served (e.g. /spatial-data).
+      URL of folder holding store (e.g. /spatial-data/xenium).
     out_path: str
       Destination path for generated config JSON.
     image: str or None
@@ -1506,7 +1505,8 @@ def parse_args():
     Returns:
     --------
     args: argparse.Namespace
-      Parsed arguments (zarr, serve_base, out, image, segmentations, obs_type).
+      Parsed arguments (zarr, spatial_root, serve_base, out, image,
+      segmentations, obs_type, sample).
     """
     parser = argparse.ArgumentParser(
         description='Generate a Vitessce config JSON for a SpatialData store.'
@@ -1515,15 +1515,22 @@ def parse_args():
         '--zarr', required=True, help='Path to SpatialData .zarr store.'
     )
     parser.add_argument(
+        '--spatial-root',
+        default=os.environ.get('SPATIAL_DATA', 'data/spatial'),
+        help='Directory gateway serves at --serve-base (SPATIAL_DATA), '
+        'holding store in any subfolder and default config folder '
+        'vitessce_configs/ (default: $SPATIAL_DATA or data/spatial).',
+    )
+    parser.add_argument(
         '--serve-base',
         default='/spatial-data',
-        help='URL prefix under which store is served by gateway.',
+        help='URL prefix under which spatial root is served by gateway.',
     )
     parser.add_argument(
         '--out',
         default=None,
         help='Output config path (default: '
-        '<store dir>/vitessce_configs/<store>.vitessce.json). Config without '
+        '<spatial root>/vitessce_configs/<store>.vitessce.json). Config without '
         'metrics is written alongside, as <name>.nometrics.vitessce.json.',
     )
     parser.add_argument(
@@ -1551,15 +1558,24 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     zarr_path = os.path.normpath(args.zarr)
+    spatial_root = os.path.normpath(args.spatial_root)
+    # Store URL keeps store's folder under root, e.g. /spatial-data/xenium/
+    store_dir = os.path.relpath(os.path.dirname(zarr_path), spatial_root)
+    if store_dir.split(os.sep)[0] == '..':
+        raise SystemExit(f'{zarr_path} is not under {spatial_root}')
+    serve_base = args.serve_base.rstrip('/')
+    if store_dir != '.':
+        serve_base = f'{serve_base}/{store_dir}'
     if args.out:
         out = args.out
     else:
-        # Keep configs in own subfolder, separated from data stores
+        # One config folder for every store, so shared links never name
+        # store's folder
         stem = os.path.basename(os.path.splitext(zarr_path)[0])
         if args.sample:
             stem = f'{stem}_{args.sample}'
         out = os.path.join(
-            os.path.dirname(zarr_path), 'vitessce_configs', stem + CONFIG_SUFFIX
+            spatial_root, 'vitessce_configs', stem + CONFIG_SUFFIX
         )
     # Both written, so gateway can switch Metric layer at start-up
     for config_out, metrics in (
@@ -1568,7 +1584,7 @@ if __name__ == '__main__':
     ):
         generate_config(
             zarr_path,
-            args.serve_base,
+            serve_base,
             config_out,
             image=args.image,
             segmentations=args.segmentations,

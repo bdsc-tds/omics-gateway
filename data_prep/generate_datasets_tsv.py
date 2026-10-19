@@ -6,9 +6,10 @@ pipeline, and write_store_metadata.py writes same keys into .zarr stores.
 
 Usage:
     python data_prep/generate_datasets_tsv.py \
-        --data-dir data/ \
+        --data-dir data/scrna \
+        --spatial-dir data/spatial \
         --output datasets.tsv \
-        --merged-file data/meta_analysis_all_final_label_transfer_swapped.h5ad \
+        --merged-file data/scrna/meta_analysis_all_final_label_transfer_swapped.h5ad \
         --merged-config data_prep/meta_analysis_config.yaml
 """
 
@@ -470,9 +471,16 @@ def load_merged_row(merged_file, config_path):
 
 
 # Function to generate datasets.tsv summary of .h5ad files
-def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
+def generate_tsv(
+    data_dir,
+    output_path,
+    merged_file=None,
+    merged_config=None,
+    spatial_dir=None,
+):
     """
-    Generate datasets.tsv by scanning data_dir for .h5ad files and stores.
+    Generate datasets.tsv by scanning data_dir for .h5ad files and spatial_dir
+    for stores.
 
     Rows follow order: .h5ad files, merged file, then .zarr stores. Stores
     without dataset_name_short in their table metadata are skipped.
@@ -480,14 +488,16 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
     Parameters:
     -----------
     data_dir: str
-      Directory containing .h5ad files and .zarr stores (searched
-      recursively).
+      Directory containing .h5ad files (searched recursively).
     output_path: str
       Path for output .tsv file.
     merged_file: str or None
       Optional path to merged/meta-analysis .h5ad to append as last row.
     merged_config: str or None
       Optional path to YAML file with manual field overrides for merged row.
+    spatial_dir: str or None
+      Directory containing .zarr stores (searched recursively); None or
+      missing directory lists no stores.
     """
     rows = []
 
@@ -499,7 +509,13 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
             'Pass --data-dir or set GATEWAY_DATA.'
         )
 
-    file_paths, zarr_paths = find_dataset_files(data_dir)
+    file_paths = find_dataset_files(data_dir)[0]
+    # Store paths are relative to spatial dir, as gateway serves them
+    zarr_paths = (
+        find_dataset_files(spatial_dir)[1]
+        if spatial_dir and os.path.isdir(spatial_dir)
+        else []
+    )
     if not file_paths and not zarr_paths:
         print(f'No .h5ad files or .zarr stores found in {data_dir}')
         return
@@ -534,10 +550,10 @@ def generate_tsv(data_dir, output_path, merged_file=None, merged_config=None):
     for store_path in zarr_paths:
         print(f'Processing: {store_path}')
         meta = clean_fields(
-            extract_zarr_metadata(os.path.join(data_dir, store_path))
+            extract_zarr_metadata(os.path.join(spatial_dir, store_path))
         )
         # Stores are listed only once given metadata, so scratch or reference
-        # stores under data dir stay out of browser
+        # stores under spatial dir stay out of browser
         if not meta['dataset_id']:
             print(
                 f'  Skipped: no {UNS_KEYS["dataset_id"]} in table metadata '
@@ -567,8 +583,9 @@ def main():
     )
     parser.add_argument(
         '--data-dir',
-        default=os.environ.get('GATEWAY_DATA', 'data'),
-        help='Directory containing .h5ad files (default: $GATEWAY_DATA or data)',
+        default=os.environ.get('GATEWAY_DATA', 'data/scrna'),
+        help='Directory containing .h5ad files (default: $GATEWAY_DATA or '
+        'data/scrna)',
     )
     parser.add_argument(
         '--output',
@@ -585,10 +602,20 @@ def main():
         default=None,
         help='Path to YAML file with manual field overrides for the merged row (optional)',
     )
+    parser.add_argument(
+        '--spatial-dir',
+        default=os.environ.get('SPATIAL_DATA', 'data/spatial'),
+        help='Directory containing .zarr stores (default: $SPATIAL_DATA or '
+        'data/spatial)',
+    )
     args = parser.parse_args()
 
     generate_tsv(
-        args.data_dir, args.output, args.merged_file, args.merged_config
+        args.data_dir,
+        args.output,
+        args.merged_file,
+        args.merged_config,
+        args.spatial_dir,
     )
 
 
