@@ -585,6 +585,23 @@
     ];
     const MARGIN = 20;
     const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    // Shift from text's baseline to alphabetic one, measured on live copy:
+    // librsvg (GIMP) and other editors ignore hanging baselines
+    function baselineShift(text) {
+      const baseline = getComputedStyle(text).dominantBaseline;
+      if (!baseline || baseline === 'auto' || baseline === 'alphabetic') {
+        return 0;
+      }
+      const probe = text.cloneNode(true);
+      probe.removeAttribute('dominant-baseline');
+      probe.style.dominantBaseline = 'alphabetic';
+      text.parentNode.appendChild(probe);
+      const shift = text.getBBox().y - probe.getBBox().y;
+      probe.remove();
+      return shift;
+    }
+
     // Standalone SVG copy at CSS size, with margin added on each side
     function svgClone(svg, margin) {
       const clone = svg.cloneNode(true);
@@ -592,14 +609,28 @@
       const to = [clone].concat(Array.from(clone.querySelectorAll('*')));
       from.forEach((el, i) => {
         const style = getComputedStyle(el);
+        const shift = el.tagName === 'text' ? baselineShift(el) : 0;
+        if (shift) {
+          to[i].removeAttribute('dominant-baseline');
+          const dy = Number.parseFloat(to[i].getAttribute('dy')) || 0;
+          to[i].setAttribute('dy', (dy + shift).toFixed(2));
+        }
         const rules = STYLE_PROPS.filter(
           (name) =>
             name !== 'transform' || style.getPropertyValue(name) !== 'none',
         ).map((name) => {
           // Computed url() is absolute, pointing outside clone: keep #id only
-          const value = style
+          let value = style
             .getPropertyValue(name)
             .replace(/url\("?[^#")]*(#[^")]+)"?\)/g, 'url($1)');
+          if (name === 'dominant-baseline' && shift) value = 'alphabetic';
+          // Fontconfig takes digits from emoji fonts listed as fallbacks
+          if (name === 'font-family') {
+            value = value
+              .split(',')
+              .filter((family) => !/emoji/i.test(family))
+              .join(',');
+          }
           return `${name}:${value}`;
         });
         to[i].setAttribute('style', rules.join(';'));
