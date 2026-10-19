@@ -167,7 +167,8 @@ def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
             f'{len(missing)} QC cells absent from Space Ranger matrix.'
         )
     counts = counts[cells.index].copy()
-    counts.X = counts.X.astype('float32')
+    # CSC: viewer reads one gene's slice; CSR makes it densify whole matrix
+    counts.X = counts.X.astype('float32').tocsc()
 
     obs = pd.DataFrame(index=pd.Index(prefix + cells.index.values))
     obs['cell_id'] = obs.index.values

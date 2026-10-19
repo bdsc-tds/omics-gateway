@@ -76,6 +76,8 @@ def merge_tables(sdata, samples):
     merged = ad.concat(tables, merge='same')
     if not merged.obs_names.is_unique:
         raise ValueError('Cell ids repeat across samples.')
+    # Concat returns CSR even from CSC tables
+    merged.X = merged.X.tocsc()
     merged.obsm = {'X_umap': merged.obsm['X_umap']}
 
     labels = [label for _, label, _ in samples]
