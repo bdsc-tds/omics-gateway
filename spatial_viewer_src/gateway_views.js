@@ -4,8 +4,8 @@
  * Cell type counts: composition by cell-type list (first hierarchy, or first
  * of rowHierarchies prop with ticked sets) of up to two selected sets
  * outside it (lasso regions, other groupings), side by side, or of whole
- * selection, listing list's every type (absent ones as 0); Vitessce shows
- * this nowhere, as Cell Set Sizes only plots whole sets.
+ * selection, listing list's every type (absent ones as 0, behind toggle);
+ * Vitessce shows this nowhere, as Cell Set Sizes only plots whole sets.
  *
  * Tabs: two or more existing views sharing one grid slot, one shown at
  * once, switched by buttons after shown view's title. Grid passes every view
@@ -173,6 +173,16 @@ const CELL_STYLE = { padding: '1px 6px', whiteSpace: 'nowrap' };
 const NUMBER_STYLE = { ...CELL_STYLE, textAlign: 'right' };
 // Bar opacity per column, so two columns' bars can be told apart
 const BAR_OPACITY = [0.85, 0.4];
+const TOGGLE_STYLE = {
+  padding: '2px 6px',
+  border: 'none',
+  background: 'none',
+  color: 'inherit',
+  font: 'inherit',
+  opacity: 0.7,
+  textDecoration: 'underline',
+  cursor: 'pointer',
+};
 
 function bar(share, fill, opacity) {
   return h('div', {
@@ -186,8 +196,12 @@ function bar(share, fill, opacity) {
   });
 }
 
-function countsTable(result) {
+function countsTable(result, showEmpty, toggleEmpty) {
   const { columns } = result;
+  // Small lasso leaves most types at 0 in every column, burying others
+  const isEmpty = ({ type }) =>
+    columns.every(({ counts }) => !counts.get(type));
+  const empty = result.rows.filter(isEmpty).length;
   const header = h(
     'tr',
     null,
@@ -214,49 +228,51 @@ function countsTable(result) {
     ),
     h('th', { style: { ...CELL_STYLE, width: '35%' } }),
   );
-  const rows = result.rows.map(({ type, colour }) => {
-    const fill = colour ? `rgb(${colour.join(',')})` : 'currentColor';
-    const shares = columns.map(
-      ({ counts, total }) => (100 * (counts.get(type) || 0)) / (total || 1),
-    );
-    return h(
-      'tr',
-      { key: type },
-      h(
-        'td',
-        { style: CELL_STYLE },
-        h('span', {
-          style: {
-            display: 'inline-block',
-            width: 10,
-            height: 10,
-            marginRight: 6,
-            background: fill,
-          },
-        }),
-        type,
-      ),
-      columns.map(({ label, counts }, index) =>
+  const rows = result.rows
+    .filter((row) => showEmpty || !isEmpty(row))
+    .map(({ type, colour }) => {
+      const fill = colour ? `rgb(${colour.join(',')})` : 'currentColor';
+      const shares = columns.map(
+        ({ counts, total }) => (100 * (counts.get(type) || 0)) / (total || 1),
+      );
+      return h(
+        'tr',
+        { key: type },
         h(
           'td',
-          { key: label, style: NUMBER_STYLE },
-          `${(counts.get(type) || 0).toLocaleString('en')} ` +
-            `(${shares[index].toFixed(1)}%)`,
+          { style: CELL_STYLE },
+          h('span', {
+            style: {
+              display: 'inline-block',
+              width: 10,
+              height: 10,
+              marginRight: 6,
+              background: fill,
+            },
+          }),
+          type,
         ),
-      ),
-      h(
-        'td',
-        { style: CELL_STYLE },
-        shares.map((share, index) =>
+        columns.map(({ label, counts }, index) =>
           h(
-            'div',
-            { key: columns[index].label },
-            bar(share, fill, BAR_OPACITY[index]),
+            'td',
+            { key: label, style: NUMBER_STYLE },
+            `${(counts.get(type) || 0).toLocaleString('en')} ` +
+              `(${shares[index].toFixed(1)}%)`,
           ),
         ),
-      ),
-    );
-  });
+        h(
+          'td',
+          { style: CELL_STYLE },
+          shares.map((share, index) =>
+            h(
+              'div',
+              { key: columns[index].label },
+              bar(share, fill, BAR_OPACITY[index]),
+            ),
+          ),
+        ),
+      );
+    });
   const notes = [
     result.hidden
       ? `Showing first ${columns.length} of ` +
@@ -286,6 +302,14 @@ function countsTable(result) {
       h('thead', null, header),
       h('tbody', null, rows),
     ),
+    empty
+      ? h(
+          'button',
+          { type: 'button', style: TOGGLE_STYLE, onClick: toggleEmpty },
+          `${showEmpty ? 'Hide' : 'Show'} ${empty} ` +
+            `${empty === 1 ? 'type' : 'types'} with no cells`,
+        )
+      : null,
   );
 }
 
@@ -300,6 +324,7 @@ function CellTypeCounts(props) {
     title = 'Cell Types in Selection',
     rowHierarchies,
   } = props;
+  const [showEmpty, setShowEmpty] = useState(false);
   const loaders = gatewayUseLoaders();
   const scopes = useCoordinationScopes(rawScopes);
   const [
@@ -327,7 +352,7 @@ function CellTypeCounts(props) {
     [obsSets, additionalObsSets, obsSetSelection, obsSetColor, rowHierarchies],
   );
   const body = result
-    ? countsTable(result)
+    ? countsTable(result, showEmpty, () => setShowEmpty(!showEmpty))
     : h(
         // Plain span, as dot plot's empty message, so card font applies
         'span',

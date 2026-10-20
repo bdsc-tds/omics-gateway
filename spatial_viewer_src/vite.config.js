@@ -92,6 +92,15 @@ const PATCHES = [
       '    hideTools: t.hideTools,',
   },
   {
+    // Preset selection (UMAP by Sample) stratified before sets load found no
+    // set, warning once per set; wait for sets (W: selection, mt: sets status)
+    name: 'scatterplot waits for sets',
+    find: 'if (Ti?.data) {\n      const [Xi, mi] = UQn(',
+    replace:
+      'if (Ti?.data && !(W?.length && mt === "loading")) {\n' +
+      '      const [Xi, mi] = UQn(',
+  },
+  {
     // Tooltip stacking offset moved crosshair drawn for other views' hover
     // below cell (f: hovered view, e: this view, O: cell's y)
     name: 'crosshair position',
