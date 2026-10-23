@@ -9,8 +9,8 @@ swap trees yourself and re-run build_qc_thumbnails.py.
 
 Usage:
     python data_prep/downscale_qc_figures.py \
-        --qc-data analysis_qc/ \
-        --output analysis_qc_150dpi/ \
+        --qc-data data/qc/ \
+        --output data/qc_150dpi/ \
         --dpi 150
 """
 
@@ -115,8 +115,8 @@ def main():
     )
     parser.add_argument(
         '--qc-data',
-        default=os.environ.get('QC_DATA', 'analysis_qc'),
-        help='QC root directory to read (default: $QC_DATA or analysis_qc).',
+        default=os.environ.get('QC_DATA', 'data/qc'),
+        help='QC root directory to read (default: $QC_DATA or data/qc).',
     )
     parser.add_argument(
         '--output', help='Output directory (default: <qc-data>_<dpi>dpi).'

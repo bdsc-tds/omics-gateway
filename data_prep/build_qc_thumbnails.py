@@ -7,8 +7,8 @@ sync.
 
 Usage:
     python data_prep/build_qc_thumbnails.py \
-        --qc-data analysis_qc/ \
-        --cache analysis_qc_thumbs/
+        --qc-data data/qc/ \
+        --cache data/qc_thumbs/
 """
 
 # Import utility modules
@@ -64,8 +64,8 @@ def main():
     )
     parser.add_argument(
         '--qc-data',
-        default=os.environ.get('QC_DATA', 'analysis_qc'),
-        help='QC root directory (default: $QC_DATA or analysis_qc).',
+        default=os.environ.get('QC_DATA', 'data/qc'),
+        help='QC root directory (default: $QC_DATA or data/qc).',
     )
     parser.add_argument(
         '--cache',

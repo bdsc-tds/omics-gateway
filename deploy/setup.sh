@@ -85,7 +85,7 @@ fi
 # logs/ matters: systemd's StandardOutput=append: fails if it does not exist.
 echo "[4/5] Creating runtime directories..."
 mkdir -p "$REPO_DIR/data/scrna" "$REPO_DIR/data/spatial/vitessce_configs" \
-         "$REPO_DIR/analysis_qc" "$REPO_DIR/logs"
+         "$REPO_DIR/data/qc" "$REPO_DIR/logs"
 
 # 5. Sanity checks
 echo "[5/5] Verifying install..."

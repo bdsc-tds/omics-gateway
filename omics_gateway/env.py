@@ -34,7 +34,7 @@ dataset_metadata_tsv = os.environ.get('DATASET_METADATA_TSV', 'datasets.tsv')
 
 # QC variables; absolutised, as Flask's `send_from_directory` resolves
 # relative directory against package dir, not working directory
-qc_data = os.path.abspath(os.environ.get('QC_DATA', 'analysis_qc'))
+qc_data = os.path.abspath(os.environ.get('QC_DATA', 'data/qc'))
 # Kept outside QC tree, which is pipeline-synced and may be read-only
 qc_thumb_cache = os.path.abspath(
     os.environ.get('QC_THUMB_CACHE', f'{qc_data}_thumbs')

@@ -18,7 +18,7 @@ cd omics-gateway
 ./deploy/setup.sh
 ```
 
-`deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/scrna/`, `data/spatial/vitessce_configs/`, `analysis_qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
+`deploy/setup.sh` creates the `omics-gateway` conda env from `deploy/omics-gateway_env.yaml` (using mamba if available, otherwise conda), installs this repo into it as an editable package, re-applies the cellxgene patch the gateway depends on, and creates the git-ignored `data/scrna/`, `data/spatial/vitessce_configs/`, `data/qc/` and `logs/` directories. It is safe to re-run, needs no root, and honours `CONDA_ROOT`/`CONDA_ENV` just like `start_gunicorn.sh`.
 
 Only editable installs are supported: the gateway serves its templates, static files and default branding straight from the repository, so a regular `pip install .` would give a package that cannot start.
 
@@ -45,7 +45,7 @@ Optional environment variables:
 * `GATEWAY_ENABLE_BACKED_MODE`: Set to `true` or to `1` to load AnnData in file-backed mode. This saves memory and speeds up launch time but may reduce overall performance.
 * `GATEWAY_LOG_LEVEL`: default is `INFO`. set to `DEBUG` to increase logging and to `WARNING` to decrease logging.
 * `DATASET_METADATA_TSV`: tab-separated file describing datasets, used to render the filterable dataset browser at `/filecrawl`. Defaults to `datasets.tsv`. When the file is absent, the browser falls back to listing files from the configured item sources
-* `QC_DATA`: a directory containing per-dataset QC report folders, served at `/qc/<dataset_id>`. Defaults to `analysis_qc`. A relative path is resolved against the working directory
+* `QC_DATA`: a directory containing per-dataset QC report folders, served at `/qc/<dataset_id>`. Defaults to `data/qc`. A relative path is resolved against the working directory
 * `QC_THUMB_CACHE`: a directory for the thumbnails shown in QC reports, which the gateway builds on demand. Defaults to `<QC_DATA>_thumbs`, outside the QC tree so that tree can stay read-only
 * `SPATIAL_METRICS`: Set to `false` or to `0` to open spatial (`.zarr`) datasets without the Metric layer, which colours cells by per-cell measurements such as cell area. Defaults to `true`. `data_prep/generate_spatial_config.py` writes both configs for each store (`<name>.vitessce.json` and `<name>.nometrics.vitessce.json`), and this variable picks which one the dataset browser links to
 * `GATEWAY_BRANDING`: path to the branding file of the deployment (names, logo, favicon and homepage texts). Defaults to `branding/default/branding.yaml`, which shows neutral Omics Gateway branding. See [Branding](#branding)
@@ -65,7 +65,7 @@ The homepage's dataset and cell counts are computed from the dataset table on ev
 
 ## Data layout
 
-The gateway reads datasets from four places, none of them tracked in git: the data directory (`GATEWAY_DATA`, `data/scrna/` with `start_gunicorn.sh`), the spatial data directory (`SPATIAL_DATA`, `data/spatial/`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `analysis_qc/`).
+The gateway reads datasets from four places, none of them tracked in git: the data directory (`GATEWAY_DATA`, `data/scrna/` with `start_gunicorn.sh`), the spatial data directory (`SPATIAL_DATA`, `data/spatial/`), the dataset table (`DATASET_METADATA_TSV`, `datasets.tsv`) and the QC directory (`QC_DATA`, `data/qc/`).
 
 ```
 data/scrna/
@@ -79,7 +79,7 @@ data/spatial/
         <sample>.vitessce.json              viewer config, with the Metric layer
         <sample>.nometrics.vitessce.json    viewer config, without it
         <sample>.metrics.json               per-cell values shown in cell tooltips
-analysis_qc/
+data/qc/
     <dataset_id>/                           one folder per dataset_id in datasets.tsv
         <N>_<step>/                         e.g. 1_preprocessing, 2_normalisation
             [<section>/]                    optional, e.g. 1_raw, results (see below)
@@ -108,7 +108,7 @@ A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generat
 `/qc/<dataset_id>` shows one tab per step folder, in folder-name order. Inside a step, folders named `1_raw`, `2_filtered`, `filtered`, `3_doublets`, `results` or `training` become headed sections; a step without them is shown as one section. Figures (`.jpg`, `.jpeg`, `.png` or `.svg`) under `per_sample/`, `per_dataset/` or `3_doublets/` are grouped by the part of their file name before `_QC_` or `_doublet_`; all other figures are shown together. The gateway builds thumbnails into `QC_THUMB_CACHE` the first time a report is opened; `data_prep/build_qc_thumbnails.py` builds them all in advance, so run it after each QC sync:
 
 ```bash
-conda run -n omics-gateway python data_prep/build_qc_thumbnails.py --qc-data analysis_qc
+conda run -n omics-gateway python data_prep/build_qc_thumbnails.py --qc-data data/qc
 ```
 
 ## Running the gateway

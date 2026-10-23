@@ -257,8 +257,8 @@ Our pipeline exports figures at 600 dpi, far more than a screen can show, which 
 
 ```bash
 conda run -n omics-gateway python data_prep/downscale_qc_figures.py \
-    --qc-data analysis_qc \
-    --output analysis_qc_150dpi \
+    --qc-data data/qc \
+    --output data/qc_150dpi \
     --dpi 150
 ```
 
@@ -268,7 +268,7 @@ Check the result, then swap the two folders by hand.
 
 ```bash
 conda run -n omics-gateway python data_prep/build_qc_thumbnails.py \
-    --qc-data analysis_qc
+    --qc-data data/qc
 ```
 
 Run it after every change to the QC figures. Otherwise the gateway builds each report's thumbnails the first time the report is opened, which makes that first visit slow.

@@ -78,12 +78,12 @@ class TestQcDataResolution(EnvReloadCase):
 
     def test_GIVEN_qc_data_unset_THEN_default_is_absolute(self):
         """
-        Test that analysis_qc default is absolutised, since Flask resolves
+        Test that data/qc default is absolutised, since Flask resolves
         relative directory against package dir rather than cwd.
         """
         self.reload_env(unset=['QC_DATA'])
         self.assertTrue(os.path.isabs(env.qc_data))
-        self.assertTrue(env.qc_data.endswith('analysis_qc'))
+        self.assertTrue(env.qc_data.endswith(os.path.join('data', 'qc')))
 
     def test_GIVEN_qc_data_relative_THEN_absolutised(self):
         """
@@ -264,7 +264,7 @@ class TestDataPathRoutes(EnvReloadCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.data_dir = os.path.join(self.tmp.name, 'data')
-        self.qc_dir = os.path.join(self.tmp.name, 'analysis_qc', 'ds1')
+        self.qc_dir = os.path.join(self.tmp.name, 'qc', 'ds1')
         os.makedirs(self.data_dir)
         os.makedirs(self.qc_dir)
         with open(os.path.join(self.data_dir, 'sample.h5ad'), 'wb') as h5ad:
@@ -284,7 +284,7 @@ class TestDataPathRoutes(EnvReloadCase):
         self.reload_env(
             GATEWAY_DATA=self.data_dir,
             SPATIAL_DATA=os.path.join(self.tmp.name, 'spatial'),
-            QC_DATA=os.path.join(self.tmp.name, 'analysis_qc'),
+            QC_DATA=os.path.join(self.tmp.name, 'qc'),
         )
 
     def test_GIVEN_existing_file_THEN_download_serves_it(self):
@@ -352,7 +352,7 @@ class TestDataPathRoutes(EnvReloadCase):
         Test that /qc and /qc-image refuse dataset id pointing outside QC
         directory, including sibling folder sharing its name as prefix.
         """
-        for dataset_id in ('..', '../analysis_qc_thumbs'):
+        for dataset_id in ('..', '../qc_thumbs'):
             with self.subTest(dataset_id=dataset_id):
                 self.assertEqual(
                     400, self.request_status(gateway.qc_report, dataset_id)
