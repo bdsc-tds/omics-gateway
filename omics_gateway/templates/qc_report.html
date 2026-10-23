@@ -55,8 +55,8 @@
                 class="qc-metrics-group"><span>{{ group.label }}</span></th>
               {% else %}
               {% for column in group.columns %}
-              <th rowspan="2" {% if column.source %}title="{{ column.source }}"
-                {% endif %}>{{ column.label }}</th>
+              <th rowspan="2" title="{{ column.source or '' }}">
+                {{ column.label }}</th>
               {% endfor %}
               {% endif %}
               {% endfor %}
@@ -69,8 +69,7 @@
             <tr>
               {% for group in metrics.groups if group.label %}
               {% for column in group.columns %}
-              <th {% if column.source %}title="{{ column.source }}" {% endif %}>
-                {{ column.label }}</th>
+              <th title="{{ column.source or '' }}">{{ column.label }}</th>
               {% endfor %}
               {% endfor %}
             </tr>

@@ -458,7 +458,7 @@ scrollable) */
 }
 
 /* Metrics table header with source metric on hover style class */
-.qc-metrics th[title] {
+.qc-metrics th[title]:not([title='']) {
   cursor: help;
 }
 
