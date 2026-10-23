@@ -257,8 +257,8 @@ Our pipeline exports figures at 600 dpi, far more than a screen can show, which 
 
 ```bash
 conda run -n omics-gateway python data_prep/downscale_qc_figures.py \
-    --qc-data analysis_qc \
-    --output analysis_qc_150dpi \
+    --qc-data data/qc \
+    --output data/qc_150dpi \
     --dpi 150
 ```
 
@@ -268,7 +268,26 @@ Check the result, then swap the two folders by hand.
 
 ```bash
 conda run -n omics-gateway python data_prep/build_qc_thumbnails.py \
-    --qc-data analysis_qc
+    --qc-data data/qc
 ```
 
 Run it after every change to the QC figures. Otherwise the gateway builds each report's thumbnails the first time the report is opened, which makes that first visit slow.
+
+### Spatial QC tables
+
+Spatial datasets get no pipeline figures. Their QC report is a table of each sample's 10x metrics with a link to its 10x report, built by `build_spatial_qc.py` into `data/qc/spatial/<dataset_id>/`. Use the dataset's `dataset_id` from `datasets.tsv`, or the catalogue shows no QC button. Pass one `--sample KEY=DIR` per sample, in the order the table should list them: `DIR` is the folder holding that sample's report and `metrics_summary.csv`, which is Space Ranger's `outs/` for Visium HD and the output bundle for Xenium, and `KEY` names the sample, matching the `sample` column of a multi-sample store.
+
+```bash
+conda run -n spatial python data_prep/build_spatial_qc.py \
+    --dataset-id visium_hd_skin \
+    --store data/spatial/visium_hd/visium_hd_skin.zarr \
+    --sample AD-BEF1=<AD-BEF1 outs> --sample AD-AFT1=<AD-AFT1 outs> \
+    --sample CLE1=<CLE1 outs> --sample LP1=<LP1 outs> --sample PSO1=<PSO1 outs>
+
+conda run -n spatial python data_prep/build_spatial_qc.py \
+    --dataset-id D1903482ppAD \
+    --store data/spatial/xenium/xenium_D1903482.zarr \
+    --sample D1903482=spatial_sources/D1903482ppAD
+```
+
+The script reads only the store's sample and disease columns: the disease becomes the line under each sample's name (`--description` stands in for a store without metadata), and for a multi-sample store the number of cells it kept per sample becomes a "Cells in viewer" column, since Space Ranger counts every cell it segments. The reports record the pipeline's command line, cluster paths included: the copies keep only file names, and the script stops if any path-like text or cluster name is left. Rerunning it replaces the dataset's QC folder.

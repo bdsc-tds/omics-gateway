@@ -4,6 +4,7 @@ import logging
 import os
 
 from omics_gateway import env
+from omics_gateway.qc_dirs import find_qc_dir
 
 # Set up logger for logging messages within this module
 logger = logging.getLogger(__name__)
@@ -175,11 +176,11 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
                     row['file_size_bytes'] = 0
 
                 # Check whether QC folder exists for this dataset
-                qc_base = env.qc_data
                 did = row.get('dataset_id', '')
-                row['has_qc'] = bool(
-                    did and os.path.isdir(os.path.join(qc_base, did))
-                )
+                try:
+                    row['has_qc'] = bool(did and find_qc_dir(did))
+                except ValueError:
+                    row['has_qc'] = False
 
                 # Collect filter values from multi-value fields
                 for val in _parse_multi(row.get('assay', '')):

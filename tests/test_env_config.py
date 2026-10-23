@@ -78,12 +78,12 @@ class TestQcDataResolution(EnvReloadCase):
 
     def test_GIVEN_qc_data_unset_THEN_default_is_absolute(self):
         """
-        Test that analysis_qc default is absolutised, since Flask resolves
+        Test that data/qc default is absolutised, since Flask resolves
         relative directory against package dir rather than cwd.
         """
         self.reload_env(unset=['QC_DATA'])
         self.assertTrue(os.path.isabs(env.qc_data))
-        self.assertTrue(env.qc_data.endswith('analysis_qc'))
+        self.assertTrue(env.qc_data.endswith(os.path.join('data', 'qc')))
 
     def test_GIVEN_qc_data_relative_THEN_absolutised(self):
         """
@@ -264,7 +264,7 @@ class TestDataPathRoutes(EnvReloadCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.data_dir = os.path.join(self.tmp.name, 'data')
-        self.qc_dir = os.path.join(self.tmp.name, 'analysis_qc', 'ds1')
+        self.qc_dir = os.path.join(self.tmp.name, 'qc', 'scrna', 'ds1')
         os.makedirs(self.data_dir)
         os.makedirs(self.qc_dir)
         with open(os.path.join(self.data_dir, 'sample.h5ad'), 'wb') as h5ad:
@@ -272,6 +272,7 @@ class TestDataPathRoutes(EnvReloadCase):
         with open(os.path.join(self.qc_dir, 'plot.png'), 'wb') as png:
             png.write(b'not really a png')
         for path in (
+            'qc/spatial/ds2/report.html',
             'spatial/xenium/store.zarr/zarr.json',
             'spatial/vitessce_configs/store.vitessce.json',
             'secret.txt',
@@ -284,7 +285,7 @@ class TestDataPathRoutes(EnvReloadCase):
         self.reload_env(
             GATEWAY_DATA=self.data_dir,
             SPATIAL_DATA=os.path.join(self.tmp.name, 'spatial'),
-            QC_DATA=os.path.join(self.tmp.name, 'analysis_qc'),
+            QC_DATA=os.path.join(self.tmp.name, 'qc'),
         )
 
     def test_GIVEN_existing_file_THEN_download_serves_it(self):
@@ -304,6 +305,28 @@ class TestDataPathRoutes(EnvReloadCase):
             response = gateway.qc_image('ds1', 'plot.png')
         self.addCleanup(response.close)
         self.assertEqual(200, response.status_code)
+
+    def test_GIVEN_spatial_dataset_THEN_qc_image_serves_it(self):
+        """
+        Test that QC files are found under spatial type folder too, not only
+        under single-cell one.
+        """
+        self.assertEqual(
+            200, self.request_status(gateway.qc_image, 'ds2', 'report.html')
+        )
+
+    def test_GIVEN_report_THEN_qc_file_serves_it_and_rejects_traversal(self):
+        """
+        Test that /qc-file serves file of dataset QC folder but refuses path
+        leaving it.
+        """
+        self.assertEqual(
+            200, self.request_status(gateway.qc_file, 'ds2', 'report.html')
+        )
+        self.assertEqual(
+            400,
+            self.request_status(gateway.qc_file, 'ds2', '../../../secret.txt'),
+        )
 
     def test_GIVEN_traversal_THEN_qc_image_rejected(self):
         """
@@ -349,10 +372,11 @@ class TestDataPathRoutes(EnvReloadCase):
 
     def test_GIVEN_escaping_dataset_id_THEN_qc_routes_reject_it(self):
         """
-        Test that /qc and /qc-image refuse dataset id pointing outside QC
-        directory, including sibling folder sharing its name as prefix.
+        Test that /qc and /qc-image refuse dataset id pointing outside its
+        type folder: QC root, sibling folder sharing its name as prefix, other
+        type's dataset, or type folder itself.
         """
-        for dataset_id in ('..', '../analysis_qc_thumbs'):
+        for dataset_id in ('..', '../../qc_thumbs', '../spatial/ds2', '.'):
             with self.subTest(dataset_id=dataset_id):
                 self.assertEqual(
                     400, self.request_status(gateway.qc_report, dataset_id)

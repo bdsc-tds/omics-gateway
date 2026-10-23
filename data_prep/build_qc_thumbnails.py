@@ -7,8 +7,8 @@ sync.
 
 Usage:
     python data_prep/build_qc_thumbnails.py \
-        --qc-data analysis_qc/ \
-        --cache analysis_qc_thumbs/
+        --qc-data data/qc/ \
+        --cache data/qc_thumbs/
 """
 
 # Import utility modules
@@ -17,9 +17,12 @@ import os
 import sys
 import time
 
+# Same figure types as QC page shows
+FIGURE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.svg')
+
 
 # Function to collect figures needing thumbnail
-def find_figures(qc_data):
+def find_figures(qc_data, qc_types):
     """
     Walk QC tree and yield dataset id and relative path of each figure.
 
@@ -27,23 +30,32 @@ def find_figures(qc_data):
     -----------
     qc_data: str
       Absolute path of QC root directory.
+    qc_types: tuple of str
+      Data type folders of QC root, each holding dataset folders.
 
     Yields:
     -------
     (dataset_id, rel_path): tuple of str
       Dataset folder name and figure path relative to that folder.
     """
-    for dataset_id in sorted(os.listdir(qc_data)):
-        dataset_dir = os.path.join(qc_data, dataset_id)
-        if not os.path.isdir(dataset_dir):
+    for data_type in qc_types:
+        type_dir = os.path.join(qc_data, data_type)
+        if not os.path.isdir(type_dir):
             continue
-        for root, dirs, files in os.walk(dataset_dir):
-            dirs.sort()
-            for name in sorted(files):
-                rel_path = os.path.relpath(
-                    os.path.join(root, name), dataset_dir
-                )
-                yield dataset_id, rel_path
+        for dataset_id in sorted(os.listdir(type_dir)):
+            dataset_dir = os.path.join(type_dir, dataset_id)
+            if not os.path.isdir(dataset_dir):
+                continue
+            for root, dirs, files in os.walk(dataset_dir):
+                dirs.sort()
+                for name in sorted(files):
+                    # Reports and metrics.json sit beside figures
+                    if not name.lower().endswith(FIGURE_EXTENSIONS):
+                        continue
+                    rel_path = os.path.relpath(
+                        os.path.join(root, name), dataset_dir
+                    )
+                    yield dataset_id, rel_path
 
 
 # Function to run thumbnail pre-build over whole QC tree
@@ -64,8 +76,8 @@ def main():
     )
     parser.add_argument(
         '--qc-data',
-        default=os.environ.get('QC_DATA', 'analysis_qc'),
-        help='QC root directory (default: $QC_DATA or analysis_qc).',
+        default=os.environ.get('QC_DATA', 'data/qc'),
+        help='QC root directory (default: $QC_DATA or data/qc).',
     )
     parser.add_argument(
         '--cache',
@@ -80,6 +92,7 @@ def main():
         os.environ['QC_THUMB_CACHE'] = os.path.abspath(args.cache)
 
     from omics_gateway import env
+    from omics_gateway.qc_dirs import QC_TYPES
     from omics_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
 
     if not os.path.isdir(env.qc_data):
@@ -90,7 +103,7 @@ def main():
 
     processed = skipped = failed = 0
     start = time.perf_counter()
-    for dataset_id, rel_path in find_figures(env.qc_data):
+    for dataset_id, rel_path in find_figures(env.qc_data, QC_TYPES):
         if not is_thumbnailable(rel_path):
             skipped += 1
             continue

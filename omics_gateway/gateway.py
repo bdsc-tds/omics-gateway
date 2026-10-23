@@ -44,6 +44,8 @@ from omics_gateway.dataset_metadata_loader import load_dataset_metadata_tsv
 from omics_gateway.extra_scripts import get_extra_scripts
 from omics_gateway.filecrawl import render_item_source
 from omics_gateway.prune_process_cache import PruneProcessCache
+from omics_gateway.qc_dirs import find_qc_dir
+from omics_gateway.qc_metrics import load_metrics_table
 from omics_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
 from omics_gateway.util import CustomRequestHandler, current_time_stamp
 
@@ -1181,24 +1183,15 @@ def qc_report(dataset_id):
     Parameters:
     -----------
     dataset_id: str
-      Dataset identifier matching subfolder in QC base directory.
+      Dataset identifier matching subfolder of one data type folder in QC
+      base directory.
 
     Returns:
     --------
     flask.Response
       Rendered QC report page, or 404 if no QC folder exists.
     """
-    qc_base = env.qc_data
-    qc_dir = os.path.normpath(os.path.join(qc_base, dataset_id))
-
-    # Security: reject traversal attempts
-    if os.path.commonpath([qc_base, qc_dir]) != os.path.normpath(qc_base):
-        raise CacheException('Invalid dataset id.', 400)
-
-    if not os.path.isdir(qc_dir):
-        raise CacheException(
-            f"No QC data found for dataset '{dataset_id}'.", 404
-        )
+    qc_dir = _validated_qc_dir(dataset_id, '')
 
     # Map top-level subdirectories to human-readable step names
     step_labels = {
@@ -1268,6 +1261,10 @@ def qc_report(dataset_id):
                 }
             ]
 
+        # Folders without figures (e.g. reports/ of metrics table) are no step
+        if not any(sec['rows'] or sec['per_sample'] for sec in sections):
+            continue
+
         # Square-crop combined thumbnails for tabs with wide figures
         cap_combined = step_dir in (
             '2_normalisation',
@@ -1297,6 +1294,7 @@ def qc_report(dataset_id):
         extra_scripts=get_extra_scripts(),
         dataset_id=dataset_id,
         dataset_name=dataset_name,
+        metrics=load_metrics_table(qc_dir),
         steps=steps,
     )
 
@@ -1320,17 +1318,21 @@ def _validated_qc_dir(dataset_id, image_path):
     Raises:
     -------
     CacheException
-      If either segment escapes QC base directory.
+      If either segment escapes QC base directory (400), or no data type
+      folder holds dataset (404).
     """
-    qc_base = env.qc_data
-    qc_dir = os.path.normpath(os.path.join(qc_base, dataset_id))
-
     # Security: reject traversal in either segment
-    if os.path.commonpath([qc_base, qc_dir]) != os.path.normpath(qc_base):
-        raise CacheException('Invalid dataset id.', 400)
+    try:
+        qc_dir = find_qc_dir(dataset_id)
+    except ValueError:
+        raise CacheException('Invalid dataset id.', 400) from None
     if '..' in image_path:
         raise CacheException('Invalid image path.', 400)
 
+    if qc_dir is None:
+        raise CacheException(
+            f"No QC data found for dataset '{dataset_id}'.", 404
+        )
     return qc_dir
 
 
@@ -1356,6 +1358,28 @@ def qc_image(dataset_id, image_path):
     img_dir = os.path.dirname(image_path)
     img_file = os.path.basename(image_path)
     return send_from_directory(os.path.join(qc_dir, img_dir), img_file)
+
+
+@app.route('/qc-file/<dataset_id>/<path:file_path>')
+def qc_file(dataset_id, file_path):
+    """
+    Serve file from dataset QC folder other than figure, such as sample report
+    linked from metrics table.
+
+    Parameters:
+    -----------
+    dataset_id: str
+      Dataset identifier.
+    file_path: str
+      Relative path to file within dataset QC folder.
+
+    Returns:
+    --------
+    flask.Response
+      File response.
+    """
+    qc_dir = _validated_qc_dir(dataset_id, file_path)
+    return send_from_directory(qc_dir, file_path)
 
 
 @app.route('/qc-thumb/<dataset_id>/<path:image_path>')

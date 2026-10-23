@@ -32,6 +32,86 @@
       <div class="qc-subtitle">{{ dataset_name }}</div>
     </div>
 
+    {% if metrics %}
+    <!-- Metrics table from metrics.json, one row per sample -->
+    <section class="qc-metrics-section">
+      {% if metrics.error %}
+      <p class="text-danger">{{ metrics.error }}</p>
+      {% else %}
+      {% if metrics.title %}
+      <h3 class="qc-metrics-title">{{ metrics.title }}</h3>
+      {% endif %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle qc-metrics">
+          <thead>
+            <!-- Group headers; ungrouped columns span both header rows. Empty
+              spacer before each group takes table's spare width -->
+            <tr>
+              <th rowspan="2" class="qc-metrics-sample">Sample</th>
+              {% for group in metrics.groups %}
+              <th rowspan="2" class="qc-metrics-spacer" aria-hidden="true"></th>
+              {% if group.label %}
+              <th colspan="{{ group.columns | length }}"
+                class="qc-metrics-group"><span>{{ group.label }}</span></th>
+              {% else %}
+              {% for column in group.columns %}
+              <th rowspan="2" title="{{ column.source or '' }}">
+                {{ column.label }}</th>
+              {% endfor %}
+              {% endif %}
+              {% endfor %}
+              {% if metrics.has_reports %}
+              <th rowspan="2" class="qc-metrics-spacer" aria-hidden="true"></th>
+              <th rowspan="2">Report</th>
+              {% endif %}
+            </tr>
+            <!-- Column headers of grouped columns; hover shows source metric -->
+            <tr>
+              {% for group in metrics.groups if group.label %}
+              {% for column in group.columns %}
+              <th title="{{ column.source or '' }}">{{ column.label }}</th>
+              {% endfor %}
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in metrics.rows %}
+            <tr>
+              <td class="qc-metrics-sample">
+                <div class="fw-semibold">{{ row.sample }}</div>
+                {% if row.description %}
+                <div class="small text-muted">{{ row.description }}</div>
+                {% endif %}
+              </td>
+              {% for cell in row.cells %}
+              {% if cell.group_start %}
+              <td class="qc-metrics-spacer" aria-hidden="true"></td>
+              {% endif %}
+              <td>{{ cell.text }}</td>
+              {% endfor %}
+              {% if metrics.has_reports %}
+              <td class="qc-metrics-spacer" aria-hidden="true"></td>
+              <td>
+                {% if row.report %}
+                <a href="{{ url_for('qc_file', dataset_id=dataset_id, file_path=row.report) }}"
+                  target="_blank" rel="noopener noreferrer">Open&nbsp;&#8599;</a>
+                {% endif %}
+              </td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="small text-muted">
+        {% if metrics.note %}{{ metrics.note }} {% endif %}Hover a column header
+        for its source metric.{% if metrics.has_reports %} Reports open in a new
+        tab.{% endif %}
+      </p>
+      {% endif %}
+    </section>
+    {% endif %}
+
     {% if steps %}
     <!-- Step tabs, one per processing stage -->
     <ul class="nav nav-tabs qc-tabs" id="qcTabs" role="tablist">
@@ -199,7 +279,7 @@
       {% endfor %}{# end steps loop #}
     </div>
 
-    {% else %}
+    {% elif not metrics %}
     <p class="text-muted mt-4">No QC figures found.</p>
     {% endif %}
 
