@@ -6,6 +6,7 @@ from PIL import Image
 
 # Import other functions from package
 from omics_gateway import env
+from omics_gateway.qc_dirs import find_qc_dir
 
 # Grid cards are ~230 px wide. Width targets 2x card for HiDPI; height cap
 # bounds very tall stacked figures
@@ -105,18 +106,18 @@ def get_thumbnail(dataset_id, image_path):
     Parameters:
     -----------
     dataset_id: str
-      Dataset identifier, used as first path segment under both QC root and
-      thumbnail cache.
+      Dataset identifier, locating its QC folder and used as first path
+      segment under thumbnail cache (ids are unique across data types).
     image_path: str
       Figure path relative to dataset QC folder. Caller is responsible for
-      rejecting traversal attempts.
+      rejecting traversal attempts and missing datasets.
 
     Returns:
     --------
     dest_path: str
       Absolute path of thumbnail file.
     """
-    src_path = os.path.join(env.qc_data, dataset_id, image_path)
+    src_path = os.path.join(find_qc_dir(dataset_id), image_path)
     dest_path = os.path.join(env.qc_thumb_cache, dataset_id, image_path)
 
     # Filenames are stable across pipeline reruns, so mtime is only signal

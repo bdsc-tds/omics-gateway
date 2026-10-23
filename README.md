@@ -80,11 +80,12 @@ data/spatial/
         <sample>.nometrics.vitessce.json    viewer config, without it
         <sample>.metrics.json               per-cell values shown in cell tooltips
 data/qc/
-    <dataset_id>/                           one folder per dataset_id in datasets.tsv
+    scrna/<dataset_id>/                     one folder per dataset_id in datasets.tsv
         <N>_<step>/                         e.g. 1_preprocessing, 2_normalisation
             [<section>/]                    optional, e.g. 1_raw, results (see below)
                 <figure>.jpg                shown for all samples together
                 per_sample/<sample>_QC_<figure>.jpg
+    spatial/<dataset_id>/                   same layout, for spatial datasets
 ```
 
 ### Dataset table
@@ -105,7 +106,7 @@ A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generat
 
 ### QC reports
 
-`/qc/<dataset_id>` shows one tab per step folder, in folder-name order. Inside a step, folders named `1_raw`, `2_filtered`, `filtered`, `3_doublets`, `results` or `training` become headed sections; a step without them is shown as one section. Figures (`.jpg`, `.jpeg`, `.png` or `.svg`) under `per_sample/`, `per_dataset/` or `3_doublets/` are grouped by the part of their file name before `_QC_` or `_doublet_`; all other figures are shown together. The gateway builds thumbnails into `QC_THUMB_CACHE` the first time a report is opened; `data_prep/build_qc_thumbnails.py` builds them all in advance, so run it after each QC sync:
+`/qc/<dataset_id>` finds the dataset's folder under `scrna/` or `spatial/` (dataset ids are unique across both) and shows one tab per step folder, in folder-name order. Inside a step, folders named `1_raw`, `2_filtered`, `filtered`, `3_doublets`, `results` or `training` become headed sections; a step without them is shown as one section. Figures (`.jpg`, `.jpeg`, `.png` or `.svg`) under `per_sample/`, `per_dataset/` or `3_doublets/` are grouped by the part of their file name before `_QC_` or `_doublet_`; all other figures are shown together. The gateway builds thumbnails into `QC_THUMB_CACHE` the first time a report is opened; `data_prep/build_qc_thumbnails.py` builds them all in advance, so run it after each QC sync:
 
 ```bash
 conda run -n omics-gateway python data_prep/build_qc_thumbnails.py --qc-data data/qc

@@ -264,7 +264,7 @@ class TestDataPathRoutes(EnvReloadCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.data_dir = os.path.join(self.tmp.name, 'data')
-        self.qc_dir = os.path.join(self.tmp.name, 'qc', 'ds1')
+        self.qc_dir = os.path.join(self.tmp.name, 'qc', 'scrna', 'ds1')
         os.makedirs(self.data_dir)
         os.makedirs(self.qc_dir)
         with open(os.path.join(self.data_dir, 'sample.h5ad'), 'wb') as h5ad:
@@ -272,6 +272,7 @@ class TestDataPathRoutes(EnvReloadCase):
         with open(os.path.join(self.qc_dir, 'plot.png'), 'wb') as png:
             png.write(b'not really a png')
         for path in (
+            'qc/spatial/ds2/report.html',
             'spatial/xenium/store.zarr/zarr.json',
             'spatial/vitessce_configs/store.vitessce.json',
             'secret.txt',
@@ -304,6 +305,15 @@ class TestDataPathRoutes(EnvReloadCase):
             response = gateway.qc_image('ds1', 'plot.png')
         self.addCleanup(response.close)
         self.assertEqual(200, response.status_code)
+
+    def test_GIVEN_spatial_dataset_THEN_qc_image_serves_it(self):
+        """
+        Test that QC files are found under spatial type folder too, not only
+        under single-cell one.
+        """
+        self.assertEqual(
+            200, self.request_status(gateway.qc_image, 'ds2', 'report.html')
+        )
 
     def test_GIVEN_traversal_THEN_qc_image_rejected(self):
         """
@@ -349,10 +359,11 @@ class TestDataPathRoutes(EnvReloadCase):
 
     def test_GIVEN_escaping_dataset_id_THEN_qc_routes_reject_it(self):
         """
-        Test that /qc and /qc-image refuse dataset id pointing outside QC
-        directory, including sibling folder sharing its name as prefix.
+        Test that /qc and /qc-image refuse dataset id pointing outside its
+        type folder: QC root, sibling folder sharing its name as prefix, other
+        type's dataset, or type folder itself.
         """
-        for dataset_id in ('..', '../qc_thumbs'):
+        for dataset_id in ('..', '../../qc_thumbs', '../spatial/ds2', '.'):
             with self.subTest(dataset_id=dataset_id):
                 self.assertEqual(
                     400, self.request_status(gateway.qc_report, dataset_id)
