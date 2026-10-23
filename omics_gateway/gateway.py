@@ -45,6 +45,7 @@ from omics_gateway.extra_scripts import get_extra_scripts
 from omics_gateway.filecrawl import render_item_source
 from omics_gateway.prune_process_cache import PruneProcessCache
 from omics_gateway.qc_dirs import find_qc_dir
+from omics_gateway.qc_metrics import load_metrics_table
 from omics_gateway.qc_thumbnail import get_thumbnail, is_thumbnailable
 from omics_gateway.util import CustomRequestHandler, current_time_stamp
 
@@ -1260,6 +1261,10 @@ def qc_report(dataset_id):
                 }
             ]
 
+        # Folders without figures (e.g. reports/ of metrics table) are no step
+        if not any(sec['rows'] or sec['per_sample'] for sec in sections):
+            continue
+
         # Square-crop combined thumbnails for tabs with wide figures
         cap_combined = step_dir in (
             '2_normalisation',
@@ -1289,6 +1294,7 @@ def qc_report(dataset_id):
         extra_scripts=get_extra_scripts(),
         dataset_id=dataset_id,
         dataset_name=dataset_name,
+        metrics=load_metrics_table(qc_dir),
         steps=steps,
     )
 
@@ -1352,6 +1358,28 @@ def qc_image(dataset_id, image_path):
     img_dir = os.path.dirname(image_path)
     img_file = os.path.basename(image_path)
     return send_from_directory(os.path.join(qc_dir, img_dir), img_file)
+
+
+@app.route('/qc-file/<dataset_id>/<path:file_path>')
+def qc_file(dataset_id, file_path):
+    """
+    Serve file from dataset QC folder other than figure, such as sample report
+    linked from metrics table.
+
+    Parameters:
+    -----------
+    dataset_id: str
+      Dataset identifier.
+    file_path: str
+      Relative path to file within dataset QC folder.
+
+    Returns:
+    --------
+    flask.Response
+      File response.
+    """
+    qc_dir = _validated_qc_dir(dataset_id, file_path)
+    return send_from_directory(qc_dir, file_path)
 
 
 @app.route('/qc-thumb/<dataset_id>/<path:image_path>')

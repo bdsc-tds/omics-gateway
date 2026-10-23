@@ -2,6 +2,11 @@
 
 /* Page layout customisation */
 
+/* Scroll bar space always kept, so short reports align with long ones */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Page wrapper style class */
 .qc-page {
   max-width: 1400px;
@@ -410,4 +415,77 @@ scrollable) */
 /* Back to top button style class during hovering */
 .back-to-top:hover {
   background: #0052a3;
+}
+
+/* Metrics table customisation */
+
+/* Metrics table section style class */
+.qc-metrics-section {
+  margin-bottom: 2rem;
+}
+
+/* Metrics table title style class */
+.qc-metrics-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+/* Metrics table cell style class: numbers right-aligned on one line;
+   columns hug contents, as spare width inside right-aligned columns would
+   space groups unevenly. Column spacing grows with window, leaving less
+   spare width to spacers between groups */
+.qc-metrics th,
+.qc-metrics td {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding-left: clamp(1rem, calc(6vw - 56px), 2rem);
+}
+
+/* Spacer before each group, sharing table's spare width with others */
+.qc-metrics .qc-metrics-spacer {
+  width: auto;
+  min-width: 1.25rem;
+  padding: 0;
+}
+
+/* Metrics table header style class */
+.qc-metrics thead th {
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Metrics table header with source metric on hover style class */
+.qc-metrics th[title] {
+  cursor: help;
+}
+
+/* Metrics table column group header style class; label carries line */
+.qc-metrics th.qc-metrics-group {
+  text-align: center;
+  color: #0066cc;
+  border-bottom: 0;
+}
+
+/* Group label underline from first column's content to last one's, as
+   header and columns share padding */
+.qc-metrics th.qc-metrics-group span {
+  display: block;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid #0066cc44;
+}
+
+/* Metrics table sample name style class, ruled off from metrics */
+.qc-metrics .qc-metrics-sample {
+  text-align: left;
+  padding-left: 0.25rem;
+  padding-right: 1rem;
+  border-right: 1px solid #dee2e6;
+}
+
+/* Sample header centred across both header rows */
+.qc-metrics thead th.qc-metrics-sample {
+  vertical-align: middle;
 }

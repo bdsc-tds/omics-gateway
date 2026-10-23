@@ -315,6 +315,19 @@ class TestDataPathRoutes(EnvReloadCase):
             200, self.request_status(gateway.qc_image, 'ds2', 'report.html')
         )
 
+    def test_GIVEN_report_THEN_qc_file_serves_it_and_rejects_traversal(self):
+        """
+        Test that /qc-file serves file of dataset QC folder but refuses path
+        leaving it.
+        """
+        self.assertEqual(
+            200, self.request_status(gateway.qc_file, 'ds2', 'report.html')
+        )
+        self.assertEqual(
+            400,
+            self.request_status(gateway.qc_file, 'ds2', '../../../secret.txt'),
+        )
+
     def test_GIVEN_traversal_THEN_qc_image_rejected(self):
         """
         Test that path traversal attempt is refused rather than served.

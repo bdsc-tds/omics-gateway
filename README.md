@@ -86,6 +86,8 @@ data/qc/
                 <figure>.jpg                shown for all samples together
                 per_sample/<sample>_QC_<figure>.jpg
     spatial/<dataset_id>/                   same layout, for spatial datasets
+        metrics.json                        optional table of per-sample metrics, in any dataset folder
+        reports/<sample>.html               files it links to, e.g. 10x reports
 ```
 
 ### Dataset table
@@ -111,6 +113,27 @@ A spatial dataset is a SpatialData `.zarr` store plus the viewer configs generat
 ```bash
 conda run -n omics-gateway python data_prep/build_qc_thumbnails.py --qc-data data/qc
 ```
+
+A `metrics.json` in the dataset folder is drawn as a table above the tabs, one row per sample; a folder without figures, such as the `reports/` it links to, gets no tab. `data_prep/build_spatial_qc.py` writes it for spatial datasets from the 10x outputs (see `data_prep/README.md`), and it can be written by hand. It holds `groups` of `columns` and a list of `rows`:
+
+```json
+{
+  "title": "Sample metrics",
+  "note": "Shown under the table.",
+  "groups": [
+    {"label": "Cells", "columns": [
+      {"key": "cells", "label": "Cells", "source": "Number of Cells", "format": "integer"},
+      {"key": "area", "label": "Median area", "format": "integer", "unit": "µm²"}
+    ]}
+  ],
+  "rows": [
+    {"sample": "S1", "description": "Psoriasis", "values": {"cells": 41983, "area": 80},
+     "report": "reports/S1.html"}
+  ]
+}
+```
+
+A group whose `label` is `null` has no group header. A column's `source` is shown when hovering its header. `format` is `integer` (41,983), `millions` (58.6 M), `percent` (a fraction shown as 95.6 %) or `decimal`; `digits` sets the decimals of the last three (default 1). `values` are raw numbers, and a missing one shows as a dash. `report`, optional, is a path relative to the dataset folder, opened in a new tab from the table. A malformed file shows its error in place of the table, so the rest of the report still displays.
 
 ## Running the gateway
 

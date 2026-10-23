@@ -17,6 +17,9 @@ import os
 import sys
 import time
 
+# Same figure types as QC page shows
+FIGURE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.svg')
+
 
 # Function to collect figures needing thumbnail
 def find_figures(qc_data, qc_types):
@@ -46,6 +49,9 @@ def find_figures(qc_data, qc_types):
             for root, dirs, files in os.walk(dataset_dir):
                 dirs.sort()
                 for name in sorted(files):
+                    # Reports and metrics.json sit beside figures
+                    if not name.lower().endswith(FIGURE_EXTENSIONS):
+                        continue
                     rel_path = os.path.relpath(
                         os.path.join(root, name), dataset_dir
                     )
