@@ -437,6 +437,9 @@ def main():
     None
     """
     args = parse_args()
+    # Output folder is deleted before rebuild, so id must name one folder
+    if args.dataset_id in ('', '.', '..') or '/' in args.dataset_id:
+        sys.exit(f'--dataset-id {args.dataset_id!r}: expected folder name')
     samples = []
     for spec in args.sample:
         key, sep, sample_dir = spec.partition('=')
