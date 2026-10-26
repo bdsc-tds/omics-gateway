@@ -62,7 +62,7 @@
               {% endfor %}
               {% if metrics.has_reports %}
               <th rowspan="2" class="qc-metrics-spacer" aria-hidden="true"></th>
-              <th rowspan="2">Report</th>
+              <th rowspan="2" class="qc-metrics-report">Report</th>
               {% endif %}
             </tr>
             <!-- Column headers of grouped columns; hover shows source metric -->
@@ -91,7 +91,7 @@
               {% endfor %}
               {% if metrics.has_reports %}
               <td class="qc-metrics-spacer" aria-hidden="true"></td>
-              <td>
+              <td class="qc-metrics-report">
                 {% if row.report %}
                 <a href="{{ url_for('qc_file', dataset_id=dataset_id, file_path=row.report) }}"
                   target="_blank" rel="noopener noreferrer">Open&nbsp;&#8599;</a>
