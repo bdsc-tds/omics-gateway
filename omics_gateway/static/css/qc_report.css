@@ -477,10 +477,11 @@ scrollable) */
   border-bottom: 2px solid #0066cc44;
 }
 
-/* Metrics table sample name style class, ruled off from metrics */
+/* Metrics table sample name style class, ruled off from metrics; outer
+   padding grows with window from 1200 px, where Visium HD barely fits */
 .qc-metrics .qc-metrics-sample {
   text-align: left;
-  padding-left: 0.25rem;
+  padding-left: clamp(0.25rem, calc(6vw - 68px), 1rem);
   padding-right: 1rem;
   border-right: 1px solid #dee2e6;
 }
@@ -488,4 +489,9 @@ scrollable) */
 /* Sample header centred across both header rows */
 .qc-metrics thead th.qc-metrics-sample {
   vertical-align: middle;
+}
+
+/* Report column kept clear of table's right edge, like sample column */
+.qc-metrics .qc-metrics-report {
+  padding-right: clamp(0.25rem, calc(6vw - 68px), 1rem);
 }
