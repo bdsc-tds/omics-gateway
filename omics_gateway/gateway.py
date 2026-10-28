@@ -1476,8 +1476,8 @@ def spatial_data(subpath):
     -----------
     subpath: str
       Path of file within spatial data directory (e.g.
-      xenium_D1903482.zarr/images/... or
-      vitessce_configs/xenium_D1903482.vitessce.json).
+      xenium/xenium_skin_1.zarr/images/... or
+      vitessce_configs/xenium_skin_1.vitessce.json).
 
     Returns:
     --------

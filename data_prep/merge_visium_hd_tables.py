@@ -15,8 +15,8 @@ replaced.
 Usage (cluster batch job, once every sample is converted):
     python data_prep/merge_visium_hd_tables.py \
         --zarr visium_hd_skin.zarr \
-        --sample pso1 PSO1 Psoriasis \
-        --sample lp1 LP1 'Lichen Planus' \
+        --sample s1 S1 Psoriasis \
+        --sample s2 S2 'Lichen Planus' \
         --metadata visium_hd_skin.metadata.yaml
 """
 

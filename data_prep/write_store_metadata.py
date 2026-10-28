@@ -9,22 +9,22 @@ store without reconverting.
 Metadata file is flat YAML mapping of uns keys (UNS_KEYS values in
 generate_datasets_tsv.py) to string or list of strings, e.g.:
 
-    dataset_name_short: D1903482ppAD
-    dataset_name: Xenium Skin (D1903482)
-    article_title: Xenium spatial transcriptomics of atopic dermatitis skin
+    dataset_name_short: xenium_skin_1
+    dataset_name: Xenium Skin (sample 1)
+    article_title: Xenium spatial transcriptomics of skin
     assay: Xenium
-    disease: Atopic Dermatitis
+    disease: Psoriasis
     tissue: Skin
     patients: 1
-    article_date: 2025
-    article_authors: A. Thiebaut
+    article_date: 2026
+    article_authors: J. Doe
 
 cell_count and gene_count can be left out: they default to table size.
 
 Usage:
     conda run -n spatial python data_prep/write_store_metadata.py \
-        --zarr data/spatial/xenium/xenium_D1903482.zarr \
-        --metadata spatial_sources/xenium_D1903482.metadata.yaml
+        --zarr data/spatial/xenium/xenium_skin_1.zarr \
+        --metadata spatial_sources/xenium_skin_1.metadata.yaml
 """
 
 # Import utility modules
