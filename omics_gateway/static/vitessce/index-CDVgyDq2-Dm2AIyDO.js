@@ -139348,9 +139348,9 @@ async function Yfn(e) {
 	if (!t) throw Error(`Unknown compression method identifier: ${e.Compression}`);
 	return new (await (t()))(e);
 }
-rL([void 0, 1], () => import("./raw-DHM7Wj2Y-C66z1LRn.js").then((e) => e.default)), rL(5, () => import("./lzw-BdRDgMbg-BM6oG9v0.js").then((e) => e.default)), rL(6, () => {
+rL([void 0, 1], () => import("./raw-DHM7Wj2Y-XbFHbNYC.js").then((e) => e.default)), rL(5, () => import("./lzw-BdRDgMbg-DXi-q5Ac.js").then((e) => e.default)), rL(6, () => {
 	throw Error("old style JPEG compression is not supported.");
-}), rL(7, () => import("./jpeg-f5LgOrOW-6d26fCY8.js").then((e) => e.default)), rL([8, 32946], () => import("./deflate-CYVx5gI8-F2FszjHS.js").then((e) => e.default)), rL(32773, () => import("./packbits-rgkGAV4R-BtiloeLN.js").then((e) => e.default)), rL(34887, () => import("./lerc-CROxlfHv-BvOLmPv5.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), rL(50001, () => import("./webimage-BilIOhkt-DCEnwYIo.js").then((e) => e.default));
+}), rL(7, () => import("./jpeg-f5LgOrOW-2B886BLH.js").then((e) => e.default)), rL([8, 32946], () => import("./deflate-CYVx5gI8-JUpSFYc4.js").then((e) => e.default)), rL(32773, () => import("./packbits-rgkGAV4R-BQhafrWv.js").then((e) => e.default)), rL(34887, () => import("./lerc-CROxlfHv-xELpk1U-.js").then(async (e) => (await e.zstd.init(), e)).then((e) => e.default)), rL(50001, () => import("./webimage-BilIOhkt-B7O_8pnS.js").then((e) => e.default));
 function iL(e, t, n, r = 1) {
 	return new (Object.getPrototypeOf(e)).constructor(t * n * r);
 }
@@ -166751,7 +166751,7 @@ var _In = class extends Bxn {
 			opacity: l,
 			visible: c,
 			maxZoom: -1,
-			minZoom: -1,
+			minZoom: -3,
 			tileSize: 512,
 			getTileData: async (t) => {
 				if (!c) return {
@@ -166792,6 +166792,7 @@ var _In = class extends Bxn {
 					],
 					data: r,
 					getRadius: 5,
+					radiusMinPixels: 1,
 					radiusMaxPixels: 3,
 					getPosition: (e, { data: t, index: n, target: r }) => (r[0] = t.src.x[n], r[1] = t.src.y[n], r[2] = 0, r),
 					getFillColor: y,
@@ -167490,7 +167491,7 @@ var SIn = class extends U.Component {
 		return e ? n : t;
 	}
 }, CIn = U.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-C04NjukO-BwhJHX0-.js").then((e) => e.r).then((e) => e.a);
+	let { SpatialWrapper: e } = await import("./index-C04NjukO-Bg29UfuK.js").then((e) => e.r).then((e) => e.a);
 	return { default: e };
 }), wIn = U.forwardRef((e, t) => (0, W.jsx)("div", {
 	ref: t,
@@ -167506,7 +167507,7 @@ var SIn = class extends U.Component {
 		})
 	})
 })), TIn = U.lazy(async () => {
-	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-CY4yuS73.js");
+	let { SpatialWrapper: e } = await import("./index-CM_UtbDW-BLfbOzWt.js");
 	return { default: e };
 }), EIn = U.forwardRef((e, t) => (0, W.jsx)("div", {
 	ref: t,
@@ -178791,7 +178792,7 @@ PVn({
 	config: mUn.config
 }, { pluginType: "dataFetcher" });
 var vUn = U.lazy(async () => {
-	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-D10P3xzo.js");
+	let { HiGlassComponent: e } = await import("./higlass-e9_JY6_6-IqvYBsOT.js");
 	return { default: e };
 }), RW = 800;
 function yUn(e, t) {
@@ -180881,7 +180882,7 @@ function PUn(e) {
 		parentClassName: t.neuroglancerWrapper
 	})] });
 }
-var FUn = U.lazy(() => import("./ReactNeuroglancer-BBJJpq73-CPqQCpcO.js"));
+var FUn = U.lazy(() => import("./ReactNeuroglancer-BBJJpq73-DzqHLfah.js"));
 function IUn() {
 	let e = new kUn();
 	return e.AsyncComputationWorker = AUn, e;
@@ -226084,9 +226085,9 @@ var u9 = class extends b8 {
 		return d;
 	}
 	async loadParquetTableInRect(e, t, n, r, i) {
-		let { queryClient: a } = this, { store: o } = this.storeRoot, s = i ?? "morton_code_2d", c = [];
-		if (t.right - t.left > 256 || t.bottom - t.top > 256) {
-			let e = Math.ceil((t.right - t.left) / 256), n = Math.ceil((t.bottom - t.top) / 256), r = (t.right - t.left) / e, i = (t.bottom - t.top) / n;
+		let { queryClient: a } = this, { store: o } = this.storeRoot, s = i ?? "morton_code_2d", c = Math.max(256, Math.max(t.right - t.left, t.bottom - t.top) / 4), l = [];
+		if (t.right - t.left > c || t.bottom - t.top > c) {
+			let e = Math.ceil((t.right - t.left) / c), n = Math.ceil((t.bottom - t.top) / c), r = (t.right - t.left) / e, i = (t.bottom - t.top) / n;
 			for (let a = 0; a < e; a++) for (let e = 0; e < n; e++) {
 				let n = {
 					left: t.left + a * r,
@@ -226094,49 +226095,49 @@ var u9 = class extends b8 {
 					top: t.top + e * i,
 					bottom: Math.min(t.top + (e + 1) * i, t.bottom)
 				};
-				c.push(n);
+				l.push(n);
 			}
-		} else c = [t];
-		let l = await lGr({
+		} else l = [t];
+		let u = await lGr({
 			queryClient: a,
 			store: o
-		}, e, 0), u = l.getChild("x"), d = l.getChild("y"), f = l.getChild(s), p = Wg(Math.min(4, l.numRows)).map((e) => f.get(e)).filter((e) => e === iGr).length, m = Wg(p).map((e) => u.get(e)), h = Wg(p).map((e) => d.get(e)), g = {
-			x_min: Math.min(...m),
-			x_max: Math.max(...m),
-			y_min: Math.min(...h),
-			y_max: Math.max(...h)
-		}, _ = await Promise.all(c.map(async (t) => pGr({
+		}, e, 0), d = u.getChild("x"), f = u.getChild("y"), p = u.getChild(s), m = Wg(Math.min(4, u.numRows)).map((e) => p.get(e)).filter((e) => e === iGr).length, h = Wg(m).map((e) => d.get(e)), g = Wg(m).map((e) => f.get(e)), _ = {
+			x_min: Math.min(...h),
+			x_max: Math.max(...h),
+			y_min: Math.min(...g),
+			y_max: Math.max(...g)
+		}, v = await Promise.all(l.map(async (t) => pGr({
 			queryClient: a,
 			store: o
-		}, e, t, g, s))), v = Array.from(new Set(_.flat())).toSorted((e, t) => e - t), { numRowsPerGroupByPart: y, numRowGroupsByPart: b } = await c9({
+		}, e, t, _, s))), y = Array.from(new Set(v.flat())).toSorted((e, t) => e - t), { numRowsPerGroupByPart: b, numRowGroupsByPart: x } = await c9({
 			queryClient: a,
 			store: o
-		}, e), x = (e) => {
+		}, e), S = (e) => {
 			let t = 0, n = 0;
-			for (let r = 0; r < b.length; r++) {
-				let i = b[r];
+			for (let r = 0; r < x.length; r++) {
+				let i = x[r];
 				if (n <= e && e < n + i) {
 					t = r;
 					break;
 				}
 				n += i;
 			}
-			return y[t];
-		}, S = v.reduce((e, t) => e + x(t), 0), C = new Float32Array(S), w = new Float32Array(S), T = new Uint32Array(S), E = await Promise.all(v.map(async (t) => lGr({
+			return b[t];
+		}, C = y.reduce((e, t) => e + S(t), 0), w = new Float32Array(C), T = new Float32Array(C), E = new Uint32Array(C), D = await Promise.all(y.map(async (t) => lGr({
 			queryClient: a,
 			store: o
-		}, e, t))), D = 0;
-		return E.forEach((t) => {
+		}, e, t))), O = 0;
+		return D.forEach((t) => {
 			let n = t.getChild("x"), i = t.getChild("y"), a = t.getChild(r);
 			if (!n || !i || !a) throw Error(`Missing required column in parquet table at ${e}. Required columns: x, y, feature_index`);
-			C.set(n.toArray(), D), w.set(i.toArray(), D), T.set(a.toArray(), D), D += t.numRows;
+			w.set(n.toArray(), O), T.set(i.toArray(), O), E.set(a.toArray(), O), O += t.numRows;
 		}), {
 			data: {
-				x: C,
-				y: w,
-				featureIndices: T
+				x: w,
+				y: T,
+				featureIndices: E
 			},
-			shape: [3, S]
+			shape: [3, C]
 		};
 	}
 }, SGr = class {

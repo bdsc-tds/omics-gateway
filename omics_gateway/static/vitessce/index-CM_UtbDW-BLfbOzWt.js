@@ -1,6 +1,6 @@
-import { Ct as e, I as t, Ot as n, R as r, U as i, V as a, _t as o, t as s, y as c } from "./index-CDVgyDq2-bbnYaTYP.js";
+import { Ct as e, I as t, Ot as n, R as r, U as i, V as a, _t as o, t as s, y as c } from "./index-CDVgyDq2-Dm2AIyDO.js";
 import { $a as l, $i as u, Ar as d, Er as f, Ga as p, Gt as m, Ln as h, Qi as g, Qr as _, Ri as v, Wa as y, Ya as b, co as ee, eo as x, gr as S, ir as C, to as w, ut as T, zi as E } from "./three.core-1aHSpGwp.js";
-import { a as D, i as te, r as O, t as k } from "./OrbitControls-BuLFvfBA.js";
+import { a as D, i as te, r as O, t as k } from "./OrbitControls-Y0toEjaq.js";
 //#region node_modules/vitessce/dist/index-CM_UtbDW.js
 var A = o(), j = /* @__PURE__ */ n(e(), 1), M = 32, N = 64, P = 64, F = 4, I = N * P * F, L = N * M, R = P * M, z = F * M, B = {
 	NOT_STARTED: "not_started",
