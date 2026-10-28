@@ -19,10 +19,10 @@ pixels, so Space Ranger geometry (full-resolution pixels) gets Scale.
 
 Usage (cluster batch job; one sample per call):
     python data_prep/convert_visium_hd.py \
-        --outs .../space_ranger/PSO1/1/A1/A1_PSO1/outs \
-        --he .../he_images/D2002110.ome.tif \
-        --sample-id A1_PSO1 --key pso1 \
-        --rctd .../analysis/rctd_cell/pso1_rctd_der.csv \
+        --outs .../space_ranger/S1/1/A1/A1_S1/outs \
+        --he .../he_images/S1.ome.tif \
+        --sample-id A1_S1 --key s1 \
+        --rctd .../analysis/rctd_cell/s1_rctd_der.csv \
         --merged-umap merged_umap_srcells.csv \
         --out visium_hd_skin.zarr
 """
@@ -75,7 +75,7 @@ def read_qc_cells(merged_csv, sample_id):
     merged_csv: str
       CSV exported by extract_merged.R.
     sample_id: str
-      Space Ranger sample id as in merged object's orig.ident (e.g. A1_PSO1).
+      Space Ranger sample id as in merged object's orig.ident (e.g. A1_S1).
 
     Returns:
     --------

@@ -77,15 +77,15 @@ Keep these inputs in `spatial_sources/` at the repository root, which git ignore
 This YAML file holds the details shown in the dataset browser, under the same keys as an `.h5ad` file's `uns` (see [Dataset table](#dataset-table)). Values are strings or lists of strings; the cell and gene counts can be left out, as they are read from the data:
 
 ```yaml
-dataset_name_short: D1903482ppAD
-dataset_name: Xenium Skin (D1903482)
-article_title: "Xenium in situ spatial transcriptomics of atopic dermatitis skin, hSkin_100g panel"
+dataset_name_short: xenium_skin_1
+dataset_name: Xenium Skin (sample 1)
+article_title: "Xenium in situ spatial transcriptomics of skin"
 assay: Xenium
-disease: Atopic Dermatitis
+disease: Psoriasis
 tissue: Skin
 patients: 1
-article_date: 2025
-article_authors: A. Thiebaut
+article_date: 2026
+article_authors: J. Doe
 ```
 
 `dataset_name_short` is required for the sample to appear in the browser; it also names the sample's QC folder. An unknown key stops the conversion before it starts, which catches typos.
@@ -162,7 +162,7 @@ conda run -n spatial python data_prep/convert_visium_hd.py \
     --outs <space ranger outs> \
     --he <he image>.ome.tif \
     --sample-id <ID in the joint analysis> \
-    --key <short key, e.g. pso1> \
+    --key <short key, e.g. s1> \
     --rctd <rctd result>.csv \
     --merged-umap <joint analysis export>.csv \
     --out data/spatial/visium_hd/<study>.zarr
@@ -281,13 +281,12 @@ Spatial datasets get no pipeline figures. Their QC report is a table of each sam
 conda run -n spatial python data_prep/build_spatial_qc.py \
     --dataset-id visium_hd_skin \
     --store data/spatial/visium_hd/visium_hd_skin.zarr \
-    --sample AD-BEF1=<AD-BEF1 outs> --sample AD-AFT1=<AD-AFT1 outs> \
-    --sample CLE1=<CLE1 outs> --sample LP1=<LP1 outs> --sample PSO1=<PSO1 outs>
+    --sample S1=<S1 outs> --sample S2=<S2 outs> --sample S3=<S3 outs>
 
 conda run -n spatial python data_prep/build_spatial_qc.py \
-    --dataset-id D1903482ppAD \
-    --store data/spatial/xenium/xenium_D1903482.zarr \
-    --sample D1903482=spatial_sources/D1903482ppAD
+    --dataset-id xenium_skin_1 \
+    --store data/spatial/xenium/xenium_skin_1.zarr \
+    --sample S1=<Xenium output bundle>
 ```
 
 The script reads only the store's sample and disease columns: the disease becomes the line under each sample's name (`--description` stands in for a store without metadata), and for a multi-sample store the number of cells it kept per sample becomes a "Cells in viewer" column, since Space Ranger counts every cell it segments. The reports record the pipeline's command line, cluster paths included: the copies keep only file names, and the script stops if any path-like text or cluster name is left. Rerunning it replaces the dataset's QC folder.

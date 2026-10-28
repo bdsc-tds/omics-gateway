@@ -18,7 +18,7 @@ Usage:
     conda run -n spatial python data_prep/build_spatial_qc.py \
         --dataset-id visium_hd_skin \
         --store data/spatial/visium_hd/visium_hd_skin.zarr \
-        --sample AD-BEF1=<outs of AD-BEF1> --sample CLE1=<outs of CLE1>
+        --sample S1=<outs of S1> --sample S2=<outs of S2>
 """
 
 # Import utility modules

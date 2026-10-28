@@ -10,7 +10,7 @@ vitessce (for this script).
 
 Usage:
     python data_prep/generate_spatial_config.py \
-        --zarr data/spatial/xenium/xenium_D1903482.zarr \
+        --zarr data/spatial/xenium/xenium_skin_1.zarr \
         --spatial-root data/spatial
 """
 
@@ -262,7 +262,7 @@ def file_uid_of(element_name, sample=None):
     Parameters:
     -----------
     element_name: str
-      Shapes or labels element name (e.g. 'pso1_nucleus_boundaries').
+      Shapes or labels element name (e.g. 's1_nucleus_boundaries').
     sample: str or None
       Sample key prefixing element names, if any.
 
@@ -447,7 +447,7 @@ def read_sample_configs(store_samples, config_name, sample):
     store_samples: list of dict
       Samples from read_store_samples().
     config_name: str
-      File name of this config (e.g. 'study_pso1.vitessce.json').
+      File name of this config (e.g. 'study_s1.vitessce.json').
     sample: str or None
       Sample key of this config; None for study-wide config.
 
@@ -559,7 +559,7 @@ def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
     Pick image, segmentation and table element paths from store.
 
     Multi-sample stores prefix each sample's elements with its key
-    (e.g. 'pso1_he', 'pso1_cell_boundaries', 'pso1_table'); sample restricts
+    (e.g. 's1_he', 's1_cell_boundaries', 's1_table'); sample restricts
     detection to those, so other samples never appear as extra layers.
 
     Parameters:
