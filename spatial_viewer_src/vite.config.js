@@ -28,6 +28,10 @@ const PATCH_MODULE = fileURLToPath(
   new URL('./vitessce_patches.js', import.meta.url),
 );
 
+// Lowest zoom at which transcripts load (Vitessce's own cutoff: -1); every
+// transcript in view downloads, so lower values cost more
+const POINT_MIN_ZOOM = -3;
+
 const PATCHES = [
   {
     // Vendored copy instead of cdn.vitessce.io
@@ -119,6 +123,28 @@ const PATCHES = [
     find: '{ kind: "array" }))), this.sparseArrays);',
     replace:
       '{ kind: "array" }))), gatewayForgetOnReject(this, "sparseArrays"));',
+  },
+  {
+    // Transcripts load below Vitessce's zoom -1 cutoff, in coarser tiles
+    name: 'point min zoom',
+    find: 'maxZoom: -1,\n      minZoom: -1,\n      tileSize: 512,',
+    replace: `maxZoom: -1,\n      minZoom: ${POINT_MIN_ZOOM},\n      tileSize: 512,`,
+  },
+  {
+    // Transcripts stay visible when zoomed out (radius is in world units)
+    name: 'point min size',
+    find: 'getRadius: 5,\n          radiusMaxPixels: 3,',
+    replace:
+      'getRadius: 5,\n          radiusMinPixels: 1,\n          radiusMaxPixels: 3,',
+  },
+  {
+    // Coarse tiles split into at most 4x4 row-group lookups, not 256-unit
+    // squares (n: tile bbox); each lookup rescans query cache
+    name: 'point tile lookups',
+    find: 'a = o ?? "morton_code_2d", l = 256;',
+    replace:
+      'a = o ?? "morton_code_2d", ' +
+      'l = Math.max(256, Math.max(n.right - n.left, n.bottom - n.top) / 4);',
   },
   {
     // Matrix retry: dense copy of CSR X, built on first gene selection

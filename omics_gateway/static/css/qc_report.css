@@ -431,10 +431,8 @@ scrollable) */
   margin-bottom: 0.75rem;
 }
 
-/* Metrics table cell style class: numbers right-aligned on one line;
-   columns hug contents, as spare width inside right-aligned columns would
-   space groups unevenly. Column spacing grows with window, leaving less
-   spare width to spacers between groups */
+/* Metrics table cell style class: columns hug contents, as spare width in
+   right-aligned columns spaces groups unevenly; spacing grows with window */
 .qc-metrics th,
 .qc-metrics td {
   width: 1%;
