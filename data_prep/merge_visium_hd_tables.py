@@ -1,7 +1,9 @@
 """
-Script to add study-wide merged table to multi-sample Visium HD store.
+Script to add study-wide merged table to multi-sample Visium HD or Xenium
+store.
 
-Concatenates per-sample tables written by convert_visium_hd.py into
+Concatenates per-sample tables written by convert_visium_hd.py or
+convert_xenium_sample.py into
 'tables/table', which annotates every sample's cell boundaries and carries
 study metadata read by generate_datasets_tsv.py. Adds 'sample' and 'disease'
 columns. Keeps only joint analysis UMAP (X_umap): per-sample UMAPs and
@@ -41,9 +43,6 @@ from write_store_metadata import load_metadata, write_store_metadata
 
 # Merged table element, where generate_datasets_tsv.py looks for metadata
 MERGED_TABLE = 'table'
-
-# obs columns shown as cell sets; concat turns differing categories to object
-CATEGORICAL_COLUMNS = ['cell_type', 'cell_type_best_guess', 'cluster']
 
 # Per-sample table of all cells' merged UMAP, read by config generator
 ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
@@ -90,7 +89,13 @@ def merge_tables(sdata, samples):
     merged.obs['disease'] = pd.Categorical([
         disease for disease, n in zip(diseases, sizes) for _ in range(n)
     ])
-    for column in CATEGORICAL_COLUMNS:
+    # Cell sets; concat turns differing categories to object
+    set_cols = [
+        c
+        for c, dtype in tables[0].obs.dtypes.items()
+        if isinstance(dtype, pd.CategoricalDtype) and c != 'region'
+    ]
+    for column in set_cols:
         merged.obs[column] = pd.Categorical(merged.obs[column].astype(str))
     regions = [table.obs['region'].iloc[0] for table in tables]
     merged.obs['region'] = pd.Categorical(
@@ -147,7 +152,7 @@ def parse_args():
       Parsed arguments.
     """
     parser = argparse.ArgumentParser(
-        description='Add merged all-samples table to a Visium HD store.'
+        description='Add merged all-samples table to a multi-sample store.'
     )
     parser.add_argument('--zarr', required=True, help='Multi-sample store.')
     parser.add_argument(

@@ -8,6 +8,7 @@ The gateway does not process data: it lists the datasets described in a table an
 .h5ad files from a single-cell pipeline ───────────────────────────┐
                                                                    ├─> generate_datasets_tsv.py ─> datasets.tsv
 Xenium Ranger output ─> convert_xenium.py ─> <sample>.zarr ────────┤
+Xenium Ranger output ─> convert_xenium_sample.py ─> <study>.zarr   │
 Space Ranger output ─> convert_visium_hd.py ─> <study>.zarr        │
                                                    │               │
                                                    └─> generate_spatial_config.py ─> viewer configs
@@ -18,6 +19,7 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | --- | --- | --- |
 | `generate_datasets_tsv.py` | `omics-gateway` | `datasets.tsv`, the table of datasets shown in the browser |
 | `convert_xenium.py` | `spatial` | a SpatialData `.zarr` store, from Xenium Ranger output |
+| `convert_xenium_sample.py` | `spatial` | one sample of a multi-sample SpatialData store, from Xenium Ranger output |
 | `convert_visium_hd.py` | `spatial` | one sample of a multi-sample SpatialData store, from Space Ranger output |
 | `merge_visium_hd_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata |
 | `write_store_metadata.py` | `spatial` | the dataset's metadata inside an existing store |
@@ -191,7 +193,26 @@ conda run -n spatial python data_prep/generate_spatial_config.py \
 
 They are written as `data/spatial/vitessce_configs/<study>_<key>.vitessce.json` and `.nometrics.vitessce.json`. Each lists every sample of the store, in the all-samples table's order, for the drop-down in the viewer's Spatial panel, which switches samples keeping the selected genes and cell sets.
 
-Without `--sample`, the script writes the study's own config, `<study>.vitessce.json` (and `.nometrics.vitessce.json`), which the dataset table links to. It shows the all-samples table: the UMAP coloured by sample, then a larger copy coloured by the selected cell sets or genes (the two pan and zoom together; lasso selections are drawn on the larger one), the gene and cell set lists, the plots and the cell type breakdown. Instead of a spatial view, it shows a thumbnail of each sample's H&E; clicking one opens that sample. The thumbnails are written beside the config as `<study>_<key>.thumbnail.jpg`, from the smallest level of each H&E pyramid. Its drop-down sits in the UMAP panel, and every sample's drop-down starts with an "All samples" entry leading back to it.
+Without `--sample`, the script writes the study's own config, `<study>.vitessce.json` (and `.nometrics.vitessce.json`), which the dataset table links to. It shows the all-samples table: the UMAP coloured by sample, then a larger copy coloured by the selected cell sets or genes (the two pan and zoom together; lasso selections are drawn on the larger one), the gene and cell set lists, the plots and the cell type breakdown. Instead of a spatial view, it shows a thumbnail of each sample's H&E; clicking one opens that sample. The thumbnails are written beside the config as `<study>_<key>.thumbnail.jpg`: a square around each sample's tissue, from a low-resolution level of its H&E pyramid, padded with the slide's background colour so that every card looks alike. Its drop-down sits in the UMAP panel, and every sample's drop-down starts with an "All samples" entry leading back to it.
+
+## Adding a Xenium study
+
+A Xenium study is laid out like a Visium HD study: one store holding all its samples, filled one sample at a time by `convert_xenium_sample.py`, then the same all-samples table and viewer configs. You need, per sample, the **Xenium Ranger output folder**, and for the whole study a **joint analysis export**: a CSV with one row per cell to keep and the columns `sample` (the sample's ID in the export), `cell_id` (Xenium's cell ID), `umap_1` and `umap_2` (the joint UMAP), and `sample_umap_1` and `sample_umap_2` (a UMAP of that sample alone). Every further column becomes a cell set list in the viewer, for example `cell_type`; empty values are labelled `Unassigned`. The sample's own UMAP comes from the export rather than from Xenium Ranger, whose UMAP leaves out some cells.
+
+Run the samples one after another, never in parallel, as they write into the same store. A sample of 38,000 cells takes about three minutes and peaks at about 5 GB, so give a cluster job 16 GB or more:
+
+```bash
+conda run -n spatial python data_prep/convert_xenium_sample.py \
+    --xenium-dir <xenium ranger output> \
+    --sample-id <ID in the joint analysis export> \
+    --key <short key, e.g. s1> \
+    --joint <joint analysis export>.csv \
+    --out data/spatial/xenium/<study>.zarr
+```
+
+Each sample's elements are named after its key (`<key>_morphology_focus`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`, `<key>_transcripts`), and its cell IDs are prefixed with it. Only the cells in the export are kept, in the table and in both outline layers; transcripts are all kept, as for a single sample. `--rotate` works as in `convert_xenium.py`. Converting a sample again replaces its elements.
+
+Then build the all-samples table with `merge_visium_hd_tables.py` and generate the configs exactly as for a Visium HD study (see above). The study's thumbnails show each sample's DAPI channel instead of an H&E.
 
 ## Reference
 
