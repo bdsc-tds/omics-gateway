@@ -170,6 +170,8 @@ conda run -n spatial python data_prep/convert_visium_hd.py \
     --out data/spatial/visium_hd/<study>.zarr
 ```
 
+`--rotate 90`, `180` or `270` turns the sample clockwise, H&E and outlines alike, as for Xenium.
+
 Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each. Converting a sample again replaces its elements.
 
 Once every sample is in the store, build the all-samples table (`tables/table`), which is also where the dataset table reads the study's metadata. Give each sample's key, its display label and its disease, in display order; the metadata file has the same format as for Xenium. It takes under a minute and about 1.5 GB, and running it again replaces the table, so rerun it whenever a sample changes:
