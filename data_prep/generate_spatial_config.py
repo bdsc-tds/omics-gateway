@@ -84,7 +84,7 @@ EMBEDDING_NAMES = {
 SAMPLE_UMAP = EMBEDDING_NAMES['X_umap_sample']
 
 # Table of every sample's cells holding joint UMAP, per sample of
-# multi-sample store (written by merge_visium_hd_tables.py)
+# multi-sample store (written by merge_study_tables.py)
 ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
 
 # Sample switch entry and title of study-wide config of multi-sample store

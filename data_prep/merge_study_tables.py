@@ -3,23 +3,22 @@ Script to add study-wide merged table to multi-sample Visium HD or Xenium
 store.
 
 Concatenates per-sample tables written by convert_visium_hd.py or
-convert_xenium_sample.py into
-'tables/table', which annotates every sample's cell boundaries and carries
-study metadata read by generate_datasets_tsv.py. Adds 'sample' and 'disease'
-columns. Keeps only joint analysis UMAP (X_umap): per-sample UMAPs and
-spatial coordinates each live in own sample's frame. Also writes
-'tables/<key>_umap_all_cells' per sample: every cell's joint UMAP, for
-sample's Merged UMAP view.
+convert_xenium_sample.py into 'tables/table', which annotates every sample's
+cell boundaries and carries study metadata read by generate_datasets_tsv.py.
+Adds 'sample' and 'disease' columns. Keeps only joint analysis UMAP
+(X_umap): per-sample UMAPs and spatial coordinates each live in own sample's
+frame. Also writes 'tables/<key>_umap_all_cells' per sample: every cell's
+joint UMAP, for sample's Merged UMAP view.
 
 Run again after any sample is converted again: existing tables are
 replaced.
 
 Usage (cluster batch job, once every sample is converted):
-    python data_prep/merge_visium_hd_tables.py \
-        --zarr visium_hd_skin.zarr \
+    python data_prep/merge_study_tables.py \
+        --zarr study.zarr \
         --sample s1 S1 Psoriasis \
         --sample s2 S2 'Lichen Planus' \
-        --metadata visium_hd_skin.metadata.yaml
+        --metadata study.metadata.yaml
 """
 
 # Import utility modules

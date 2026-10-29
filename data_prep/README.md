@@ -21,7 +21,7 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | `convert_xenium.py` | `spatial` | a SpatialData `.zarr` store, from Xenium Ranger output |
 | `convert_xenium_sample.py` | `spatial` | one sample of a multi-sample SpatialData store, from Xenium Ranger output |
 | `convert_visium_hd.py` | `spatial` | one sample of a multi-sample SpatialData store, from Space Ranger output |
-| `merge_visium_hd_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata |
+| `merge_study_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata |
 | `write_store_metadata.py` | `spatial` | the dataset's metadata inside an existing store |
 | `generate_spatial_config.py` | `spatial` | the viewer configs for a store |
 | `downscale_qc_figures.py` | `omics-gateway` | a lower-resolution copy of the QC figures |
@@ -177,7 +177,7 @@ Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundari
 Once every sample is in the store, build the all-samples table (`tables/table`), which is also where the dataset table reads the study's metadata. Give each sample's key, its display label and its disease, in display order; the metadata file has the same format as for Xenium. It takes under a minute and about 1.5 GB, and running it again replaces the table, so rerun it whenever a sample changes:
 
 ```bash
-conda run -n spatial python data_prep/merge_visium_hd_tables.py \
+conda run -n spatial python data_prep/merge_study_tables.py \
     --zarr data/spatial/visium_hd/<study>.zarr \
     --sample <key> <label> <disease> \
     --sample <key> <label> <disease> \
@@ -214,7 +214,7 @@ conda run -n spatial python data_prep/convert_xenium_sample.py \
 
 Each sample's elements are named after its key (`<key>_morphology_focus`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`, `<key>_transcripts`), and its cell IDs are prefixed with it. Only the cells in the export are kept, in the table and in both outline layers; transcripts are all kept, as for a single sample. `--rotate` works as in `convert_xenium.py`. Converting a sample again replaces its elements.
 
-Then build the all-samples table with `merge_visium_hd_tables.py` and generate the configs exactly as for a Visium HD study (see above). The study's thumbnails show each sample's DAPI channel instead of an H&E.
+Then build the all-samples table with `merge_study_tables.py` and generate the configs exactly as for a Visium HD study (see above). The study's thumbnails show each sample's DAPI channel instead of an H&E.
 
 ## Reference
 

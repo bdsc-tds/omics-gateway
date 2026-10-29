@@ -8,7 +8,7 @@ Layout matches convert_visium_hd.py: each sample gets own coordinate system
 '<key>_transcripts'; cell ids are prefixed too. Store is created on first
 sample and extended afterwards; converting sample again replaces its
 elements. 'tables/table' is left free for study-wide merged table
-(merge_visium_hd_tables.py).
+(merge_study_tables.py).
 
 Only cells of study's joint analysis are kept, read from CSV with 'sample',
 'cell_id', 'umap_1', 'umap_2' (joint UMAP, stored as X_umap) and
