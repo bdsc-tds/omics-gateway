@@ -16,6 +16,8 @@ extract_merged.R. Table X holds Space Ranger raw counts, as Xenium stores do.
 H&E is read tile by tile and written as RGB pyramid starting at
 1/--downsample of scan resolution; global frame of sample is that level's
 pixels, so Space Ranger geometry (full-resolution pixels) gets Scale.
+--rotate turns sample clockwise by quarter turns, image and geometry alike,
+since viewer cannot rotate it.
 
 Usage (cluster batch job; one sample per call):
     python data_prep/convert_visium_hd.py \
@@ -47,9 +49,11 @@ import zarr
 
 # Import sibling script; data_prep/ is on sys.path when scripts run directly
 from convert_xenium import (
+    add_genes_detected,
     downcast_int64_obs,
     normalise_string_dtypes,
     peak_rss_gb,
+    quarter_turn_matrix,
 )
 from spatialdata import SpatialData, read_zarr
 from spatialdata.models import Image2DModel, ShapesModel, TableModel
@@ -93,7 +97,7 @@ def read_qc_cells(merged_csv, sample_id):
 
 
 # Function to read Space Ranger polygons of kept cells
-def read_polygons(geojson_path, cell_ids, key, scale):
+def read_polygons(geojson_path, cell_ids, key, scale, rotation=None):
     """
     Read Space Ranger cell or nucleus polygons, keeping only given cells.
 
@@ -108,6 +112,8 @@ def read_polygons(geojson_path, cell_ids, key, scale):
       across samples of store.
     scale: float
       Factor from full-resolution pixels to sample's global frame.
+    rotation: numpy.ndarray or None
+      3x3 affine matrix turning full-resolution coordinates with sample.
 
     Returns:
     --------
@@ -118,8 +124,20 @@ def read_polygons(geojson_path, cell_ids, key, scale):
     ids = frame['cell_id'].map(lambda n: f'cellid_{int(n):09d}-1')
     frame = frame[ids.isin(cell_ids)]
     ids = ids[frame.index]
+    geometry = frame.geometry
+    if rotation is not None:
+        # shapely order: x' = a x + b y + xoff, y' = d x + e y + yoff
+        m = rotation
+        geometry = geometry.affine_transform([
+            m[0, 0],
+            m[0, 1],
+            m[1, 0],
+            m[1, 1],
+            m[0, 2],
+            m[1, 2],
+        ])
     frame = gpd.GeoDataFrame(
-        geometry=frame.geometry.values,
+        geometry=geometry.values,
         index=pd.Index(f'{key}_' + ids.values, name='cell_id'),
     )
 
@@ -131,7 +149,8 @@ def read_polygons(geojson_path, cell_ids, key, scale):
 # Function to build table of kept cells
 def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
     """
-    Build AnnData of kept cells with counts, cell types, clusters and UMAPs.
+    Build AnnData of kept cells with counts, QC metrics, cell types, clusters
+    and UMAPs.
 
     Parameters:
     -----------
@@ -173,6 +192,8 @@ def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
     obs = pd.DataFrame(index=pd.Index(prefix + cells.index.values))
     obs['cell_id'] = obs.index.values
     obs['region'] = pd.Categorical([region] * len(obs))
+    # Per-cell QC measurements, offered as viewer metrics
+    obs['umi_counts'] = np.asarray(counts.X.sum(axis=1)).ravel().astype('int32')
 
     # Confident list blanks reject class; best guess keeps every first_type
     rctd = pd.read_csv(rctd_csv).set_index('Barcode')
@@ -188,6 +209,7 @@ def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
     obs['cluster'] = pd.Categorical(cells['cluster'].astype(str).values)
 
     table = ad.AnnData(X=counts.X, obs=obs, var=counts.var)
+    add_genes_detected(table)
     table.obsm['X_umap'] = cells[['umap_1', 'umap_2']].to_numpy('float32')
 
     projection = os.path.join(
@@ -217,7 +239,7 @@ def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
 
 
 # Function to build RGB pyramid of H&E scan
-def build_he_pyramid(he_path, downsample, key):
+def build_he_pyramid(he_path, downsample, key, rotate=0):
     """
     Read H&E OME-TIFF lazily and wrap it as multiscale RGB image element.
 
@@ -229,6 +251,8 @@ def build_he_pyramid(he_path, downsample, key):
       Integer factor applied before level s0.
     key: str
       Coordinate system name.
+    rotate: int
+      Clockwise rotation: 0, 90, 180 or 270.
 
     Returns:
     --------
@@ -246,6 +270,8 @@ def build_he_pyramid(he_path, downsample, key):
             np.mean, image, {0: downsample, 1: downsample}, trim_excess=True
         )
         image = da.round(image).astype('uint8')
+    if rotate:
+        image = da.rot90(image, k=-rotate // 90, axes=(0, 1))
     image = image.transpose(2, 0, 1).rechunk((1, TILE, TILE))
 
     # Halve until longest side fits one tile
@@ -431,6 +457,13 @@ def parse_args():
     )
     parser.add_argument('--out', required=True, help='Destination .zarr store.')
     parser.add_argument('--downsample', type=int, default=2)
+    parser.add_argument(
+        '--rotate',
+        type=int,
+        default=0,
+        choices=[0, 90, 180, 270],
+        help='Rotate the sample clockwise by this many degrees.',
+    )
     parser.add_argument('--workers', type=int, default=4)
 
     return parser.parse_args()
@@ -447,17 +480,34 @@ if __name__ == '__main__':
 
     cells = read_qc_cells(args.merged_umap, args.sample_id)
     print(f'{len(cells)} QC-passed cells', flush=True)
+    # Lazy; built first, as geometry turns within its frame
+    image = build_he_pyramid(args.he, args.downsample, args.key, args.rotate)
+    rotation = None
+    if args.rotate:
+        _, height, width = image['scale0']['image'].shape
+        if args.rotate in (90, 270):
+            width, height = height, width
+        # Rotation of image frame, conjugated to full-resolution pixels
+        to_frame = np.diag([scale, scale, 1.0])
+        rotation = (
+            np.linalg.inv(to_frame)
+            @ quarter_turn_matrix(args.rotate, width, height)
+            @ to_frame
+        )
+        print(f'rotated {args.rotate} degrees clockwise', flush=True)
     cell_shapes = read_polygons(
         os.path.join(segmented, 'cell_segmentations.geojson'),
         cells.index,
         args.key,
         scale,
+        rotation,
     )
     nuclei = read_polygons(
         os.path.join(segmented, 'nucleus_segmentations.geojson'),
         cells.index,
         args.key,
         scale,
+        rotation,
     )
     if len(cell_shapes) != len(cells) or not cell_shapes.index.is_unique:
         raise ValueError(
@@ -478,7 +528,6 @@ if __name__ == '__main__':
         'best guess',
         flush=True,
     )
-    image = build_he_pyramid(args.he, args.downsample, args.key)
 
     backed = write_elements(
         args.out,

@@ -122,7 +122,7 @@ conda run -n spatial python data_prep/generate_spatial_config.py \
 
 This writes three files into `data/spatial/vitessce_configs/`, the one config folder shared by every store:
 
-- `<sample>.vitessce.json`, the viewer config with a Metric layer, which colours cells by measurements such as cell area or transcript count;
+- `<sample>.vitessce.json`, the viewer config with a Metric layer, which colours cells by measurements such as cell area, transcript count or genes detected;
 - `<sample>.nometrics.vitessce.json`, the same config without it;
 - `<sample>.metrics.json`, the per-cell measurements shown in cell tooltips.
 
@@ -170,7 +170,9 @@ conda run -n spatial python data_prep/convert_visium_hd.py \
     --out data/spatial/visium_hd/<study>.zarr
 ```
 
-Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each. Converting a sample again replaces its elements.
+`--rotate 90`, `180` or `270` turns the sample clockwise, H&E and outlines alike, as for Xenium.
+
+Each sample's elements are named after its key (`<key>_he`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`), and its cell IDs are prefixed with it. The table holds Space Ranger's counts, each cell's UMI count (`umi_counts`) and number of genes detected (`genes_detected`), shown in the viewer's Metric layer, two cell-type columns (`cell_type`, RCTD's call with rejected cells as `Unassigned`; `cell_type_best_guess`, RCTD's top type for every cell), the joint analysis cluster and two UMAPs (`X_umap` from the joint analysis, `X_umap_sample` from Space Ranger). The H&E is stored at half its scan resolution, as three channels the viewer shows in true colour with a slider each. Converting a sample again replaces its elements.
 
 Once every sample is in the store, build the all-samples table (`tables/table`), which is also where the dataset table reads the study's metadata. Give each sample's key, its display label and its disease, in display order; the metadata file has the same format as for Xenium. It takes under a minute and about 1.5 GB, and running it again replaces the table, so rerun it whenever a sample changes:
 
@@ -264,7 +266,7 @@ conda run -n omics-gateway python data_prep/generate_datasets_tsv.py \
 `convert_xenium.py` reads the output folder with [spatialdata-io](https://github.com/scverse/spatialdata-io), then:
 
 1. **Rotates the sample** if `--rotate` is given: the image pixels themselves are turned, and the cell and nucleus outlines, transcripts and cell centroids are moved with them, so the rest of the pipeline sees an ordinary upright sample. The zoomed-out image levels are rebuilt from the rotated full-resolution image, so they can differ slightly from Xenium Ranger's own.
-2. **Adds annotations**: the cell types from the CSV, and Xenium Ranger's own UMAP, so the viewer needs no embedding of its own.
+2. **Adds annotations**: the cell types from the CSV, Xenium Ranger's own UMAP, so the viewer needs no embedding of its own, and each cell's number of genes detected (`genes_detected`), shown in the Metric layer beside Xenium Ranger's own measurements.
 3. **Adapts the data to the viewer.** Several details of a freshly read sample stop Vitessce from showing it, without any error message, so the script links the cell table to the cell outlines, converts text columns to a format Vitessce can read, fills missing annotations, indexes nucleus outlines by cell, and narrows 64-bit integer columns.
 4. **Filters and prepares the transcripts.** Control-probe detections are dropped, and so are transcripts with a quality score (`qv`) below 20. Xenium Ranger's own gene counts per cell, which drive gene colouring, use exactly the transcripts at or above 20, so the Transcript layer shows the same molecules the counts include. Only each transcript's position and gene are kept. The rows are then sorted by position and split into blocks of 50,000, so the browser fetches only the transcripts in view.
 5. **Writes the store piece by piece**, single-threaded, which keeps memory use bounded and leaves a partial store rather than nothing if something fails.
