@@ -390,8 +390,8 @@ def read_store_samples(zarr_path):
     List samples of multi-sample store in display order, from merged table.
 
     Store counts as multi-sample only when merged table has sample column
-    and every sample has own '<key>_table', so single-sample stores (Xenium)
-    never get study-wide config.
+    and every sample has own '<key>_table', so single-sample stores never get
+    study-wide config.
 
     Parameters:
     -----------
@@ -500,10 +500,13 @@ def thumbnail_name(config_path, key):
     return f'{stem}_{key}{THUMBNAIL_SUFFIX}'
 
 
-# Function to write H&E thumbnail of one sample
+# Function to write H&E or DAPI thumbnail of one sample
 def write_thumbnail(image_dir, out_path):
     """
-    Save smallest pyramid level of RGB image as JPEG thumbnail.
+    Save smallest pyramid level of image as JPEG thumbnail.
+
+    RGB image (H&E) is saved as is; fluorescence image (Xenium) as its first
+    channel (DAPI) in grey, stretched to 99.5th percentile.
 
     Parameters:
     -----------
@@ -516,8 +519,15 @@ def write_thumbnail(image_dir, out_path):
         attrs = json.load(handle)['attributes']
     level = attrs['ome']['multiscales'][0]['datasets'][-1]['path']
     pixels = zarr.open_array(os.path.join(image_dir, level), mode='r')[:]
-    # Axes are cyx; PIL wants yxc
-    image = Image.fromarray(np.moveaxis(pixels, 0, -1))
+    if pixels.dtype == np.uint8 and pixels.shape[0] == 3:
+        # Axes are cyx; PIL wants yxc
+        image = Image.fromarray(np.moveaxis(pixels, 0, -1))
+    else:
+        dapi = pixels[0].astype('float32')
+        top = max(float(np.percentile(dapi, 99.5)), 1.0)
+        image = Image.fromarray(
+            (np.clip(dapi / top, 0, 1) * 255).astype('uint8')
+        )
     image.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE))
     image.save(out_path, quality=85)
 
