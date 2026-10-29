@@ -13,8 +13,8 @@
  * Each tab keeps own coordination scopes, from view's props, over tab view's
  * auto-initialised ones.
  *
- * Sample thumbnails: study config's samples as static H&E images made by
- * config generator (live spatial views would load every sample at once);
+ * Sample thumbnails: study config's samples as static H&E or DAPI images made
+ * by config generator (live spatial views would load every sample at once);
  * clicking one switches to that sample's config.
  *
  * Data hooks, TitleInfo and coordination type lists are not exported by
@@ -478,8 +478,8 @@ function Tabs(props) {
   );
 }
 
-// Static H&E thumbnail per sample of study config; click asks main.js to
-// switch, as sample drop-down does
+// Static H&E or DAPI thumbnail per sample of study config; click asks
+// main.js to switch, as sample drop-down does
 function SampleThumbnails(props) {
   const {
     theme,
@@ -508,7 +508,7 @@ function SampleThumbnails(props) {
       },
       h('img', {
         src: new URL(sample.thumbnail, base).href,
-        alt: `H&E of ${sample.label}`,
+        alt: `Thumbnail of ${sample.label}`,
         loading: 'lazy',
       }),
       h('span', { className: 'gateway-thumbnail-label' }, sample.label),
