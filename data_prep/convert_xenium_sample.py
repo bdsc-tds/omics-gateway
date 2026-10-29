@@ -40,6 +40,7 @@ from convert_visium_hd import write_elements
 from convert_xenium import (
     MIN_TRANSCRIPT_QV,
     TRANSCRIPT_ROW_GROUP_SIZE,
+    add_genes_detected,
     add_global_centroids,
     downcast_int64_obs,
     normalise_string_dtypes,
@@ -173,6 +174,7 @@ def build_table(sdata, cells, key):
     table.obs['cell_id'] = table.obs_names.to_numpy()
     # CSC: viewer reads one gene's slice; CSR makes it densify whole matrix
     table.X = table.X.astype('float32').tocsc()
+    add_genes_detected(table)
     retarget_table_region(sdata, f'{key}_cell_boundaries')
 
     # Must run last, after every column steps above may add

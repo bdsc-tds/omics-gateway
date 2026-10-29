@@ -188,6 +188,26 @@ def add_global_centroids(sdata, region, key='spatial_global'):
     return [float(affine[0, 0]), float(affine[1, 1])]
 
 
+# Function to count genes detected per cell
+def add_genes_detected(table):
+    """
+    Store number of genes with non-zero count per cell as obs column.
+
+    Viewer offers it as metric beside counts. 10x matrices hold no explicit
+    zeros, so stored entries per row are genes detected.
+
+    Parameters:
+    -----------
+    table: anndata.AnnData
+      Table with sparse counts in X; obs gains 'genes_detected' in place.
+
+    Returns:
+    --------
+    None
+    """
+    table.obs['genes_detected'] = table.X.getnnz(axis=1).astype('int32')
+
+
 # Function to make string columns readable by viewer
 def normalise_string_dtypes(table):
     """
@@ -775,6 +795,8 @@ if __name__ == '__main__':
     if not args.cells_labels:
         scale = add_global_centroids(sdata, 'cell_boundaries')
         print(f'global centroids written (scale {scale})', flush=True)
+
+    add_genes_detected(table)
 
     # Must run last, after every column steps above may add
     converted = normalise_string_dtypes(table)

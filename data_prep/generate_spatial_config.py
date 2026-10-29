@@ -47,12 +47,15 @@ POINT_OBS_TYPE = 'transcript'
 # Centroids pre-scaled to rendered coordinates, written by convert_xenium.py
 CENTROIDS_KEY = 'spatial_global'
 
-# Per-cell measurements offered for colouring, as obs columns
+# Per-cell measurements offered for colouring, as obs columns: Xenium's own,
+# then those convert_visium_hd.py computes
 METRIC_OBS_COLS = [
     'cell_area',
     'nucleus_area',
     'nucleus_count',
     'transcript_counts',
+    'umi_counts',
+    'genes_detected',
 ]
 
 # featureType keeping metrics apart from genes; also metric channel's obsType,
@@ -115,6 +118,8 @@ NON_SET_OBS_COLS = {
     'cell_area',
     'nucleus_area',
     'nucleus_count',
+    'umi_counts',
+    'genes_detected',
 }
 
 

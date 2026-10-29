@@ -49,6 +49,7 @@ import zarr
 
 # Import sibling script; data_prep/ is on sys.path when scripts run directly
 from convert_xenium import (
+    add_genes_detected,
     downcast_int64_obs,
     normalise_string_dtypes,
     peak_rss_gb,
@@ -148,7 +149,8 @@ def read_polygons(geojson_path, cell_ids, key, scale, rotation=None):
 # Function to build table of kept cells
 def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
     """
-    Build AnnData of kept cells with counts, cell types, clusters and UMAPs.
+    Build AnnData of kept cells with counts, QC metrics, cell types, clusters
+    and UMAPs.
 
     Parameters:
     -----------
@@ -190,6 +192,8 @@ def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
     obs = pd.DataFrame(index=pd.Index(prefix + cells.index.values))
     obs['cell_id'] = obs.index.values
     obs['region'] = pd.Categorical([region] * len(obs))
+    # Per-cell QC measurements, offered as viewer metrics
+    obs['umi_counts'] = np.asarray(counts.X.sum(axis=1)).ravel().astype('int32')
 
     # Confident list blanks reject class; best guess keeps every first_type
     rctd = pd.read_csv(rctd_csv).set_index('Barcode')
@@ -205,6 +209,7 @@ def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
     obs['cluster'] = pd.Categorical(cells['cluster'].astype(str).values)
 
     table = ad.AnnData(X=counts.X, obs=obs, var=counts.var)
+    add_genes_detected(table)
     table.obsm['X_umap'] = cells[['umap_1', 'umap_2']].to_numpy('float32')
 
     projection = os.path.join(
