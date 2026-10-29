@@ -157,7 +157,7 @@ A Visium HD study becomes one SpatialData store holding all its samples, plus on
 - an **RCTD result**: a CSV with `Barcode` (Space Ranger's cell ID), `spot_class` and `first_type` columns;
 - the **joint analysis export**: a CSV with one row per cell kept after quality control, and the columns `cell_id` (Space Ranger's cell ID), `sample` (the sample's ID in the joint analysis), `cluster`, `umap_1` and `umap_2`. Only the cells listed there are kept.
 
-The H&E images are large (several GB each at full resolution), so run the conversion where memory is plentiful, such as a cluster job with 16 GB or more. It takes a few minutes per sample and stays below 2.5 GB. Run the samples one after another, never in parallel, as they write into the same store:
+The H&E images are large (several GB each at full resolution), so run the conversion where memory is plentiful, such as a cluster job with 16 GB or more. It takes a few minutes per sample and peaks below 3 GB. Run the samples one after another, never in parallel, as they write into the same store:
 
 ```bash
 conda run -n spatial python data_prep/convert_visium_hd.py \
