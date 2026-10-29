@@ -18792,7 +18792,7 @@ function ge(e) {
 		onClick: () => window.dispatchEvent(new CustomEvent("gateway-switch-sample", { detail: e.config }))
 	}, (0, x.createElement)("img", {
 		src: new URL(e.thumbnail, o).href,
-		alt: `H&E of ${e.label}`,
+		alt: `Thumbnail of ${e.label}`,
 		loading: "lazy"
 	}), (0, x.createElement)("span", { className: "gateway-thumbnail-label" }, e.label), e.disease ? (0, x.createElement)("span", { className: "gateway-thumbnail-disease" }, e.disease) : null));
 	return (0, x.createElement)(y, {

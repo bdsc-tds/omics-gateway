@@ -114,7 +114,7 @@ def write_store_metadata(store_path, metadata):
 # Function to parse command-line arguments
 def parse_args():
     """
-    Parse command-line arguments.
+    Parse command-line arguments for store metadata writing.
 
     Returns:
     --------

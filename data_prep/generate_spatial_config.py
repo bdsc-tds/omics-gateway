@@ -84,7 +84,7 @@ EMBEDDING_NAMES = {
 SAMPLE_UMAP = EMBEDDING_NAMES['X_umap_sample']
 
 # Table of every sample's cells holding joint UMAP, per sample of
-# multi-sample store (written by merge_visium_hd_tables.py)
+# multi-sample store (written by merge_study_tables.py)
 ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
 
 # Sample switch entry and title of study-wide config of multi-sample store
@@ -1402,8 +1402,8 @@ def generate_config(
             ),
         )
 
-    # Transcripts are off by default: 13.5M points obscure everything beneath
-    # and are only meaningful once genes are selected
+    # Transcripts are off by default: millions of points obscure everything
+    # beneath and are only meaningful once genes are selected
     if paths['obs_points_path']:
         vc.link_views_by_dict(
             [spatial, controller],
@@ -1424,7 +1424,7 @@ def generate_config(
                         # Filled in per selected gene by viewer, from
                         # Vitessce's palette by gene position
                         'featureColor': [],
-                        # Draw only genes picked in gene list, not all 13.5M
+                        # Draw only genes picked in gene list, not all millions of
                         # detections. Checkbox in viewer sets this same string
                         'featureFilterMode': 'featureSelection',
                         'featureSelection': feature_selection,

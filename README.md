@@ -238,7 +238,7 @@ Spatial datasets open in [Vitessce](https://vitessce.io), a JavaScript applicati
 * `package.json` and `package-lock.json`: the npm packages, pinned to exact versions
 * `viewer_build_env.yaml`: the conda environment providing Node
 
-The built files are committed, so deployment needs neither Node nor a build step, and no CDN is contacted at runtime. Rebuild only after upgrading Vitessce or editing `main.js`, `vite.config.js` or `vitessce_patches.js`:
+The built files are committed, so deployment needs neither Node nor a build step, and no CDN is contacted at runtime. Rebuild only after upgrading Vitessce or editing `main.js`, `vite.config.js`, `vitessce_patches.js` or `gateway_views.js`:
 
 ```bash
 conda env create -f spatial_viewer_src/viewer_build_env.yaml   # once
