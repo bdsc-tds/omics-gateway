@@ -2,11 +2,11 @@
 Script to convert Xenium Ranger output bundle into SpatialData .zarr store for
 Vitessce spatial viewer.
 
-Memory is binding constraint: full-resolution morphology image is
-(4, 40866, 14354), so naive `SpatialData.write()` under dask's default threaded
-scheduler exhausts 16 GB workstation. This script forces single-threaded
-scheduler and small chunks, and writes element by element, so peak usage stays
-bounded and failure is partial rather than total.
+Memory is binding constraint: full-resolution morphology image spans tens of
+thousands of pixels per side, so naive `SpatialData.write()` under dask's
+default threaded scheduler exhausts 16 GB workstation. This script forces
+single-threaded scheduler and small chunks, and writes element by element, so
+peak usage stays bounded and failure is partial rather than total.
 
 Transcripts below quality 20 (qv) and control probes are dropped, so
 Transcript layer shows only molecules counted in Xenium Ranger's cell counts,
@@ -71,7 +71,7 @@ ELEMENT_ORDER = [
 ]
 
 # Only columns viewer reads. Xenium carries nine more per transcript, and at
-# 13.5M rows dropping them is what keeps sort and store affordable
+# millions of rows dropping them is what keeps sort and store affordable
 TRANSCRIPT_COLUMNS = ['x', 'y', 'z', 'feature_name']
 
 # Xenium Ranger's cell counts, behind gene colouring, keep only calls at or
@@ -551,7 +551,7 @@ def prepare_transcripts(sdata, var_names):
     )
     points = points[is_gene & passes_qv][TRANSCRIPT_COLUMNS]
 
-    # Map through categories rather than per-row lookup: 13.5M string lookups
+    # Map through categories rather than per-row lookup: millions of lookups
     # against list is minutes, this is one pass over ~500 categories
     points['feature_name'] = points['feature_name'].cat.as_known()
     lookup = pd.Series(

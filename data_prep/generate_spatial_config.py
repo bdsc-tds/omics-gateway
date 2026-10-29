@@ -1402,8 +1402,8 @@ def generate_config(
             ),
         )
 
-    # Transcripts are off by default: 13.5M points obscure everything beneath
-    # and are only meaningful once genes are selected
+    # Transcripts are off by default: millions of points obscure everything
+    # beneath and are only meaningful once genes are selected
     if paths['obs_points_path']:
         vc.link_views_by_dict(
             [spatial, controller],
@@ -1424,7 +1424,7 @@ def generate_config(
                         # Filled in per selected gene by viewer, from
                         # Vitessce's palette by gene position
                         'featureColor': [],
-                        # Draw only genes picked in gene list, not all 13.5M
+                        # Draw only genes picked in gene list, not all millions of
                         # detections. Checkbox in viewer sets this same string
                         'featureFilterMode': 'featureSelection',
                         'featureSelection': feature_selection,
