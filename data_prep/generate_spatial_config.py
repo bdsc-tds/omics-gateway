@@ -87,9 +87,17 @@ ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
 # Sample switch entry and title of study-wide config of multi-sample store
 ALL_SAMPLES_LABEL = 'All samples'
 
-# Sample thumbnails beside study config: H&E's smallest level, longest side
+# Sample thumbnails beside study config: square crop of tissue, side in pixels
 THUMBNAIL_SUFFIX = '.thumbnail.jpg'
 THUMBNAIL_SIZE = 320
+
+# Thumbnail margin around tissue, as fraction of tissue's longer side
+THUMBNAIL_MARGIN = 0.04
+
+# Tissue pixels: H&E stain's colour spread, or DAPI share of its 99.5th
+# percentile; slide background, bubbles and dust fall below
+HE_TISSUE_SPREAD = 30
+DAPI_TISSUE_LEVEL = 0.15
 
 # obs columns that describe cells rather than annotate them
 NON_SET_OBS_COLS = {
@@ -503,10 +511,13 @@ def thumbnail_name(config_path, key):
 # Function to write H&E or DAPI thumbnail of one sample
 def write_thumbnail(image_dir, out_path):
     """
-    Save smallest pyramid level of image as JPEG thumbnail.
+    Save square JPEG thumbnail of image, cropped to tissue.
 
-    RGB image (H&E) is saved as is; fluorescence image (Xenium) as its first
-    channel (DAPI) in grey, stretched to 99.5th percentile.
+    RGB image (H&E) keeps its colours; fluorescence image (Xenium) shows its
+    first channel (DAPI) in grey, stretched to 99.5th percentile. Tissue's
+    bounding box, trimmed of stray specks, is padded to square with image's
+    background colour, so every sample's card shows same size and framing.
+    Smallest pyramid level still twice thumbnail size is read.
 
     Parameters:
     -----------
@@ -517,19 +528,54 @@ def write_thumbnail(image_dir, out_path):
     """
     with open(os.path.join(image_dir, 'zarr.json')) as handle:
         attrs = json.load(handle)['attributes']
-    level = attrs['ome']['multiscales'][0]['datasets'][-1]['path']
-    pixels = zarr.open_array(os.path.join(image_dir, level), mode='r')[:]
+    levels = [
+        zarr.open_array(os.path.join(image_dir, d['path']), mode='r')
+        for d in attrs['ome']['multiscales'][0]['datasets']
+    ]
+    level = next(
+        (a for a in reversed(levels) if max(a.shape[1:]) >= 2 * THUMBNAIL_SIZE),
+        levels[0],
+    )
+    pixels = level[:]
     if pixels.dtype == np.uint8 and pixels.shape[0] == 3:
         # Axes are cyx; PIL wants yxc
-        image = Image.fromarray(np.moveaxis(pixels, 0, -1))
+        image = np.moveaxis(pixels, 0, -1)
+        spread = image.max(axis=-1).astype('int16') - image.min(axis=-1)
+        tissue = spread > HE_TISSUE_SPREAD
     else:
         dapi = pixels[0].astype('float32')
         top = max(float(np.percentile(dapi, 99.5)), 1.0)
-        image = Image.fromarray(
-            (np.clip(dapi / top, 0, 1) * 255).astype('uint8')
-        )
-    image.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE))
-    image.save(out_path, quality=85)
+        image = (np.clip(dapi / top, 0, 1) * 255).astype('uint8')
+        tissue = image > DAPI_TISSUE_LEVEL * 255
+    background = (
+        np.median(image[~tissue], axis=0).astype('uint8')
+        if (~tissue).any()
+        else image[0, 0]
+    )
+
+    ys, xs = np.nonzero(tissue)
+    if len(ys):
+        y0, y1 = np.percentile(ys, [0.5, 99.5]).astype(int)
+        x0, x1 = np.percentile(xs, [0.5, 99.5]).astype(int)
+    else:
+        y0, y1, x0, x1 = 0, image.shape[0] - 1, 0, image.shape[1] - 1
+    side = int(max(y1 - y0, x1 - x0) * (1 + 2 * THUMBNAIL_MARGIN)) + 1
+    canvas = np.empty((side, side, *image.shape[2:]), dtype='uint8')
+    canvas[...] = background
+    # Tissue centred on canvas; parts of image beyond canvas are dropped
+    cy, cx = (y0 + y1) // 2, (x0 + x1) // 2
+    top_y, left_x = cy - side // 2, cx - side // 2
+    src_y0, src_x0 = max(top_y, 0), max(left_x, 0)
+    src_y1 = min(top_y + side, image.shape[0])
+    src_x1 = min(left_x + side, image.shape[1])
+    canvas[
+        src_y0 - top_y : src_y1 - top_y, src_x0 - left_x : src_x1 - left_x
+    ] = image[src_y0:src_y1, src_x0:src_x1]
+
+    thumbnail = Image.fromarray(canvas).resize(
+        (THUMBNAIL_SIZE, THUMBNAIL_SIZE), Image.Resampling.LANCZOS
+    )
+    thumbnail.save(out_path, quality=85)
 
 
 # Function to compute zoom level that fits extent in viewport
