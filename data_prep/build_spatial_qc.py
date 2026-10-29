@@ -380,7 +380,7 @@ def build_groups(technology, per_sample_store):
 # Function to parse command-line arguments
 def parse_args():
     """
-    Parse command-line arguments.
+    Parse command-line arguments for spatial QC folder build.
 
     Parameters:
     -----------
