@@ -166,6 +166,8 @@ circles; move them clear */
 .gateway-thumbnails {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Every card as tall as tallest, whatever its disease name's length */
+  grid-auto-rows: 1fr;
   gap: 8px;
 }
 
@@ -195,6 +197,9 @@ circles; move them clear */
   width: 100%;
   aspect-ratio: 1;
   object-fit: contain;
+  /* Off-white H&E square would otherwise merge into card */
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
 }
 
 .gateway-thumbnail-label {
