@@ -167,7 +167,6 @@ circles; move them clear */
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  font-size: 13px;
 }
 
 .gateway-thumbnail {
@@ -180,6 +179,8 @@ circles; move them clear */
   background: #fff;
   color: inherit;
   font: inherit;
+  /* On button: viewer's container rule sets every div to 16px */
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
