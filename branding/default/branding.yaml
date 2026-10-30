@@ -45,3 +45,7 @@ homepage_subtitle: "Browse, download and visually explore single-cell and spatia
 # Dataset and cell numbers are computed from dataset table instead
 # Leave unset to hide this card
 # cell_types_stat: "30+"
+
+# Text of pop-up on small Privacy label at bottom of homepage
+# Leave unset to hide it
+# privacy_notice: "This site keeps standard server logs for 90 days."

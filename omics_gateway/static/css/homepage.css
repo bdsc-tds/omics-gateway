@@ -153,6 +153,52 @@ main.main-content {
   line-height: 1.5;
 }
 
+/* Privacy label at bottom of homepage style class */
+.privacy-notice {
+  padding: 0.25rem 1rem;
+  font-size: 0.75rem;
+  color: #767676;
+  text-align: center;
+}
+
+/* Hover target holding label and pop-up, so pointer can reach pop-up's text */
+.privacy-popup {
+  position: relative;
+  display: inline-block;
+}
+
+/* Privacy label button, reset to look like plain text */
+.privacy-label {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: help;
+}
+
+/* Pop-up notice style class */
+.privacy-text {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  z-index: 10;
+  width: min(calc(100vw - 2rem), 32rem);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  cursor: text;
+  visibility: hidden;
+  transform: translateX(-50%);
+}
+
+/* Keyboard focus only: mouse click focus would keep pop-up open */
+.privacy-popup:hover .privacy-text,
+.privacy-label:focus-visible + .privacy-text {
+  visibility: visible;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .hero-title {
