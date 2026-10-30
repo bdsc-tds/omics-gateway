@@ -59,7 +59,7 @@ If any of the following optional variables are set, [ProxyFix](https://werkzeug.
 
 ### Branding
 
-The page titles, navbar logo and title, favicon, and homepage texts and contact banner come from a branding file rather than from the templates. To brand a deployment, copy `branding/default/` to `branding/<name>/` (git ignores every branding folder except the default one), edit its `branding.yaml`, whose comments describe each setting, and set `GATEWAY_BRANDING` to that file. The gateway checks the file when it starts and refuses to start if a mandatory setting is missing, a setting is unknown or an image cannot be found, naming each problem. Changes to the file take effect when the gateway restarts.
+The page titles, navbar logo and title, favicon, and homepage texts, contact banner and privacy notice come from a branding file rather than from the templates. To brand a deployment, copy `branding/default/` to `branding/<name>/` (git ignores every branding folder except the default one), edit its `branding.yaml`, whose comments describe each setting, and set `GATEWAY_BRANDING` to that file. The gateway checks the file when it starts and refuses to start if a mandatory setting is missing, a setting is unknown or an image cannot be found, naming each problem. Changes to the file take effect when the gateway restarts.
 
 The homepage's dataset and cell counts are computed from the dataset table on every visit, so they follow edits to it without a restart. The number of cell types is set in the branding file.
 

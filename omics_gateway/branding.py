@@ -17,6 +17,7 @@ OPTIONAL_KEYS = (
     'logo_alt',
     'contact_email',
     'cell_types_stat',
+    'privacy_notice',
 )
 # Resolved against folder holding branding file; must point to existing file
 PATH_KEYS = ('favicon_path', 'logo_path')

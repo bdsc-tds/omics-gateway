@@ -106,6 +106,19 @@
     </section>
     {% endif %}
   </main>
+
+  <!-- Privacy label with pop-up notice, shown only when branding file sets it -->
+  {% if branding.privacy_notice %}
+  <footer class="privacy-notice">
+    <span class="privacy-popup">
+      <button class="privacy-label" type="button"
+        aria-describedby="privacy-text">Privacy</button>
+      <span class="privacy-text" id="privacy-text" role="tooltip">
+        {{ branding.privacy_notice }}
+      </span>
+    </span>
+  </footer>
+  {% endif %}
 </body>
 
 </html>
