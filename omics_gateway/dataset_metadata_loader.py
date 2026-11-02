@@ -183,14 +183,10 @@ def load_dataset_metadata_tsv(tsv_path, data_dir=None):
                     row['has_qc'] = False
 
                 # Collect filter values from multi-value fields
-                for val in _parse_multi(row.get('assay', '')):
-                    assays.add(val)
-                for val in _parse_multi(row.get('disease', '')):
-                    diseases.add(val)
-                for val in _parse_multi(row.get('tissue', '')):
-                    tissues.add(val)
-                for val in _parse_multi(row.get('sex', '')):
-                    sexes.add(val)
+                assays.update(_parse_multi(row.get('assay', '')))
+                diseases.update(_parse_multi(row.get('disease', '')))
+                tissues.update(_parse_multi(row.get('tissue', '')))
+                sexes.update(_parse_multi(row.get('sex', '')))
 
                 # Collect numeric ranges
                 try:

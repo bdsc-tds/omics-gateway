@@ -228,7 +228,7 @@ def empty_metadata(name):
     meta: dict
       Dictionary with every TSV column but file_path, all empty except name.
     """
-    meta = {column: '' for column in UNS_KEYS}
+    meta = dict.fromkeys(UNS_KEYS, '')
     meta['name'] = name
     return meta
 

@@ -69,7 +69,7 @@ def load_branding(branding_path):
         problems.append(f'{key}: unknown key')
 
     branding_dir = os.path.dirname(os.path.abspath(branding_path))
-    branding = {key: None for key in MANDATORY_KEYS + OPTIONAL_KEYS}
+    branding = dict.fromkeys(MANDATORY_KEYS + OPTIONAL_KEYS)
     for key in MANDATORY_KEYS + OPTIONAL_KEYS:
         value = content.get(key)
         if value in (None, ''):
