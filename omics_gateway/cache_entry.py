@@ -330,7 +330,7 @@ class CacheEntry:
             # Converted back to local time so loading page still shows server's
             # wall clock; tz-aware so offset is explicit
             launch_time = datetime.datetime.fromtimestamp(
-                self.launchtime, tz=datetime.timezone.utc
+                self.launchtime, tz=datetime.UTC
             ).astimezone()
             return render_template(
                 'loading.html',

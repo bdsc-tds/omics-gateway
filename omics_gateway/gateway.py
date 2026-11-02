@@ -15,7 +15,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from threading import Lock, Thread
 
 from flask import (
@@ -275,13 +275,6 @@ def handle_invalid_process(error):
     tuple:
       Rendered error template and HTTP status code.
     """
-
-    message = []
-
-    message.append(error.message)
-    message.append(f'{error.http_status} Error.')
-    message.append(f'Stdout: {error.stdout}')
-    message.append(f'Stderr: {error.stderr}')
 
     return (
         render_template(
@@ -1556,7 +1549,7 @@ def spatial_viewer():
     return render_template(
         'spatial_viewer.html',
         extra_scripts=get_extra_scripts(),
-        launchtime=datetime.now(timezone.utc).astimezone(),
+        launchtime=datetime.now(UTC).astimezone(),
     )
 
 
