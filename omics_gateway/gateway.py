@@ -276,13 +276,6 @@ def handle_invalid_process(error):
       Rendered error template and HTTP status code.
     """
 
-    message = []
-
-    message.append(error.message)
-    message.append(f'{error.http_status} Error.')
-    message.append(f'Stdout: {error.stdout}')
-    message.append(f'Stderr: {error.stderr}')
-
     return (
         render_template(
             'cellxgene_error.html',
