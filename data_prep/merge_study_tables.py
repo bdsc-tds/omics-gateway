@@ -14,6 +14,10 @@ joint UMAP, for sample's Merged UMAP view.
 Run again after any sample is converted again: existing tables are
 replaced.
 
+--metadata-only writes --metadata into existing store's table, single-sample
+stores included, without merging (file format in load_metadata() of
+generate_datasets_tsv.py).
+
 Usage (cluster batch job, once every sample is converted):
     python data_prep/merge_study_tables.py \
         --zarr study.zarr \
@@ -24,6 +28,8 @@ Usage (cluster batch job, once every sample is converted):
 
 # Import utility modules
 import argparse
+import os
+import sys
 import time
 
 import anndata as ad
@@ -37,9 +43,13 @@ from convert_xenium import (
     normalise_string_dtypes,
     peak_rss_gb,
 )
+from generate_datasets_tsv import (
+    TABLE_PATH,
+    load_metadata,
+    write_store_metadata,
+)
 from spatialdata import read_zarr
 from spatialdata.models import TableModel
-from write_store_metadata import load_metadata, write_store_metadata
 
 # Merged table element, where generate_datasets_tsv.py looks for metadata
 MERGED_TABLE = 'table'
@@ -144,7 +154,7 @@ def all_cells_umap(merged, region):
 # Function to parse command-line arguments
 def parse_args():
     """
-    Parse command-line arguments for merged table creation.
+    Parse command-line arguments for merged table creation or metadata update.
 
     Returns:
     --------
@@ -159,7 +169,6 @@ def parse_args():
         '--sample',
         nargs=3,
         action='append',
-        required=True,
         metavar=('KEY', 'LABEL', 'DISEASE'),
         help='Sample key in store, display label and disease; repeat per '
         'sample, in display order.',
@@ -167,8 +176,18 @@ def parse_args():
     parser.add_argument(
         '--metadata', default=None, help='YAML file of study uns keys.'
     )
+    parser.add_argument(
+        '--metadata-only',
+        action='store_true',
+        help='Only write --metadata into the existing table, of any store.',
+    )
+    args = parser.parse_args()
+    if args.metadata_only and not args.metadata:
+        parser.error('--metadata-only needs --metadata.')
+    if not args.metadata_only and not args.sample:
+        parser.error('--sample is required unless --metadata-only is given.')
 
-    return parser.parse_args()
+    return args
 
 
 if __name__ == '__main__':
@@ -176,6 +195,12 @@ if __name__ == '__main__':
     start = time.time()
     # Read first, so typo fails before store changes
     metadata = load_metadata(args.metadata) if args.metadata else None
+    if args.metadata_only:
+        if not os.path.isdir(os.path.join(args.zarr, TABLE_PATH)):
+            raise FileNotFoundError(f'No table found in store {args.zarr}.')
+        keys = write_store_metadata(args.zarr, metadata)
+        print(f'Wrote {", ".join(keys)} to {args.zarr}')
+        sys.exit()
 
     umap_tables = [f'{key}{ALL_CELLS_UMAP_SUFFIX}' for key, _, _ in args.sample]
     remove_existing_elements(args.zarr, [MERGED_TABLE, *umap_tables])

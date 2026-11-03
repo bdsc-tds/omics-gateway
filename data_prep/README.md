@@ -23,8 +23,7 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | `convert_xenium_sample.py` | `spatial` | one sample of a multi-sample SpatialData store, from Xenium Ranger output |
 | `convert_visium_hd.py` | `spatial` | one sample of a multi-sample SpatialData store, from Space Ranger output |
 | `convert_visium.py` | `spatial` | one sample of a multi-sample SpatialData store, from a classic (spot-based) Visium `.h5ad` |
-| `merge_study_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata |
-| `write_store_metadata.py` | `spatial` | the dataset's metadata inside an existing store |
+| `merge_study_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata; also updates the metadata of any existing store |
 | `generate_spatial_config.py` | `spatial` | the viewer configs for a store |
 | `downscale_qc_figures.py` | `omics-gateway` | a lower-resolution copy of the QC figures |
 | `build_qc_thumbnails.py` | `omics-gateway` | the QC report thumbnails |
@@ -140,12 +139,13 @@ Start the gateway (see "Running the gateway" in the main README), open the datas
 
 ### Correcting metadata later
 
-To change a store's metadata without converting it again, edit the YAML file and run:
+To change a store's metadata without converting it again, edit the YAML file and run the following. It works for any store, a single sample or a study:
 
 ```bash
-conda run -n spatial python data_prep/write_store_metadata.py \
+conda run -n spatial python data_prep/merge_study_tables.py \
     --zarr data/spatial/xenium/<sample>.zarr \
-    --metadata spatial_sources/<sample>.metadata.yaml
+    --metadata spatial_sources/<sample>.metadata.yaml \
+    --metadata-only
 ```
 
 Then regenerate the dataset table.
@@ -291,7 +291,7 @@ conda run -n omics-gateway python data_prep/generate_datasets_tsv.py \
 3. **Adapts the data to the viewer.** Several details of a freshly read sample stop Vitessce from showing it, without any error message, so the script links the cell table to the cell outlines, converts text columns to a format Vitessce can read, fills missing annotations, indexes nucleus outlines by cell, and narrows 64-bit integer columns.
 4. **Filters and prepares the transcripts.** Control-probe detections are dropped, and so are transcripts with a quality score (`qv`) below 20. Xenium Ranger's own gene counts per cell, which drive gene colouring, use exactly the transcripts at or above 20, so the Transcript layer shows the same molecules the counts include. Only each transcript's position and gene are kept. The rows are then sorted by position and split into blocks of 50,000, so the browser fetches only the transcripts in view.
 5. **Writes the store piece by piece**, single-threaded, which keeps memory use bounded and leaves a partial store rather than nothing if something fails.
-6. **Writes the metadata** from `--metadata`, as `write_store_metadata.py` would.
+6. **Writes the metadata** from `--metadata`, as `merge_study_tables.py --metadata-only` would.
 
 ## QC reports
 

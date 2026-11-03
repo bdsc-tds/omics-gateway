@@ -22,8 +22,9 @@ Usage:
             --out data/spatial/xenium/xenium_sample.zarr \
             --metadata spatial_sources/xenium_sample.metadata.yaml
 
---metadata writes dataset metadata into table (see write_store_metadata.py),
-from which generate_datasets_tsv.py builds store's datasets.tsv row.
+--metadata writes dataset metadata into table, from which
+generate_datasets_tsv.py builds store's datasets.tsv row (file format in its
+load_metadata()).
 
 --rotate turns whole sample clockwise by quarter turns, since 2D viewer cannot
 rotate it.
@@ -40,6 +41,9 @@ import dask.array as da
 import numpy as np
 import pandas as pd
 import spatialdata_io
+
+# Import sibling script; data_prep/ is on sys.path when scripts run directly
+from generate_datasets_tsv import load_metadata, write_store_metadata
 from spatialdata import SpatialData
 from spatialdata.models import Image2DModel, PointsModel, TableModel
 from spatialdata.transformations import (
@@ -51,9 +55,6 @@ from vitessce.data_utils import (
     sdata_morton_sort_points,
     sdata_points_modify_row_group_size,
 )
-
-# Import sibling script; data_prep/ is on sys.path when scripts run directly
-from write_store_metadata import load_metadata, write_store_metadata
 
 # Single-threaded: dask's default scheduler runs one task per core, each
 # materialising image chunk, so peak memory scales with core count
@@ -722,7 +723,7 @@ def parse_args():
         '--metadata',
         default=None,
         help='Optional YAML of dataset metadata for datasets.tsv '
-        '(see write_store_metadata.py).',
+        '(see load_metadata() in generate_datasets_tsv.py).',
     )
     parser.add_argument(
         '--rotate',
