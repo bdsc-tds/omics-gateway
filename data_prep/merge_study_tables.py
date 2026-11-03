@@ -1,10 +1,11 @@
 """
-Script to add study-wide merged table to multi-sample Visium HD or Xenium
-store.
+Script to add study-wide merged table to multi-sample Visium, Visium HD or
+Xenium store.
 
-Concatenates per-sample tables written by convert_visium_hd.py or
-convert_xenium_sample.py into 'tables/table', which annotates every sample's
-cell boundaries and carries study metadata read by generate_datasets_tsv.py.
+Concatenates per-sample tables written by convert_visium.py,
+convert_visium_hd.py or convert_xenium_sample.py into 'tables/table', which
+annotates every sample's cell boundaries or spots and carries study metadata
+read by generate_datasets_tsv.py.
 Adds 'sample' and 'disease' columns. Keeps only joint analysis UMAP
 (X_umap): per-sample UMAPs and spatial coordinates each live in own sample's
 frame. Also writes 'tables/<key>_umap_all_cells' per sample: every cell's
@@ -62,7 +63,7 @@ def merge_tables(sdata, samples):
     Returns:
     --------
     merged: anndata.AnnData
-      Parsed table annotating every sample's cell boundaries.
+      Parsed table annotating every sample's cell boundaries or spots.
     """
     tables = [sdata.tables[f'{key}_table'] for key, _, _ in samples]
     genes = tables[0].var_names
@@ -110,7 +111,7 @@ def merge_tables(sdata, samples):
 
 
 # Function to build one sample's all-cells UMAP table
-def all_cells_umap(merged, key):
+def all_cells_umap(merged, region):
     """
     Build table of every cell's joint analysis UMAP, sample's cells last.
 
@@ -121,15 +122,15 @@ def all_cells_umap(merged, key):
     -----------
     merged: anndata.AnnData
       Table built by merge_tables().
-    key: str
-      Sample key in store.
+    region: str
+      Element annotated by sample's own table.
 
     Returns:
     --------
     table: anndata.AnnData
       Parsed table with obs index and X_umap only, annotating no region.
     """
-    own = (merged.obs['region'] == f'{key}_cell_boundaries').to_numpy()
+    own = (merged.obs['region'] == region).to_numpy()
     order = list(np.flatnonzero(~own)) + list(np.flatnonzero(own))
     table = ad.AnnData(
         obs=pd.DataFrame(index=pd.Index(merged.obs_names[order], dtype=object)),
@@ -190,7 +191,8 @@ if __name__ == '__main__':
     sdata[MERGED_TABLE] = merged
     sdata.write_element(MERGED_TABLE)
     for (key, _, _), name in zip(args.sample, umap_tables):
-        sdata[name] = all_cells_umap(merged, key)
+        region = sdata.tables[f'{key}_table'].obs['region'].iloc[0]
+        sdata[name] = all_cells_umap(merged, region)
         sdata.write_element(name)
     sdata.write_consolidated_metadata()
     if metadata:
