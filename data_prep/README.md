@@ -13,7 +13,7 @@ Visium .h5ad ─> convert_visium.py ─> <study>.zarr                  │
 Space Ranger output ─> convert_visium_hd.py ─> <study>.zarr        │
                                                    │               │
                                                    └─> generate_spatial_config.py ─> viewer configs
-QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py ─> thumbnails
+QC figures ─> build_qc_thumbnails.py ─> thumbnails
 ```
 
 | Script | Environment | Produces |
@@ -24,7 +24,6 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | `convert_visium.py` | `spatial` | one sample of a multi-sample SpatialData store, from a classic (spot-based) Visium `.h5ad` |
 | `merge_study_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata; also updates the metadata of any existing store |
 | `generate_spatial_config.py` | `spatial` | the viewer configs for a store |
-| `downscale_qc_figures.py` | `omics-gateway` | a lower-resolution copy of the QC figures |
 | `build_qc_thumbnails.py` | `omics-gateway` | the QC report thumbnails |
 
 The spatial scripts share their common code through `spatial_common.py`, which is not run on its own.
@@ -297,17 +296,6 @@ conda run -n omics-gateway python data_prep/generate_datasets_tsv.py \
 ## QC reports
 
 The folder layout the gateway expects is described in the main README.
-
-Our pipeline exports figures at 600 dpi, far more than a screen can show, which makes reports slow to load. `downscale_qc_figures.py` writes a copy resampled to 150 dpi into a separate folder, leaving the originals untouched:
-
-```bash
-conda run -n omics-gateway python data_prep/downscale_qc_figures.py \
-    --qc-data data/qc \
-    --output data/qc_150dpi \
-    --dpi 150
-```
-
-Check the result, then swap the two folders by hand.
 
 `build_qc_thumbnails.py` builds the thumbnails shown in each report:
 
