@@ -1170,8 +1170,8 @@ def generate_config(
     # Mean expression and fraction expressing per cell set, for selected genes
     # only; heatmap always drew all genes and loaded whole matrix
     dot_plot = vc.add_view('dotPlot', dataset=dataset)
-    # Worded like violin plot's "Expression by Cell Set"
-    dot_plot.set_props(title='Mean Expression by Cell Set')
+    # Worded like violin plot's "Expression by Cell Set", which follows obsType
+    dot_plot.set_props(title=f'Mean Expression by {obs_type.capitalize()} Set')
     feature_list = vc.add_view('featureList', dataset=dataset)
     # Shift-click enables multi-gene selection with distinct transcript colours
     # Defaults false for single-select behavior and no deselection
@@ -1190,6 +1190,9 @@ def generate_config(
     ]
     if len(cell_type_lists) > 1:
         breakdown.set_props(rowHierarchies=cell_type_lists)
+    # Spot rows are their first set list (often clusters), not cell types
+    if obs_type != 'cell':
+        breakdown.set_props(title=f'{obs_type.capitalize()} Sets in Selection')
     description = vc.add_view('description', dataset=dataset)
     description.set_props(description=os.path.splitext(name)[0])
     # Metric list takes status panel's slot, least used one

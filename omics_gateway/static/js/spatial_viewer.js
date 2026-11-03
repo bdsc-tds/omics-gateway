@@ -568,17 +568,18 @@
     }
 
     // File name part from panel title: "Scatterplot (UMAP)" gives umap,
-    // "Merged UMAP" merged_umap; plot titles give plot type
-    const FILE_NAMES = {
-      'Expression by Cell Set': 'violin_plot',
-      'Mean Expression by Cell Set': 'dot_plot',
-    };
+    // "Merged UMAP" merged_umap; plot titles, naming obsType, by pattern
+    const FILE_NAMES = [
+      [/^Expression by \w+ Set$/, 'violin_plot'],
+      [/^Mean Expression by \w+ Set$/, 'dot_plot'],
+    ];
     function slugOf(panel) {
       const title =
         panel?.querySelector('[class*="titleLeft"]')?.textContent.trim() || '';
       const embedding = /^Scatterplot \(([^)]+)\)/.exec(title);
       const base = embedding ? embedding[1] : title.replace(/\s*\(.*$/, '');
-      const slug = (FILE_NAMES[base] || base)
+      const named = FILE_NAMES.find(([pattern]) => pattern.test(base));
+      const slug = (named ? named[1] : base)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '');
