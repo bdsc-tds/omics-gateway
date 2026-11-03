@@ -112,6 +112,30 @@ const PATCHES = [
     replace: 'y: f === e ? O + (R += 20 + 15 * Object.keys(G).length) : O,',
   },
   {
+    // Tooltip gets spots' sets, which spatial layers already receive
+    name: 'spot tooltip sets data',
+    find: 'obsSegmentationsSetsData: Hr,',
+    replace: 'obsSegmentationsSetsData: Hr, obsSpotsSetsData: at,',
+  },
+  {
+    // Spot rows built as cells' are; crosshair offset as 'crosshair position'
+    name: 'spot tooltip sets',
+    find:
+      '    return _(SO, { parentUuid: e, sourceUuid: f, tooltipsVisible: Z, ' +
+      'tooltipCrosshairsVisible: J, width: n, height: i, info: {\n' +
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Vitessce's code
+      '      [`${vi(b)} ID`]: y\n' +
+      '    }, x: k, y: X + (R += 30), featureType: o, featureLabelsMap: A }, E);\n' +
+      '  }), a?.map((E) => {',
+    replace:
+      '    const gatewayInfo = Pfi(t.obsSpotsSetsData?.[E], b, y);\n' +
+      '    return _(SO, { parentUuid: e, sourceUuid: f, tooltipsVisible: Z, ' +
+      'tooltipCrosshairsVisible: J, width: n, height: i, info: gatewayInfo, ' +
+      'x: k, y: f === e ? X + (R += 20 + 15 * Object.keys(gatewayInfo).length) ' +
+      ': X, featureType: o, featureLabelsMap: A }, E);\n' +
+      '  }), a?.map((E) => {',
+  },
+  {
     // Dot plot height grows with genes (f: dot plot data)
     name: 'dot plot height',
     find: 'Z = n ? Dl(A - E - b - 50, 10, 1 / 0) :',

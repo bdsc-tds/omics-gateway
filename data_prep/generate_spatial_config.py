@@ -47,6 +47,11 @@ POINT_OBS_TYPE = 'transcript'
 # Centroids pre-scaled to rendered coordinates, written by convert_xenium.py
 CENTROIDS_KEY = 'spatial_global'
 
+# Name suffixes of element sample's table annotates: segmented cells, or
+# classic Visium spots (convert_visium.py), which get spot layer instead
+CELLS_SUFFIX = '_cell_boundaries'
+SPOTS_SUFFIX = '_spots'
+
 # Per-cell measurements offered for colouring, as obs columns: Xenium's own,
 # then those convert_visium_hd.py computes
 METRIC_OBS_COLS = [
@@ -432,7 +437,7 @@ def read_store_samples(zarr_path):
     pairs = pairs.sort_values('label')
     samples = [
         {
-            'key': key.removesuffix('_cell_boundaries'),
+            'key': key.removesuffix(CELLS_SUFFIX).removesuffix(SPOTS_SUFFIX),
             'label': str(label),
             'disease': disease,
         }
@@ -640,8 +645,9 @@ def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
       Keys 'image_shape', 'image_path', 'microns_per_unit',
       'obs_segmentations_path', 'other_segmentation_paths', 'table_path',
       'obs_points_path', 'coordinate_system', 'obs_set_cols',
-      'obs_embeddings', 'centroids_path', 'metric_cols' and
-      'all_cells_umap_path'.
+      'obs_embeddings', 'centroids_path', 'metric_cols',
+      'all_cells_umap_path' and 'spot_radius' (None unless segmentation
+      element is spots, then held by 'obs_segmentations_path').
     """
 
     # Function to list group members, restricted to sample's elements
@@ -707,6 +713,14 @@ def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
 
     table_dir = os.path.join(zarr_path, 'tables', table_name)
     all_cells_umap = f'{sample}{ALL_CELLS_UMAP_SUFFIX}'
+    spot_radius = None
+    if seg_path.endswith(SPOTS_SUFFIX):
+        # Spot layer takes one radius; viewer's auto-init reads first row too
+        radius = pd.read_parquet(
+            os.path.join(zarr_path, *seg_path.split('/'), 'shapes.parquet'),
+            columns=['radius'],
+        )['radius']
+        spot_radius = float(radius.iloc[0])
 
     return {
         'image_shape': read_image_shape(
@@ -740,6 +754,7 @@ def detect_elements(zarr_path, image=None, segmentations=None, sample=None):
         'all_cells_umap_path': (
             f'tables/{all_cells_umap}' if all_cells_umap in tables else None
         ),
+        'spot_radius': spot_radius,
     }
 
 
@@ -906,7 +921,7 @@ def generate_config(
     out_path,
     image=None,
     segmentations=None,
-    obs_type='cell',
+    obs_type=None,
     metrics=True,
     sample=None,
 ):
@@ -934,8 +949,9 @@ def generate_config(
       Image element override passed to detection.
     segmentations: str or None
       Segmentation element override passed to detection.
-    obs_type: str
-      Label used for observations throughout views.
+    obs_type: str or None
+      Label used for observations throughout views; 'spot' for spot stores
+      and 'cell' otherwise when None.
     metrics: bool
       Whether to add Metric layer and its list, which replaces Status panel.
     sample: str or None
@@ -951,8 +967,15 @@ def generate_config(
     paths = detect_elements(
         zarr_path, image=image, segmentations=segmentations, sample=sample
     )
-    if not metrics:
+    spots = paths['spot_radius'] is not None
+    if obs_type is None:
+        obs_type = 'spot' if spots else 'cell'
+    # Metric layer is second segmentation channel; spot layer has no channels,
+    # and builds own lasso index, so needs no centroids
+    if not metrics or spots:
         paths['metric_cols'] = []
+    if spots:
+        paths['centroids_path'] = None
     store_samples = read_store_samples(zarr_path)
     # Whole multi-sample store: merged table's UMAPs, plots and sample
     # thumbnails, no spatial view, as detected elements are first sample's
@@ -1020,7 +1043,12 @@ def generate_config(
         dataset.add_object(
             SpatialDataWrapper(
                 sdata_url=sdata_url,
-                obs_segmentations_path=paths['obs_segmentations_path'],
+                obs_spots_path=(
+                    paths['obs_segmentations_path'] if spots else None
+                ),
+                obs_segmentations_path=(
+                    None if spots else paths['obs_segmentations_path']
+                ),
                 table_path=table_path,
                 coordinate_system=paths['coordinate_system'],
                 region=region,
@@ -1142,8 +1170,8 @@ def generate_config(
     # Mean expression and fraction expressing per cell set, for selected genes
     # only; heatmap always drew all genes and loaded whole matrix
     dot_plot = vc.add_view('dotPlot', dataset=dataset)
-    # Worded like violin plot's "Expression by Cell Set"
-    dot_plot.set_props(title='Mean Expression by Cell Set')
+    # Worded like violin plot's "Expression by Cell Set", which follows obsType
+    dot_plot.set_props(title=f'Mean Expression by {obs_type.capitalize()} Set')
     feature_list = vc.add_view('featureList', dataset=dataset)
     # Shift-click enables multi-gene selection with distinct transcript colours
     # Defaults false for single-select behavior and no deselection
@@ -1162,6 +1190,9 @@ def generate_config(
     ]
     if len(cell_type_lists) > 1:
         breakdown.set_props(rowHierarchies=cell_type_lists)
+    # Spot rows are their first set list (often clusters), not cell types
+    if obs_type != 'cell':
+        breakdown.set_props(title=f'{obs_type.capitalize()} Sets in Selection')
     description = vc.add_view('description', dataset=dataset)
     description.set_props(description=os.path.splitext(name)[0])
     # Metric list takes status panel's slot, least used one
@@ -1393,7 +1424,38 @@ def generate_config(
 
     # Image layer left to viewer's own initialisation, which derives contrast
     # windows from pixel statistics this script cannot read without pyramid
-    if not study:
+    if not study and spots:
+        vc.link_views_by_dict(
+            [spatial, controller],
+            {
+                'spotLayer': CL([
+                    {
+                        'obsType': obs_type,
+                        'spatialLayerVisible': True,
+                        'spatialLayerOpacity': 1,
+                        'spatialSpotRadius': paths['spot_radius'],
+                        # Filled, as spots are few pixels wide at full view
+                        'spatialSpotFilled': True,
+                        'spatialSpotStrokeWidth': 1,
+                        'obsColorEncoding': color_encoding,
+                        'featureSelection': feature_selection,
+                        'obsSetSelection': obs_set_selection,
+                        'obsSetColor': obs_set_color,
+                        'featureValueColormapRange': colormap_range,
+                        # Read per layer for spots, unlike segmentation channels
+                        'featureAggregationStrategy': aggregation_strategy,
+                        'obsHighlight': obs_highlight,
+                        'tooltipsVisible': True,
+                        'tooltipCrosshairsVisible': True,
+                        'legendVisible': True,
+                    }
+                ])
+            },
+            scope_prefix=get_initial_coordination_scope_prefix(
+                DATASET_UID, 'obsSpots'
+            ),
+        )
+    elif not study:
         vc.link_views_by_dict(
             [spatial, controller],
             {'segmentationLayer': CL(segmentation_layers)},
@@ -1604,8 +1666,9 @@ def parse_args():
     )
     parser.add_argument(
         '--obs-type',
-        default='cell',
-        help='Observation label used across views (default: cell).',
+        default=None,
+        help='Observation label used across views (default: spot for spot '
+        'stores, cell otherwise).',
     )
     parser.add_argument(
         '--sample',

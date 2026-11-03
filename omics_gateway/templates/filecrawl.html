@@ -308,6 +308,11 @@
               <!-- Cells -->
               <td>
                 <span class="cell-small">{{ dataset.cell_count or "" }}</span>
+                {# Classic Visium counts spots, each holding several cells #}
+                {% if dataset.cell_count and "Visium" in
+                (dataset.assay or "").split(";")|map("trim")|list %}
+                <span class="cell-small text-muted d-block">spots</span>
+                {% endif %}
               </td>
 
               <!-- Genes -->

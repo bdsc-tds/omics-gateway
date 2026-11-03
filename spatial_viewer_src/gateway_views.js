@@ -98,6 +98,7 @@ function countCellTypes(
   selection,
   colours,
   rowHierarchies,
+  obsType,
 ) {
   const tree = obsSets?.tree || [];
   const lists = tree.filter((node) => rowHierarchies?.includes(node.name));
@@ -127,7 +128,7 @@ function countCellTypes(
         label: path[path.length - 1],
         ids: idsOf([path]),
       }))
-    : [{ label: 'Selected cells', ids: idsOf(selection) }];
+    : [{ label: `Selected ${obsType}s`, ids: idsOf(selection) }];
   const outside = new Set();
   const columns = sources.map(({ label, ids }) => {
     const counts = new Map();
@@ -196,7 +197,9 @@ function bar(share, fill, opacity) {
   });
 }
 
-function countsTable(result, showEmpty, toggleEmpty) {
+function countsTable(result, showEmpty, toggleEmpty, obsType) {
+  // Spot rows come from set list (often clusters), not cell types
+  const rowNoun = obsType === 'cell' ? 'type' : 'set';
   const { columns } = result;
   // Small lasso leaves most types at 0 in every column, burying others
   const isEmpty = ({ type }) =>
@@ -279,7 +282,7 @@ function countsTable(result, showEmpty, toggleEmpty) {
         `${columns.length + result.hidden} selections.`
       : null,
     result.outside
-      ? `${result.outside.toLocaleString('en')} selected cells from other ` +
+      ? `${result.outside.toLocaleString('en')} selected ${obsType}s from other ` +
         'samples not counted.'
       : null,
   ]
@@ -307,7 +310,7 @@ function countsTable(result, showEmpty, toggleEmpty) {
           'button',
           { type: 'button', style: TOGGLE_STYLE, onClick: toggleEmpty },
           `${showEmpty ? 'Hide' : 'Show'} ${empty} ` +
-            `${empty === 1 ? 'type' : 'types'} with no cells`,
+            `${rowNoun}${empty === 1 ? '' : 's'} with no ${obsType}s`,
         )
       : null,
   );
@@ -348,17 +351,25 @@ function CellTypeCounts(props) {
         obsSetSelection,
         obsSetColor,
         rowHierarchies,
+        obsType,
       ),
-    [obsSets, additionalObsSets, obsSetSelection, obsSetColor, rowHierarchies],
+    [
+      obsSets,
+      additionalObsSets,
+      obsSetSelection,
+      obsSetColor,
+      rowHierarchies,
+      obsType,
+    ],
   );
   const body = result
-    ? countsTable(result, showEmpty, () => setShowEmpty(!showEmpty))
+    ? countsTable(result, showEmpty, () => setShowEmpty(!showEmpty), obsType)
     : h(
         // Plain span, as dot plot's empty message, so card font applies
         'span',
         null,
-        'Draw a region with the lasso, or select cell sets, to see their ' +
-          'cell types.',
+        `Draw a region with the lasso, or select ${obsType} sets, to see ` +
+          `their ${obsType === 'cell' ? 'cell types' : 'composition'}.`,
       );
   return h(
     GatewayTitleInfo,
@@ -367,7 +378,7 @@ function CellTypeCounts(props) {
       info: result
         ? `${result.columns
             .map(({ total }) => total.toLocaleString('en'))
-            .join(' vs ')} cells`
+            .join(' vs ')} ${obsType}s`
         : null,
       theme,
       isScroll: true,
