@@ -2,7 +2,8 @@
 Script to generate datasets.tsv from .h5ad files and SpatialData stores.
 
 Rows come from each dataset's uns metadata: .h5ad files carry it from team
-pipeline, and write_store_metadata.py writes same keys into .zarr stores.
+pipeline, and write_store_metadata() below writes same keys into .zarr
+stores for spatial converters.
 
 Usage:
     python data_prep/generate_datasets_tsv.py \
@@ -42,7 +43,7 @@ TSV_COLUMNS = [
 ]
 
 # uns key read for each TSV column; year is extracted from article_date. Also
-# defines keys write_store_metadata.py accepts
+# defines keys load_metadata() accepts
 UNS_KEYS = {
     'dataset_id': 'dataset_name_short',
     'name': 'dataset_name',
@@ -364,6 +365,97 @@ def extract_zarr_metadata(store_path):
         return empty_metadata(stem)
 
 
+# Function to read and validate metadata YAML
+def load_metadata(metadata_path):
+    """
+    Read metadata YAML and reject keys this script would ignore.
+
+    Called before conversion too, so typo fails fast rather than after it.
+    Stores then carry same uns keys as team's .h5ad files, so this script
+    builds their datasets.tsv rows same way.
+
+    Metadata file is flat YAML mapping of uns keys (UNS_KEYS values) to
+    string or list of strings, e.g.:
+
+        dataset_name_short: xenium_skin_1
+        dataset_name: Xenium Skin (sample 1)
+        article_title: Xenium spatial transcriptomics of skin
+        assay: Xenium
+        disease: Psoriasis
+        tissue: Skin
+        patients: 1
+        article_date: 2026
+        article_authors: J. Doe
+
+    cell_count and gene_count can be left out: they default to table size.
+
+    Parameters:
+    -----------
+    metadata_path: str
+      Path to YAML file mapping uns keys to values.
+
+    Returns:
+    --------
+    metadata: dict
+      Mapping of uns key to string, or to list of strings.
+    """
+    with open(metadata_path) as handle:
+        metadata = yaml.safe_load(handle) or {}
+    unknown = sorted(set(metadata) - set(UNS_KEYS.values()))
+    if unknown:
+        raise ValueError(
+            f'Unknown metadata keys in {metadata_path}: {", ".join(unknown)}. '
+            f'Expected: {", ".join(UNS_KEYS.values())}.'
+        )
+
+    # Strings throughout, as in team's .h5ad uns; YAML parses 2025 as int
+    return {
+        key: [str(v) for v in value]
+        if isinstance(value, list)
+        else ('' if value is None else str(value))
+        for key, value in metadata.items()
+    }
+
+
+# Function to write metadata into store's table uns
+def write_store_metadata(store_path, metadata):
+    """
+    Write metadata into uns of store's table and refresh consolidated metadata.
+
+    Only uns elements are written, leaving rest of table untouched: rewriting
+    whole table risks undoing conversion fixes such as string dtypes.
+
+    Parameters:
+    -----------
+    store_path: str
+      Path to SpatialData .zarr store.
+    metadata: dict
+      Mapping returned by load_metadata.
+
+    Returns:
+    --------
+    keys: list of str
+      Keys written, sorted.
+    """
+    import numpy as np
+    import zarr
+    from anndata.io import write_elem
+
+    uns = zarr.open_group(
+        os.path.join(store_path, TABLE_PATH, 'uns'), mode='r+'
+    )
+    for key, value in metadata.items():
+        if isinstance(value, list):
+            value = np.array(value, dtype=object)
+        write_elem(uns, key, value)
+
+    # Root index lists every node; stale one hides new keys from SpatialData
+    root = zarr.open_group(store_path, mode='r+', use_consolidated=False)
+    zarr.consolidate_metadata(root.store)
+
+    return sorted(metadata)
+
+
 # Function to recursively find .h5ad files and SpatialData stores
 def find_dataset_files(data_dir):
     """
@@ -557,7 +649,7 @@ def generate_tsv(
         if not meta['dataset_id']:
             print(
                 f'  Skipped: no {UNS_KEYS["dataset_id"]} in table metadata '
-                '(see write_store_metadata.py)'
+                '(see load_metadata())'
             )
             continue
         rows.append({'file_path': store_path, **meta})

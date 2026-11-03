@@ -30,11 +30,9 @@ import re
 import shutil
 import sys
 
-# Import analysis modules
-import zarr
-
-# Import sibling script; data_prep/ is on sys.path when scripts run directly
-from generate_datasets_tsv import TABLE_PATH, extract_zarr_metadata
+# Import sibling modules; data_prep/ is on sys.path when scripts run directly
+from generate_datasets_tsv import extract_zarr_metadata
+from spatial_common import read_store_samples
 
 # Report file and metrics table each technology's pipeline writes
 REPORT_FILES = {
@@ -255,40 +253,6 @@ def scrub_report(text, source):
     return scrubbed
 
 
-# Function to read per-sample cell counts and diseases from store
-def read_store_samples(store_path):
-    """
-    Read cells kept and disease per sample from store's table, loading only
-    those obs columns.
-
-    Parameters:
-    -----------
-    store_path: str
-      Path to .zarr store.
-
-    Returns:
-    --------
-    samples: dict
-      Sample key to {'cells': int, 'disease': str}; empty for single-sample
-      store, whose table has no sample column.
-    """
-    from anndata.io import read_elem
-
-    obs = zarr.open_group(os.path.join(store_path, TABLE_PATH), mode='r')['obs']
-    if 'sample' not in obs:
-        return {}
-    sample = read_elem(obs['sample'])
-    disease = read_elem(obs['disease']) if 'disease' in obs else None
-    samples = {}
-    for key in sample.categories:
-        mask = sample == key
-        samples[str(key)] = {
-            'cells': int(mask.sum()),
-            'disease': str(disease[mask][0]) if disease is not None else '',
-        }
-    return samples
-
-
 # Function to build metrics.json row for one sample
 def build_row(key, sample_dir, technology, store_sample, description):
     """
@@ -451,7 +415,8 @@ def main():
         sys.exit(f'Samples mix technologies: {sorted(technologies)}')
     technology = technologies.pop()
 
-    store_samples = read_store_samples(args.store)
+    # Keyed by display label, which --sample keys repeat
+    store_samples = {s['label']: s for s in read_store_samples(args.store)}
     store_disease = extract_zarr_metadata(args.store)['disease']
     missing = [
         key for key, _ in samples if store_samples and key not in store_samples

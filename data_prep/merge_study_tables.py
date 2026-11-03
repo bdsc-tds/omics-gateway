@@ -3,7 +3,7 @@ Script to add study-wide merged table to multi-sample Visium, Visium HD or
 Xenium store.
 
 Concatenates per-sample tables written by convert_visium.py,
-convert_visium_hd.py or convert_xenium_sample.py into 'tables/table', which
+convert_visium_hd.py or convert_xenium.py into 'tables/table', which
 annotates every sample's cell boundaries or spots and carries study metadata
 read by generate_datasets_tsv.py.
 Adds 'sample' and 'disease' columns. Keeps only joint analysis UMAP
@@ -13,6 +13,10 @@ joint UMAP, for sample's Merged UMAP view.
 
 Run again after any sample is converted again: existing tables are
 replaced.
+
+--metadata-only writes --metadata into existing store's table, single-sample
+stores included, without merging (file format in load_metadata() of
+generate_datasets_tsv.py).
 
 Usage (cluster batch job, once every sample is converted):
     python data_prep/merge_study_tables.py \
@@ -24,28 +28,32 @@ Usage (cluster batch job, once every sample is converted):
 
 # Import utility modules
 import argparse
+import os
+import sys
 import time
 
 import anndata as ad
 import numpy as np
 import pandas as pd
 
-# Import sibling scripts; data_prep/ is on sys.path when scripts run directly
-from convert_visium_hd import remove_existing_elements
-from convert_xenium import (
+# Import sibling modules; data_prep/ is on sys.path when scripts run directly
+from generate_datasets_tsv import (
+    TABLE_PATH,
+    load_metadata,
+    write_store_metadata,
+)
+from spatial_common import (
+    ALL_CELLS_UMAP_SUFFIX,
     downcast_int64_obs,
     normalise_string_dtypes,
     peak_rss_gb,
+    remove_existing_elements,
 )
 from spatialdata import read_zarr
 from spatialdata.models import TableModel
-from write_store_metadata import load_metadata, write_store_metadata
 
 # Merged table element, where generate_datasets_tsv.py looks for metadata
 MERGED_TABLE = 'table'
-
-# Per-sample table of all cells' merged UMAP, read by config generator
-ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
 
 
 # Function to concatenate per-sample tables into one
@@ -144,7 +152,7 @@ def all_cells_umap(merged, region):
 # Function to parse command-line arguments
 def parse_args():
     """
-    Parse command-line arguments for merged table creation.
+    Parse command-line arguments for merged table creation or metadata update.
 
     Returns:
     --------
@@ -159,7 +167,6 @@ def parse_args():
         '--sample',
         nargs=3,
         action='append',
-        required=True,
         metavar=('KEY', 'LABEL', 'DISEASE'),
         help='Sample key in store, display label and disease; repeat per '
         'sample, in display order.',
@@ -167,8 +174,18 @@ def parse_args():
     parser.add_argument(
         '--metadata', default=None, help='YAML file of study uns keys.'
     )
+    parser.add_argument(
+        '--metadata-only',
+        action='store_true',
+        help='Only write --metadata into the existing table, of any store.',
+    )
+    args = parser.parse_args()
+    if args.metadata_only and not args.metadata:
+        parser.error('--metadata-only needs --metadata.')
+    if not args.metadata_only and not args.sample:
+        parser.error('--sample is required unless --metadata-only is given.')
 
-    return parser.parse_args()
+    return args
 
 
 if __name__ == '__main__':
@@ -176,6 +193,12 @@ if __name__ == '__main__':
     start = time.time()
     # Read first, so typo fails before store changes
     metadata = load_metadata(args.metadata) if args.metadata else None
+    if args.metadata_only:
+        if not os.path.isdir(os.path.join(args.zarr, TABLE_PATH)):
+            raise FileNotFoundError(f'No table found in store {args.zarr}.')
+        keys = write_store_metadata(args.zarr, metadata)
+        print(f'Wrote {", ".join(keys)} to {args.zarr}')
+        sys.exit()
 
     umap_tables = [f'{key}{ALL_CELLS_UMAP_SUFFIX}' for key, _, _ in args.sample]
     remove_existing_elements(args.zarr, [MERGED_TABLE, *umap_tables])
