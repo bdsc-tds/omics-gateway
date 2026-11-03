@@ -3,7 +3,7 @@ Script to add study-wide merged table to multi-sample Visium, Visium HD or
 Xenium store.
 
 Concatenates per-sample tables written by convert_visium.py,
-convert_visium_hd.py or convert_xenium_sample.py into 'tables/table', which
+convert_visium_hd.py or convert_xenium.py into 'tables/table', which
 annotates every sample's cell boundaries or spots and carries study metadata
 read by generate_datasets_tsv.py.
 Adds 'sample' and 'disease' columns. Keeps only joint analysis UMAP

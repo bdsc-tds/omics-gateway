@@ -18,7 +18,7 @@ microns per pixel comes from spot centre spacing, 100 um on every Visium
 slide.
 
 Only spots of study's joint analysis are kept, read from CSV in
-convert_xenium_sample.py's format; every further column becomes set list.
+convert_xenium.py's study sample format; every further column becomes set list.
 
 Usage (one sample per call, chained, since parallel writes race on root
 metadata):
