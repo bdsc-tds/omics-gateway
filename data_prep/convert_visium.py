@@ -30,40 +30,36 @@ metadata):
 
 # Import utility modules
 import argparse
-import os
 import time
 
 import anndata as ad
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import zarr
+from scipy.spatial import cKDTree
+from shapely.geometry import Point
 
-# Import sibling scripts; data_prep/ is on sys.path when scripts run directly
-from convert_visium_hd import (
+# Import sibling module; data_prep/ is on sys.path when scripts run directly
+from spatial_common import (
     CENTROIDS_KEY,
+    SPOTS_SUFFIX,
     TILE,
-    set_rgb_channel_rendering,
-    write_elements,
-)
-from convert_xenium import (
     add_genes_detected,
+    add_set_columns,
     downcast_int64_obs,
     normalise_string_dtypes,
     peak_rss_gb,
+    read_joint_cells,
+    set_microns_per_pixel,
+    set_rgb_channel_rendering,
+    write_elements,
 )
-from convert_xenium_sample import JOINT_KEY_COLUMNS, read_joint_cells
-from scipy.spatial import cKDTree
-from shapely.geometry import Point
 from spatialdata.models import Image2DModel, ShapesModel, TableModel
 from spatialdata.transformations import Identity
 
 # Visium slide geometry, identical on every capture area
 SPOT_PITCH_UM = 100
 SPOT_DIAMETER_UM = 55
-
-# Region suffix; config generator's SPOTS_SUFFIX must match
-SPOTS_SUFFIX = '_spots'
 
 
 # Function to measure full-resolution pixel size from spot spacing
@@ -179,10 +175,7 @@ def build_table(adata, spots, prefix, region, frame_xy):
     obs['region'] = pd.Categorical([region] * len(obs))
     # Per-spot QC measurement, offered as viewer metric
     obs['umi_counts'] = np.asarray(counts.X.sum(axis=1)).ravel().astype('int32')
-    set_cols = [c for c in spots.columns if c not in JOINT_KEY_COLUMNS]
-    for column in set_cols:
-        values = spots[column].fillna('Unassigned').astype(str)
-        obs[column] = pd.Categorical(values.to_numpy())
+    add_set_columns(obs, spots, spots.index)
 
     var_cols = [c for c in ('gene_ids', 'feature_types') if c in counts.var]
     table = ad.AnnData(X=counts.X, obs=obs, var=counts.var[var_cols].copy())
@@ -272,11 +265,8 @@ if __name__ == '__main__':
         {region: shapes, f'{prefix}table': table, f'{prefix}he': image},
     )
     set_rgb_channel_rendering(args.out, f'{prefix}he')
-    # Scale bar reads it; hires pixel is full-res pixel divided by scale
-    group = zarr.open_group(
-        os.path.join(args.out, 'images', f'{prefix}he'), mode='r+'
-    )
-    group.attrs.update(microns_per_pixel=microns / scale)
+    # Hires pixel is full-res pixel divided by scale
+    set_microns_per_pixel(args.out, f'{prefix}he', microns / scale)
     backed.write_consolidated_metadata()
     print(
         f'done in {time.time() - start:.1f}s, peak RSS {peak_rss_gb():.2f} GB '

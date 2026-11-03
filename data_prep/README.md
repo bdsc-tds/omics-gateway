@@ -28,6 +28,8 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | `downscale_qc_figures.py` | `omics-gateway` | a lower-resolution copy of the QC figures |
 | `build_qc_thumbnails.py` | `omics-gateway` | the QC report thumbnails |
 
+The spatial scripts share their common code through `spatial_common.py`, which is not run on its own.
+
 Where these files end up on the server is described under "Data layout" in the main README.
 
 ## Terms used here

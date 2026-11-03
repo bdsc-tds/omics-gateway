@@ -33,7 +33,6 @@ rotate it.
 # Import utility modules
 import argparse
 import os
-import resource
 import time
 
 import dask
@@ -42,8 +41,17 @@ import numpy as np
 import pandas as pd
 import spatialdata_io
 
-# Import sibling script; data_prep/ is on sys.path when scripts run directly
+# Import sibling modules; data_prep/ is on sys.path when scripts run directly
 from generate_datasets_tsv import load_metadata, write_store_metadata
+from spatial_common import (
+    CENTROIDS_KEY,
+    add_genes_detected,
+    downcast_int64_obs,
+    normalise_string_dtypes,
+    peak_rss_gb,
+    quarter_turn_matrix,
+    transform_geometry,
+)
 from spatialdata import SpatialData
 from spatialdata.models import Image2DModel, PointsModel, TableModel
 from spatialdata.transformations import (
@@ -82,19 +90,6 @@ MIN_TRANSCRIPT_QV = 20
 # Row group small enough that browser can fetch spatial tile as byte range
 # instead of pulling whole file
 TRANSCRIPT_ROW_GROUP_SIZE = 50_000
-
-
-# Function to report peak resident memory of process
-def peak_rss_gb():
-    """
-    Report peak resident set size of current process.
-
-    Returns:
-    --------
-    peak: float
-      Maximum resident set size reached so far, in gibibytes.
-    """
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024
 
 
 # Function to attach cell type labels to table
@@ -151,7 +146,7 @@ def add_umap(table, csv_path):
 
 
 # Function to add cell centroids in viewer's rendered coordinates
-def add_global_centroids(sdata, region, key='spatial_global'):
+def add_global_centroids(sdata, region, key=CENTROIDS_KEY):
     """
     Copy table's cell centroids into obsm, scaled to region's coordinate system.
 
@@ -187,98 +182,6 @@ def add_global_centroids(sdata, region, key='spatial_global'):
     table.obsm[key] = (homogeneous @ affine.T)[:, :2]
 
     return [float(affine[0, 0]), float(affine[1, 1])]
-
-
-# Function to count genes detected per cell
-def add_genes_detected(table):
-    """
-    Store number of genes with non-zero count per cell as obs column.
-
-    Viewer offers it as metric beside counts. 10x matrices hold no explicit
-    zeros, so stored entries per row are genes detected.
-
-    Parameters:
-    -----------
-    table: anndata.AnnData
-      Table with sparse counts in X; obs gains 'genes_detected' in place.
-
-    Returns:
-    --------
-    None
-    """
-    table.obs['genes_detected'] = table.X.getnnz(axis=1).astype('int32')
-
-
-# Function to make string columns readable by viewer
-def normalise_string_dtypes(table):
-    """
-    Rewrite pandas string-dtype columns as plain object columns.
-
-    AnnData writes pandas `str` dtype as 'nullable-string-array', which is zarr
-    group of mask and values arrays. Vitessce only reads plain 'string-array',
-    so gene names and any string annotation stored like this load as empty and
-    heatmap/gene list render nothing.
-
-    Parameters:
-    -----------
-    table: anndata.AnnData
-      Table element whose var index and obs columns are rewritten in place.
-
-    Returns:
-    --------
-    converted: list of str
-      Names of columns that were rewritten ('var index' for index).
-    """
-    converted = []
-    if table.var.index.dtype != object:
-        table.var.index = pd.Index(table.var.index.astype(object))
-        converted.append('var index')
-    for frame_name, frame in (('obs', table.obs), ('var', table.var)):
-        for column in frame.columns:
-            dtype = frame[column].dtype
-            # Categoricals already write their categories as plain string-array,
-            # and SpatialData requires region column to stay categorical
-            if isinstance(dtype, pd.CategoricalDtype) or dtype == object:
-                continue
-            if pd.api.types.is_string_dtype(frame[column]):
-                frame[column] = frame[column].astype(object)
-                converted.append(f'{frame_name}/{column}')
-
-    return converted
-
-
-# Function to make integer obs columns loadable as viewer metrics
-def downcast_int64_obs(table):
-    """
-    Rewrite int64 obs columns as int32 when their values fit.
-
-    Zarr reader in viewer returns int64 as BigInt64Array, which its obs column
-    loader cannot copy into Float32Array: load throws and every metric sharing
-    that file definition comes up blank. Xenium counts peak in low thousands.
-
-    Parameters:
-    -----------
-    table: anndata.AnnData
-      Table element whose obs columns are rewritten in place.
-
-    Returns:
-    --------
-    converted: list of str
-      Names of obs columns that were downcast.
-    """
-    info = np.iinfo('int32')
-    converted = []
-    for column in table.obs.columns:
-        values = table.obs[column]
-        if values.dtype != 'int64':
-            continue
-        # Out-of-range column stays int64; config generator then skips it
-        if values.min() < info.min or values.max() > info.max:
-            continue
-        table.obs[column] = values.astype('int32')
-        converted.append(column)
-
-    return converted
 
 
 # Function to point table at segmentation element that was written
@@ -344,38 +247,6 @@ def reindex_nucleus_boundaries(sdata):
     del nuclei['cell_id']
 
     return int(nuclei.index.duplicated().sum())
-
-
-# Function to build clockwise quarter-turn rotation of image frame
-def quarter_turn_matrix(degrees, width, height):
-    """
-    Build affine matrix rotating global pixel frame clockwise by quarter turns.
-
-    y axis points down, so clockwise on screen. Translation keeps rotated
-    image in positive quadrant with origin at its top-left corner, so image
-    stays on identity transform.
-
-    Parameters:
-    -----------
-    degrees: int
-      Clockwise rotation: 90, 180 or 270.
-    width: int
-      Image width in global pixels, before rotation.
-    height: int
-      Image height in global pixels, before rotation.
-
-    Returns:
-    --------
-    matrix: numpy.ndarray
-      3x3 affine matrix acting on (x, y, 1) column vectors.
-    """
-    matrices = {
-        90: [[0, -1, height], [1, 0, 0], [0, 0, 1]],
-        180: [[-1, 0, width], [0, -1, height], [0, 0, 1]],
-        270: [[0, 1, 0], [-1, 0, width], [0, 0, 1]],
-    }
-
-    return np.array(matrices[degrees], dtype='float64')
 
 
 # Function to express global rotation in element's own coordinates
@@ -448,18 +319,11 @@ def rotate_sample(sdata, degrees, image_name='morphology_focus'):
         transformations={'global': Identity()},
     )
 
-    # shapely order: x' = a x + b y + xoff, y' = d x + e y + yoff
     for name in sdata.shapes:
         shapes = sdata.shapes[name]
-        m = element_rotation(shapes, rotation)
-        shapes.geometry = shapes.geometry.affine_transform([
-            m[0, 0],
-            m[0, 1],
-            m[1, 0],
-            m[1, 1],
-            m[0, 2],
-            m[1, 2],
-        ])
+        shapes.geometry = transform_geometry(
+            shapes.geometry, element_rotation(shapes, rotation)
+        )
 
     if 'transcripts' in sdata.points:
         points = sdata.points['transcripts']

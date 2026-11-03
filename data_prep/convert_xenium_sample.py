@@ -36,61 +36,28 @@ import geopandas as gpd
 import pandas as pd
 
 # Import sibling scripts; data_prep/ is on sys.path when scripts run directly
-from convert_visium_hd import write_elements
 from convert_xenium import (
     MIN_TRANSCRIPT_QV,
     TRANSCRIPT_ROW_GROUP_SIZE,
-    add_genes_detected,
     add_global_centroids,
-    downcast_int64_obs,
-    normalise_string_dtypes,
-    peak_rss_gb,
     prepare_transcripts,
     read_xenium,
     reindex_nucleus_boundaries,
     retarget_table_region,
     rotate_sample,
 )
+from spatial_common import (
+    add_genes_detected,
+    add_set_columns,
+    downcast_int64_obs,
+    normalise_string_dtypes,
+    peak_rss_gb,
+    read_joint_cells,
+    write_elements,
+)
 from spatialdata.models import ShapesModel
 from spatialdata.transformations import get_transformation, set_transformation
 from vitessce.data_utils import sdata_points_modify_row_group_size
-
-# Joint analysis CSV columns that are not cell sets
-JOINT_KEY_COLUMNS = [
-    'sample',
-    'cell_id',
-    'umap_1',
-    'umap_2',
-    'sample_umap_1',
-    'sample_umap_2',
-]
-
-
-# Function to read joint analysis rows of one sample
-def read_joint_cells(joint_csv, sample_id):
-    """
-    Read joint analysis rows of one sample, indexed by Xenium cell id.
-
-    Parameters:
-    -----------
-    joint_csv: str
-      CSV with JOINT_KEY_COLUMNS and cell set columns.
-    sample_id: str
-      Value of 'sample' column selecting this sample's rows.
-
-    Returns:
-    --------
-    cells: pandas.DataFrame
-      Cell set and UMAP columns, indexed by unprefixed cell id.
-    """
-    joint = pd.read_csv(joint_csv)
-    cells = joint[joint['sample'] == sample_id].set_index('cell_id')
-    if cells.empty:
-        raise ValueError(f'No cells of {sample_id} in {joint_csv}.')
-    if not cells.index.is_unique:
-        raise ValueError(f'Duplicate cell ids for {sample_id} in {joint_csv}.')
-
-    return cells.drop(columns='sample')
 
 
 # Function to keep joint analysis cells of shapes element under sample's names
@@ -156,10 +123,7 @@ def build_table(sdata, cells, key):
     table = sdata.tables['table']
     ids = table.obs['cell_id'].to_numpy()
 
-    set_cols = [c for c in cells.columns if c not in JOINT_KEY_COLUMNS]
-    for column in set_cols:
-        values = cells[column].reindex(ids).fillna('Unassigned').astype(str)
-        table.obs[column] = pd.Categorical(values.to_numpy())
+    add_set_columns(table.obs, cells, ids)
     for obsm_key, stem in (
         ('X_umap', 'umap'),
         ('X_umap_sample', 'sample_umap'),

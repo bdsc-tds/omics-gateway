@@ -34,7 +34,6 @@ import argparse
 import json
 import math
 import os
-import shutil
 import time
 
 import anndata as ad
@@ -47,53 +46,26 @@ import scanpy as sc
 import tifffile
 import zarr
 
-# Import sibling script; data_prep/ is on sys.path when scripts run directly
-from convert_xenium import (
+# Import sibling module; data_prep/ is on sys.path when scripts run directly
+from spatial_common import (
+    CENTROIDS_KEY,
+    TILE,
     add_genes_detected,
     downcast_int64_obs,
     normalise_string_dtypes,
     peak_rss_gb,
     quarter_turn_matrix,
+    read_joint_cells,
+    set_microns_per_pixel,
+    set_rgb_channel_rendering,
+    transform_geometry,
+    write_elements,
 )
-from spatialdata import SpatialData, read_zarr
 from spatialdata.models import Image2DModel, ShapesModel, TableModel
 from spatialdata.transformations import Identity, Scale
 
-# Tile edge in viewer; also chunk size of every image level
-TILE = 2048
-
 # RCTD classes whose first_type is not confident
 REJECT_CLASSES = {'reject'}
-
-# Centroids pre-scaled to rendered coordinates, read by config generator
-CENTROIDS_KEY = 'spatial_global'
-
-
-# Function to read analysts' QC-passed cells of one sample
-def read_qc_cells(merged_csv, sample_id):
-    """
-    Read merged-object rows of one sample, indexed by Space Ranger cell id.
-
-    Parameters:
-    -----------
-    merged_csv: str
-      CSV exported by extract_merged.R.
-    sample_id: str
-      Space Ranger sample id as in merged object's orig.ident (e.g. A1_S1).
-
-    Returns:
-    --------
-    cells: pandas.DataFrame
-      Columns cluster, umap_1, umap_2, indexed by cell id ('cellid_...-1').
-    """
-    merged = pd.read_csv(merged_csv)
-    cells = merged[merged['sample'] == sample_id].set_index('cell_id')
-    if cells.empty:
-        raise ValueError(f'No cells of {sample_id} in {merged_csv}.')
-    if not cells.index.is_unique:
-        raise ValueError(f'Duplicate cell ids for {sample_id} in {merged_csv}.')
-
-    return cells[['cluster', 'umap_1', 'umap_2']]
 
 
 # Function to read Space Ranger polygons of kept cells
@@ -126,16 +98,7 @@ def read_polygons(geojson_path, cell_ids, key, scale, rotation=None):
     ids = ids[frame.index]
     geometry = frame.geometry
     if rotation is not None:
-        # shapely order: x' = a x + b y + xoff, y' = d x + e y + yoff
-        m = rotation
-        geometry = geometry.affine_transform([
-            m[0, 0],
-            m[0, 1],
-            m[1, 0],
-            m[1, 1],
-            m[0, 2],
-            m[1, 2],
-        ])
+        geometry = transform_geometry(geometry, rotation)
     frame = gpd.GeoDataFrame(
         geometry=geometry.values,
         index=pd.Index(f'{key}_' + ids.values, name='cell_id'),
@@ -157,7 +120,8 @@ def build_table(outs, cells, rctd_csv, prefix, region, cell_shapes, scale):
     outs: str
       Space Ranger outs directory.
     cells: pandas.DataFrame
-      QC-passed cells from read_qc_cells().
+      QC-passed cells from read_joint_cells(), Seurat's cluster and UMAP
+      columns only.
     rctd_csv: str
       RCTD result with 'Barcode', 'spot_class' and 'first_type' columns.
     prefix: str
@@ -287,126 +251,17 @@ def build_he_pyramid(he_path, downsample, key, rotate=0):
     )
 
 
-# Function to delete elements written by earlier run
-def remove_existing_elements(out_path, names):
+# Function to read pixel size of image's level s0 from Space Ranger
+def scan_microns_per_pixel(outs, downsample):
     """
-    Delete named elements from store on disk and consolidate metadata again.
+    Compute microns per pixel of image's level s0 from Space Ranger's scale
+    factors, for viewer's scale bar.
 
-    SpatialData can neither overwrite nor delete element loaded from same
-    store, so sample being converted again is removed before store is read.
+    Space Ranger shapes are in pixels, not microns, so it cannot be derived
+    from them as for Xenium.
 
     Parameters:
     -----------
-    out_path: str
-      Existing .zarr store.
-    names: iterable of str
-      Element names to remove wherever found.
-    """
-    removed = []
-    for group in ('images', 'labels', 'points', 'shapes', 'tables'):
-        for name in names:
-            path = os.path.join(out_path, group, name)
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-                removed.append(f'{group}/{name}')
-    if removed:
-        # Root metadata still lists removed elements, which read_zarr opens
-        zarr.consolidate_metadata(out_path)
-        print(f'  replacing {", ".join(removed)}', flush=True)
-
-
-# Function to write elements into new or existing store
-def write_elements(out_path, elements):
-    """
-    Write elements one by one into store, creating store if needed.
-
-    Elements already in store, from earlier run of same sample, are replaced.
-
-    Parameters:
-    -----------
-    out_path: str
-      Destination .zarr store.
-    elements: dict
-      Element name to element, written in insertion order.
-
-    Returns:
-    --------
-    backed: spatialdata.SpatialData
-      Store-backed object.
-    """
-    if os.path.isdir(out_path):
-        remove_existing_elements(out_path, elements)
-        backed = read_zarr(out_path)
-    else:
-        backed = SpatialData()
-        backed.write(out_path)
-    for name, element in elements.items():
-        step = time.time()
-        backed[name] = element
-        backed.write_element(name, overwrite=True)
-        print(
-            f'  wrote {name} in {time.time() - step:.1f}s '
-            f'(peak RSS {peak_rss_gb():.2f} GB)',
-            flush=True,
-        )
-
-    return backed
-
-
-# Function to make RGB image render as true-colour channels
-def set_rgb_channel_rendering(out_path, image_name):
-    """
-    Give image's R, G, B channels pure colours and full 0-255 windows.
-
-    Viewer initialises each channel's colour and contrast from these OME
-    'omero' fields; without them it uses its fluorescence palette and H&E
-    turns violet. Rendered additively, they reproduce scan's colours, while
-    each channel keeps own row, toggle and contrast slider.
-
-    Parameters:
-    -----------
-    out_path: str
-      SpatialData .zarr store.
-    image_name: str
-      Image element name.
-
-    Returns:
-    --------
-    None
-    """
-    group = zarr.open_group(
-        os.path.join(out_path, 'images', image_name), mode='r+'
-    )
-    ome = dict(group.attrs['ome'])
-    for channel, label, colour in zip(
-        ome['omero']['channels'],
-        ('R', 'G', 'B'),
-        ('FF0000', '00FF00', '0000FF'),
-        strict=True,
-    ):
-        # Label set too, so stores written with lowercase labels match
-        channel['label'] = label
-        channel['color'] = colour
-        channel['window'] = {'start': 0, 'end': 255, 'min': 0, 'max': 255}
-    # Layer row's name in viewer, 'Image' otherwise
-    ome['omero']['name'] = 'H&E'
-    group.attrs.update(ome=ome)
-
-
-# Function to record image's pixel size for viewer's scale bar
-def set_microns_per_pixel(out_path, image_name, outs, downsample):
-    """
-    Store microns per pixel of image's level s0 as image attribute.
-
-    Config generator reads it for scale bar; Space Ranger shapes are in
-    pixels, not microns, so it cannot be derived from them as for Xenium.
-
-    Parameters:
-    -----------
-    out_path: str
-      SpatialData .zarr store.
-    image_name: str
-      Image element name.
     outs: str
       Space Ranger outs directory, whose scale factors give scan's size.
     downsample: int
@@ -415,19 +270,13 @@ def set_microns_per_pixel(out_path, image_name, outs, downsample):
     Returns:
     --------
     microns: float
-      Microns per pixel written.
+      Microns per pixel of level s0.
     """
     factors_path = os.path.join(
         outs, 'segmented_outputs', 'spatial', 'scalefactors_json.json'
     )
     with open(factors_path) as handle:
-        microns = json.load(handle)['microns_per_pixel'] * downsample
-    group = zarr.open_group(
-        os.path.join(out_path, 'images', image_name), mode='r+'
-    )
-    group.attrs.update(microns_per_pixel=microns)
-
-    return microns
+        return json.load(handle)['microns_per_pixel'] * downsample
 
 
 # Function to parse command-line arguments
@@ -446,7 +295,9 @@ def parse_args():
     parser.add_argument('--outs', required=True, help='Space Ranger outs dir.')
     parser.add_argument('--he', required=True, help='H&E OME-TIFF path.')
     parser.add_argument(
-        '--sample-id', required=True, help='Sample id in merged object.'
+        '--sample-id',
+        required=True,
+        help="Sample id in merged object's orig.ident (e.g. A1_S1).",
     )
     parser.add_argument(
         '--key', required=True, help='Element prefix and coordinate system.'
@@ -478,7 +329,10 @@ if __name__ == '__main__':
     region = f'{prefix}cell_boundaries'
     segmented = os.path.join(args.outs, 'segmented_outputs')
 
-    cells = read_qc_cells(args.merged_umap, args.sample_id)
+    # CSV also holds Seurat's own cell name, which is no set list
+    cells = read_joint_cells(args.merged_umap, args.sample_id)[
+        ['cluster', 'umap_1', 'umap_2']
+    ]
     print(f'{len(cells)} QC-passed cells', flush=True)
     # Lazy; built first, as geometry turns within its frame
     image = build_he_pyramid(args.he, args.downsample, args.key, args.rotate)
@@ -539,7 +393,11 @@ if __name__ == '__main__':
         },
     )
     set_rgb_channel_rendering(args.out, f'{prefix}he')
-    set_microns_per_pixel(args.out, f'{prefix}he', args.outs, args.downsample)
+    set_microns_per_pixel(
+        args.out,
+        f'{prefix}he',
+        scan_microns_per_pixel(args.outs, args.downsample),
+    )
     backed.write_consolidated_metadata()
     print(
         f'done in {time.time() - start:.1f}s, peak RSS {peak_rss_gb():.2f} GB '

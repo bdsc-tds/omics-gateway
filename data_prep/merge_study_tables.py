@@ -36,26 +36,24 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 
-# Import sibling scripts; data_prep/ is on sys.path when scripts run directly
-from convert_visium_hd import remove_existing_elements
-from convert_xenium import (
-    downcast_int64_obs,
-    normalise_string_dtypes,
-    peak_rss_gb,
-)
+# Import sibling modules; data_prep/ is on sys.path when scripts run directly
 from generate_datasets_tsv import (
     TABLE_PATH,
     load_metadata,
     write_store_metadata,
+)
+from spatial_common import (
+    ALL_CELLS_UMAP_SUFFIX,
+    downcast_int64_obs,
+    normalise_string_dtypes,
+    peak_rss_gb,
+    remove_existing_elements,
 )
 from spatialdata import read_zarr
 from spatialdata.models import TableModel
 
 # Merged table element, where generate_datasets_tsv.py looks for metadata
 MERGED_TABLE = 'table'
-
-# Per-sample table of all cells' merged UMAP, read by config generator
-ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
 
 
 # Function to concatenate per-sample tables into one
