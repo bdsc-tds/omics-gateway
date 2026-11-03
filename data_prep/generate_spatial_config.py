@@ -25,6 +25,15 @@ import pandas as pd
 import zarr
 from anndata.io import read_elem
 from PIL import Image
+
+# Import sibling module; data_prep/ is on sys.path when scripts run directly
+from spatial_common import (
+    ALL_CELLS_UMAP_SUFFIX,
+    CENTROIDS_KEY,
+    SPOTS_SUFFIX,
+    list_group_members,
+    read_store_samples,
+)
 from vitessce import (
     AnnDataWrapper,
     SpatialDataWrapper,
@@ -43,14 +52,6 @@ DATASET_UID = 'A'
 
 # Layer name in viewer comes from obsType, so transcripts need one of their own
 POINT_OBS_TYPE = 'transcript'
-
-# Centroids pre-scaled to rendered coordinates, written by convert_xenium.py
-CENTROIDS_KEY = 'spatial_global'
-
-# Name suffixes of element sample's table annotates: segmented cells, or
-# classic Visium spots (convert_visium.py), which get spot layer instead
-CELLS_SUFFIX = '_cell_boundaries'
-SPOTS_SUFFIX = '_spots'
 
 # Per-cell measurements offered for colouring, as obs columns: Xenium's own,
 # then those convert_visium_hd.py computes
@@ -88,10 +89,6 @@ EMBEDDING_NAMES = {
 # joint analysis's
 SAMPLE_UMAP = EMBEDDING_NAMES['X_umap_sample']
 
-# Table of every sample's cells holding joint UMAP, per sample of
-# multi-sample store (written by merge_study_tables.py)
-ALL_CELLS_UMAP_SUFFIX = '_umap_all_cells'
-
 # Sample switch entry and title of study-wide config of multi-sample store
 ALL_SAMPLES_LABEL = 'All samples'
 
@@ -126,28 +123,6 @@ NON_SET_OBS_COLS = {
     'umi_counts',
     'genes_detected',
 }
-
-
-# Function to list child element names of zarr group directory
-def list_group_members(group_dir):
-    """
-    List element names inside SpatialData zarr group directory.
-
-    Parameters:
-    -----------
-    group_dir: str
-      Path to group directory within store (e.g. <store>/images).
-
-    Returns:
-    --------
-    members: list of str
-      Sorted names of child elements, excluding zarr bookkeeping entries.
-    """
-    if not os.path.isdir(group_dir):
-        return []
-    skip = {'zarr.json', '.zgroup', '.zattrs', '.zmetadata', 'zmetadata'}
-
-    return sorted(name for name in os.listdir(group_dir) if name not in skip)
 
 
 # Function to read element's SpatialData coordinate-system name
@@ -400,56 +375,6 @@ def read_set_order(table_dir, set_cols):
         order[col.replace('_', ' ').title()] = sorted(present)
 
     return order
-
-
-# Function to list samples of multi-sample store
-def read_store_samples(zarr_path):
-    """
-    List samples of multi-sample store in display order, from merged table.
-
-    Store counts as multi-sample only when merged table has sample column
-    and every sample has own '<key>_table', so single-sample stores never get
-    study-wide config.
-
-    Parameters:
-    -----------
-    zarr_path: str
-      Path to SpatialData .zarr store on disk.
-
-    Returns:
-    --------
-    samples: list of dict
-      'key', 'label' and 'disease' (None when column absent) per sample;
-      empty for single-sample stores.
-    """
-    obs_dir = os.path.join(zarr_path, 'tables', 'table', 'obs')
-    if not os.path.isdir(os.path.join(obs_dir, 'sample')):
-        return []
-    obs = zarr.open_group(obs_dir, mode='r')
-    pairs = pd.DataFrame({
-        'label': read_elem(obs['sample']),
-        'key': read_elem(obs['region']).astype(str),
-        'disease': (
-            read_elem(obs['disease']).astype(str) if 'disease' in obs else None
-        ),
-    }).drop_duplicates()
-    # Categories hold display order given to merge script
-    pairs = pairs.sort_values('label')
-    samples = [
-        {
-            'key': key.removesuffix(CELLS_SUFFIX).removesuffix(SPOTS_SUFFIX),
-            'label': str(label),
-            'disease': disease,
-        }
-        for label, key, disease in zip(
-            pairs['label'], pairs['key'], pairs['disease']
-        )
-    ]
-    tables = list_group_members(os.path.join(zarr_path, 'tables'))
-    if not all(f'{s["key"]}_table' in tables for s in samples):
-        return []
-
-    return samples
 
 
 # Function to list samples of multi-sample store with their configs' names

@@ -3,7 +3,7 @@ Module of helpers shared by spatial conversion scripts and config generator.
 
 Holds store naming every script must agree on, table fixes viewer needs,
 element writing into new or existing stores, joint analysis export reading
-and pixel size writing. Library only: run converters, not this module.
+and store sample listing. Library only: run converters, not this module.
 """
 
 # Import utility modules
@@ -16,6 +16,7 @@ import time
 import numpy as np
 import pandas as pd
 import zarr
+from anndata.io import read_elem
 from spatialdata import SpatialData, read_zarr
 
 # Tile edge in viewer; also chunk size of every image level
@@ -398,3 +399,78 @@ def add_set_columns(obs, cells, ids):
     for column in set_cols:
         values = cells[column].reindex(ids).fillna('Unassigned').astype(str)
         obs[column] = pd.Categorical(values.to_numpy())
+
+
+# Function to list child element names of zarr group directory
+def list_group_members(group_dir):
+    """
+    List element names inside SpatialData zarr group directory.
+
+    Parameters:
+    -----------
+    group_dir: str
+      Path to group directory within store (e.g. <store>/images).
+
+    Returns:
+    --------
+    members: list of str
+      Sorted names of child elements, excluding zarr bookkeeping entries.
+    """
+    if not os.path.isdir(group_dir):
+        return []
+    skip = {'zarr.json', '.zgroup', '.zattrs', '.zmetadata', 'zmetadata'}
+
+    return sorted(name for name in os.listdir(group_dir) if name not in skip)
+
+
+# Function to list samples of multi-sample store
+def read_store_samples(zarr_path):
+    """
+    List samples of multi-sample store in display order, from merged table,
+    loading only obs columns needed.
+
+    Store counts as multi-sample only when merged table has sample column
+    and every sample has own '<key>_table', so single-sample stores never get
+    study-wide config or per-sample QC counts.
+
+    Parameters:
+    -----------
+    zarr_path: str
+      Path to SpatialData .zarr store on disk.
+
+    Returns:
+    --------
+    samples: list of dict
+      'key', 'label', 'disease' (None when column absent) and 'cells' (cells
+      kept in store) per sample; empty for single-sample stores.
+    """
+    obs_dir = os.path.join(zarr_path, 'tables', 'table', 'obs')
+    if not os.path.isdir(os.path.join(obs_dir, 'sample')):
+        return []
+    obs = zarr.open_group(obs_dir, mode='r')
+    rows = pd.DataFrame({
+        'label': read_elem(obs['sample']),
+        'key': read_elem(obs['region']).astype(str),
+        'disease': (
+            read_elem(obs['disease']).astype(str) if 'disease' in obs else None
+        ),
+    })
+    cells = rows['label'].value_counts()
+    # Categories hold display order given to merge script
+    pairs = rows.drop_duplicates().sort_values('label')
+    samples = [
+        {
+            'key': key.removesuffix(CELLS_SUFFIX).removesuffix(SPOTS_SUFFIX),
+            'label': str(label),
+            'disease': disease,
+            'cells': int(cells[label]),
+        }
+        for label, key, disease in zip(
+            pairs['label'], pairs['key'], pairs['disease']
+        )
+    ]
+    tables = list_group_members(os.path.join(zarr_path, 'tables'))
+    if not all(f'{s["key"]}_table' in tables for s in samples):
+        return []
+
+    return samples
