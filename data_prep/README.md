@@ -9,6 +9,7 @@ The gateway does not process data: it lists the datasets described in a table an
                                                                    ├─> generate_datasets_tsv.py ─> datasets.tsv
 Xenium Ranger output ─> convert_xenium.py ─> <sample>.zarr ────────┤
 Xenium Ranger output ─> convert_xenium_sample.py ─> <study>.zarr   │
+Visium .h5ad ─> convert_visium.py ─> <study>.zarr                  │
 Space Ranger output ─> convert_visium_hd.py ─> <study>.zarr        │
                                                    │               │
                                                    └─> generate_spatial_config.py ─> viewer configs
@@ -21,6 +22,7 @@ QC figures ─> downscale_qc_figures.py (optional) ─> build_qc_thumbnails.py �
 | `convert_xenium.py` | `spatial` | a SpatialData `.zarr` store, from Xenium Ranger output |
 | `convert_xenium_sample.py` | `spatial` | one sample of a multi-sample SpatialData store, from Xenium Ranger output |
 | `convert_visium_hd.py` | `spatial` | one sample of a multi-sample SpatialData store, from Space Ranger output |
+| `convert_visium.py` | `spatial` | one sample of a multi-sample SpatialData store, from a classic (spot-based) Visium `.h5ad` |
 | `merge_study_tables.py` | `spatial` | the all-samples table of a multi-sample store, with the study's metadata |
 | `write_store_metadata.py` | `spatial` | the dataset's metadata inside an existing store |
 | `generate_spatial_config.py` | `spatial` | the viewer configs for a store |
@@ -215,6 +217,25 @@ conda run -n spatial python data_prep/convert_xenium_sample.py \
 Each sample's elements are named after its key (`<key>_morphology_focus`, `<key>_cell_boundaries`, `<key>_nucleus_boundaries`, `<key>_table`, `<key>_transcripts`), and its cell IDs are prefixed with it. Only the cells in the export are kept, in the table and in both outline layers; transcripts are all kept, as for a single sample. `--rotate` works as in `convert_xenium.py`. Converting a sample again replaces its elements.
 
 Then build the all-samples table with `merge_study_tables.py` and generate the configs exactly as for a Visium HD study (see above). The study's thumbnails show each sample's DAPI channel instead of an H&E.
+
+## Adding a classic Visium study
+
+A classic (spot-based, not HD) Visium study is laid out like the other studies: one store holding all its samples, filled one sample at a time by `convert_visium.py`, then the same all-samples table and viewer configs. You need, per sample, an **`.h5ad` file in scanpy's Visium layout**, as written by `scanpy.read_visium()` from Space Ranger output: raw counts in `X`, spot centres in full-resolution pixels in `obsm['spatial']`, and the tissue images and scale factors in `uns['spatial']`. For the whole study you need a **joint analysis export** in the same format as for a Xenium study, with Space Ranger's spot barcode as `cell_id`.
+
+Run the samples one after another, never in parallel, as they write into the same store. A sample takes a few seconds and about 1 GB:
+
+```bash
+conda run -n spatial python data_prep/convert_visium.py \
+    --h5ad <sample>.h5ad \
+    --sample-id <ID in the joint analysis export> \
+    --key <short key, e.g. s1> \
+    --joint <joint analysis export>.csv \
+    --out data/spatial/visium/<study>.zarr
+```
+
+Each sample's elements are named after its key (`<key>_he`, `<key>_spots`, `<key>_table`), and its spot IDs are prefixed with it. The H&E is the `.h5ad`'s high-resolution image (about 2,000 pixels across), and its pixels are the sample's coordinate frame. Spots are stored as circles of the physical 55 µm diameter; the pixel size comes from the spacing between spot centres, 100 µm on every Visium slide, because Space Ranger's own spot diameter does not match the physical one. The table holds the counts, each spot's UMI count and number of genes detected, the export's cell set lists and both UMAPs.
+
+Then build the all-samples table with `merge_study_tables.py` and generate the configs exactly as for a Visium HD study (see above). The config generator recognises the `<key>_spots` element: the viewer draws a spot layer instead of cell outlines, calls observations "spots", and has no Metric layer, since that layer is a second channel of a segmentation. The two configs it writes per sample therefore show the same panels.
 
 ## Reference
 
